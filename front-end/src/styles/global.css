@@ -1,0 +1,321 @@
+/* ==========================================================================
+   1. Reset e Estilos Globais
+   ========================================================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100vh;
+  background: linear-gradient(45deg, #d6e5ff, #78b2ff, #b1f1ff, #d6e5ff);
+}
+
+body {
+  background-color: transparent;
+  overflow-y: auto;
+  min-height: 600px;
+}
+
+/* ==========================================================================
+   2. Layout Principal (Header, Footer, Containers)
+   ========================================================================== */
+
+header,
+footer {
+  width: 100%;
+}
+
+.header-panel,
+.footer-panel {
+  width: 100%;
+  height: 50px;
+  background-color: rgb(255, 255, 255);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 1000;
+}
+
+.big-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.logo {
+  width: 45px;
+}
+
+p {
+  font-size: 14px;
+}
+
+a {
+  /* ou a cor clara que combina com o fundo */
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  text-decoration: none;
+  padding-left: 5px;
+}
+
+.royal-blue-text {
+  color: #1030a4;
+}
+
+label {
+  font-weight: 400;
+  font-size: 14px;
+}
+/* ==========================================================================
+   3. Componentes (Botões, Alertas, Tabelas, Links)
+   ========================================================================== */
+
+/* --- Botões --- */
+
+.btn-delete {
+  background: rgba(255, 255, 255, 0.052) !important;
+  color: white;
+  width: 30px;
+  height: 30px;
+  padding: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.104);
+}
+
+.btn-delete:hover {
+  background-color: rgba(68, 40, 40, 0.286);
+  font-weight: 700;
+  color: rgb(255, 255, 255);
+  border: none;
+  box-shadow: 0 0 7px rgba(255, 255, 255, 0.532);
+}
+
+.btn-delete:active {
+  background-color: rgba(68, 40, 40, 0.286);
+  font-weight: 700;
+  color: rgb(255, 255, 255);
+  border: none;
+  box-shadow: none;
+}
+
+.btn-paginacao {
+  width: 80px !important;
+}
+
+.footerButton {
+  width: 160px;
+  max-width: 300px;
+}
+
+/* --- Alertas e Animações --- */
+.alert {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  max-width: 80%;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.3s forwards, fadeOut 0.5s forwards 3s;
+}
+
+.alert-success {
+  background-color: #d4eddabb;
+  color: #210035;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* --- Tabelas --- */
+.table-responsive {
+  background: transparent !important;
+}
+
+.table {
+  background: transparent !important;
+  color: white !important;
+  border-radius: 10px !important;
+}
+
+.table th,
+.table td {
+  background: transparent !important;
+  color: white !important;
+  border: none !important;
+}
+
+.table thead tr,
+.table tbody tr {
+  border: none !important;
+}
+
+/* --- Links --- */
+.link {
+  background-color: rgb(19, 19, 19);
+  text-decoration: none;
+  color: rgb(255, 255, 255);
+  border-radius: 20px;
+}
+
+.link:hover {
+  text-decoration: none;
+  color: rgb(205, 205, 205);
+  background-color: rgb(39, 45, 52);
+  box-shadow: 0 0 7px white;
+}
+
+/* ==========================================================================
+   4. Formulários
+   ========================================================================== */
+input {
+  background-color: rgb(255, 255, 255);
+  color: rgba(0, 0, 0, 0.824);
+  font-size: 13px;
+  border-radius: 20px;
+  height: 30px;
+  border: solid 1px rgba(255, 255, 255, 0.27);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.086);
+}
+
+input:focus {
+  outline: solid 1px rgba(0, 0, 0, 0.27);
+  color: rgba(0, 0, 0, 0.824);
+  font-size: 13px;
+  border-radius: 20px;
+  height: 30px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.086);
+}
+
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input {
+  width: 100%;
+  padding-right: 40px; /* espaço para o ícone */
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #555;
+}
+
+.radio-clean {
+  outline: none;
+  box-shadow: none;
+  accent-color: #ffffff;
+}
+
+.radio-clean:focus {
+  outline: none;
+  box-shadow: none;
+  accent-color: #1030a4;
+}
+
+.radio-clean:checked {
+  outline: none;
+  box-shadow: none;
+  accent-color: #1030a4;
+}
+
+/* ==========================================================================
+   5. Classes Utilitárias (Sombras, Bordas, Fundos)
+   ========================================================================== */
+.primaria {
+  background-color: rgb(255, 255, 255);
+  color: rgba(0, 0, 0, 0.824);
+  font-size: 13px;
+  border-radius: 20px;
+  height: 30px;
+  border: solid 1px rgba(255, 255, 255, 0.27);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.086);
+}
+
+.primaria:hover {
+  background-color: rgba(0, 0, 0, 0.124);
+  border: solid 1px white;
+  box-shadow: 0 0 7px rgba(255, 255, 255, 0.532);
+  color: rgb(255, 255, 255);
+  font-weight: 500;
+}
+
+.primaria:active {
+  background-color: rgba(255, 255, 255, 0) !important;
+  box-shadow: none;
+  color: rgb(255, 255, 255) !important;
+}
+
+.secondary {
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.649);
+  color: rgb(0, 0, 0);
+  font-weight: 350;
+}
+
+.terciary {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0 0 7px rgba(255, 255, 255, 0.532);
+  color: rgb(0, 0, 0);
+  font-weight: 350;
+  backdrop-filter: blur(40px);
+}
+
+.dark-shadow {
+  box-shadow: 0 0 50px rgba(5, 2, 86, 0.595);
+}
+
+.noBreak-line {
+  white-space: nowrap;
+}
