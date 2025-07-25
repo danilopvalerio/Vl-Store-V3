@@ -12,6 +12,7 @@ import Caixa from "./Caixa"; // Supondo que você criará Caixa.ts
 import Venda from "./Venda"; // Supondo que você criará Venda.ts
 import Movimentacao from "./Movimentacao"; // Supondo que você criará Movimentacao.ts
 import LogSistema from "./LogSistema"; // Supondo que você criará LogSistema.ts
+import RefreshToken from "./RefreshToken";
 
 @Entity("loja")
 export default class Loja {
@@ -76,4 +77,7 @@ export default class Loja {
   // Uma loja pode ter vários logs.
   @OneToMany(() => LogSistema, (log) => log.loja)
   logs!: LogSistema[];
+
+  @OneToMany(() => RefreshToken, (token) => token.loja)
+  refreshTokens!: RefreshToken[];
 }

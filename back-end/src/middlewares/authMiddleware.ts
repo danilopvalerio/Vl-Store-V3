@@ -3,20 +3,20 @@
 import { Request, Response, NextFunction } from "express";
 import * as jwt from "jsonwebtoken";
 
-// Interface para os dados que estão DENTRO do token
+// Dados esperados no payload do JWT
 interface ITokenPayload {
-  id_loja: string; // O nome exato que você salvou no SessionService
+  id_loja: string;
   iat: number;
   exp: number;
   sub: string;
 }
 
-// Interface para o objeto 'user' que vamos anexar à requisição
+// O que vamos adicionar à request
 interface IUserPayload {
-  idLoja: string; // O nome que os Controllers esperam.
+  idLoja: string;
 }
 
-// Isso "ensina" ao TypeScript que o nosso objeto Request agora pode ter uma propriedade 'user'
+// Faz o TypeScript entender que `request.user` existe
 declare global {
   namespace Express {
     interface Request {
@@ -30,33 +30,34 @@ export function authMiddleware(
   response: Response,
   next: NextFunction
 ) {
-  // 1. Pega o token de dentro dos cookies da requisição
-  const { token } = request.cookies;
+  // 1. Pega o token do header Authorization (padrão Bearer Token)
+  const authHeader = request.headers.authorization;
 
-  // 2. Se não houver um cookie chamado 'token', o usuário não está autenticado
-  if (!token) {
+  // 2. Verifica se o header está presente e no formato correto
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return response.status(401).json({ message: "Token JWT não fornecido." });
   }
 
+  // 3. Extrai o token do header
+  const token = authHeader.replace("Bearer ", "");
+
   try {
-    // 3. Verifica se o token é válido usando nosso segredo
+    // 4. Verifica e decodifica o token
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
+      process.env.ACCESS_TOKEN_SECRET as string
     ) as ITokenPayload;
 
-    // 4. Pegamos o 'id_loja' de dentro do token decodificado...
-    const { id_loja } = decoded;
-
-    // ... e o anexamos ao objeto 'request' com o formato que o controller espera.
+    // 5. Extrai o ID da loja e anexa à requisição
     request.user = {
-      idLoja: id_loja,
+      idLoja: decoded.id_loja,
     };
 
-    // 5. Se o token for válido, permite que a requisição continue para o controller
+    // 6. Passa para o próximo middleware ou controller
     return next();
-  } catch {
-    // Se jwt.verify der um erro (token expirado, assinatura inválida), retorna erro.
-    return response.status(401).json({ message: "Token JWT inválido." });
+  } catch (error) {
+    return response
+      .status(401)
+      .json({ message: "Token JWT inválido ou expirado." });
   }
 }

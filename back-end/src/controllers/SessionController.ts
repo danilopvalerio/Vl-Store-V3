@@ -3,35 +3,63 @@ import { SessionService } from "../services/SessionService";
 
 export class SessionController {
   async create(request: Request, response: Response): Promise<Response> {
-    // Pega o e-mail e a senha que o usuário enviou no corpo da requisição
     const { email, senha } = request.body;
-
     const sessionService = new SessionService();
 
     try {
-      // Tenta executar a lógica de login do nosso service
-      const { loja, token } = await sessionService.create({ email, senha });
+      const { loja, accessToken, refreshToken } = await sessionService.create({
+        email,
+        senha,
+      });
 
-      // Nós configuramos o cookie com o token e todos os atributos de segurança
-      response.cookie(
-        "token", // Nome do cookie
-        token, // O valor (o próprio JWT)
-        {
-          httpOnly: true, // Impede acesso via JavaScript
-          secure: process.env.NODE_ENV !== "development", // 'true' em produção (HTTPS), 'false' em dev (HTTP)
-          sameSite: "strict", // Protege contra CSRF
-          maxAge: 24 * 60 * 60 * 1000, // Tempo de vida do cookie em milissegundos (ex: 1 dia)
-        }
-      );
+      response.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV !== "development",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+        path: "/api/sessions",
+      });
 
-      // Se deu certo, devolve a resposta para o usuário
-      return response.json({ loja });
+      return response.json({ loja, accessToken });
     } catch (error) {
-      // Se o service deu algum erro (ex: senha errada), devolvemos o erro
       if (error instanceof Error) {
-        return response.status(401).json({ message: error.message }); // 401: Não Autorizado
+        return response.status(401).json({ message: error.message });
       }
       return response.status(500).json({ message: "Erro interno no servidor" });
     }
+  }
+
+  async refresh(request: Request, response: Response): Promise<Response> {
+    const sessionService = new SessionService();
+    const refreshToken = request.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return response
+        .status(401)
+        .json({ message: "Refresh token não encontrado." });
+    }
+
+    try {
+      const { loja, accessToken } = await sessionService.refresh(refreshToken);
+      return response.json({ loja, accessToken });
+    } catch (error) {
+      return response
+        .status(401)
+        .json({ message: "Token inválido ou expirado." });
+    }
+  }
+
+  async logout(request: Request, response: Response): Promise<Response> {
+    const sessionService = new SessionService();
+    const refreshToken = request.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return response.sendStatus(204);
+    }
+
+    await sessionService.logout(refreshToken);
+    response.clearCookie("refreshToken", { path: "/api/sessions" });
+
+    return response.sendStatus(204);
   }
 }

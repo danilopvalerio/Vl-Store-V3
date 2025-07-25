@@ -1,11 +1,12 @@
+// src/routes/session.routes.ts
 import { Router } from "express";
 import { SessionController } from "../controllers/SessionController";
 
 const sessionRoutes = Router();
-const sessionController = new SessionController();
+const controller = new SessionController();
 
-// Qualquer requisição POST para a URL base ('/') desta rota,
-// vai acionar o método 'create' do nosso controller.
-sessionRoutes.post("/", sessionController.create);
+sessionRoutes.post("/", controller.create); // /api/sessions
+sessionRoutes.post("/refresh", controller.refresh); // /api/sessions/refresh
+sessionRoutes.delete("/", controller.logout); // /api/sessions
 
 export default sessionRoutes;

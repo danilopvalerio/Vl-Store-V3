@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import "reflect-metadata"; // Necessário para o TypeORM
 import { AppDataSource } from "./database/data-source";
 import routes from "./routes"; // Importa nosso roteador principal
+import cors from "cors";
 
 // Inicializa a conexão com o banco de dados
 AppDataSource.initialize()
@@ -14,6 +15,15 @@ AppDataSource.initialize()
 
     const app = express();
     const PORT = process.env.PORT || 3333;
+
+    // --- CONFIGURAÇÃO DO CORS ---
+    // Isso precisa vir ANTES de app.use(routes)
+    app.use(
+      cors({
+        origin: "http://localhost:3001", // Permite que APENAS seu frontend faça requisições
+        credentials: true, // Permite o envio de cookies (essencial para sua autenticação)
+      })
+    );
 
     // Middleware para o Express entender JSON
     app.use(express.json());
