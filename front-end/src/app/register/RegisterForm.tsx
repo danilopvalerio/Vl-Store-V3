@@ -15,6 +15,7 @@ import {
   faLock,
 } from "@fortawesome/free-solid-svg-icons";
 
+// Supondo que este é o caminho correto para seu arquivo de utilitários
 import {
   isValidEmail,
   isValidCpfCnpj,
@@ -42,44 +43,74 @@ export default function RegisterForm() {
     setError("");
     setSuccess(false);
 
+    // --- Bloco de Validação ---
+
+    // 1. Verifica se todos os campos estão preenchidos
     if (
       !storeName ||
-      !password ||
       !email ||
       !cpfCnpj ||
       !birthDate ||
-      !telephone
+      !telephone ||
+      !password ||
+      !confirmPassword
     ) {
       setError("Todos os campos são obrigatórios.");
       return;
     }
 
+    // 2. Valida o formato do e-mail
+    if (!isValidEmail(email)) {
+      setError("Por favor, insira um e-mail válido.");
+      return;
+    }
+
+    // 3. Valida o CPF ou CNPJ
+    if (!isValidCpfCnpj(cpfCnpj)) {
+      setError("O CPF ou CNPJ inserido é inválido.");
+      return;
+    }
+
+    // 4. Verifica se as senhas coincidem
+    if (password !== confirmPassword) {
+      setError("As senhas não coincidem.");
+      return;
+    }
+
+    // 5. Valida a força da senha
+    if (!isValidPassword(password)) {
+      setError(
+        "A senha deve ter no mínimo 8 caracteres, com uma letra maiúscula, uma minúscula, um número e um caractere especial (@$!%*?&)."
+      );
+      return;
+    }
+
+    // --- Fim do Bloco de Validação ---
+
     const storeData = {
       nome: storeName,
       senha: password,
       email: email.toLowerCase(),
-      cpf_cnpj_proprietario_loja: extractDigitsOnly(cpfCnpj),
-      data_nasc_proprietario: new Date(
-        convertToISODate(birthDate)
-      ).toISOString(),
+      cpfCnpjProprietarioLoja: extractDigitsOnly(cpfCnpj),
+      dataNascProprietario: new Date(convertToISODate(birthDate)).toISOString(),
       telefone: extractDigitsOnly(telephone),
     };
 
     try {
       setLoading(true);
-      await axios.post("https://vl-store-v2.onrender.com/api/lojas", storeData);
+      await axios.post("http://localhost:3000/api/lojas", storeData);
 
       setSuccess(true);
       setLoading(false);
 
       setTimeout(() => {
-        router.push("/loginPage");
+        router.push("/login");
       }, 2000);
     } catch (error) {
       setLoading(false);
       if (axios.isAxiosError(error) && error.response) {
         if (error.response.status === 409) {
-          setError("E-mail ou CPF/CNPJ já cadastrado.");
+          setError("Erro:" + error.response);
         } else {
           setError(
             `Erro no cadastro: ${

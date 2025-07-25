@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import { SessionService } from "../services/SessionService";
 
 export class SessionController {
+  /**
+   * Cria uma nova sessão para a loja (login).
+   */
   async create(request: Request, response: Response): Promise<Response> {
     const { email, senha } = request.body;
     const sessionService = new SessionService();
@@ -12,12 +15,13 @@ export class SessionController {
         senha,
       });
 
+      // Define o refresh token em um cookie seguro
       response.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== "development",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
-        path: "/api/sessions",
+        httpOnly: true, // Impede acesso via JavaScript no cliente
+        secure: process.env.NODE_ENV !== "development", // Usa HTTPS em produção
+        sameSite: "strict", // Ajuda a mitigar ataques CSRF
+        maxAge: 7 * 24 * 60 * 60 * 1000, // Expira em 7 dias
+        path: "/api/sessions", // O cookie só será enviado para este path
       });
 
       return response.json({ loja, accessToken });
@@ -29,6 +33,9 @@ export class SessionController {
     }
   }
 
+  /**
+   * Atualiza o access token usando o refresh token.
+   */
   async refresh(request: Request, response: Response): Promise<Response> {
     const sessionService = new SessionService();
     const refreshToken = request.cookies.refreshToken;
@@ -49,17 +56,47 @@ export class SessionController {
     }
   }
 
+  /**
+   * Realiza o logout da loja, invalidando o refresh token.
+   */
   async logout(request: Request, response: Response): Promise<Response> {
     const sessionService = new SessionService();
     const refreshToken = request.cookies.refreshToken;
 
+    // Se não houver refresh token, apenas retorna sucesso (o usuário já não está "logado")
     if (!refreshToken) {
-      return response.sendStatus(204);
+      return response.sendStatus(204); // No Content
     }
 
-    await sessionService.logout(refreshToken);
-    response.clearCookie("refreshToken", { path: "/api/sessions" });
+    try {
+      await sessionService.logout(refreshToken);
+      // Limpa o cookie do navegador
+      response.clearCookie("refreshToken", { path: "/api/sessions" });
+      return response.sendStatus(204); // No Content
+    } catch (error) {
+      return response
+        .status(500)
+        .json({ message: "Erro interno ao fazer logout." });
+    }
+  }
 
-    return response.sendStatus(204);
+  /**
+   * Obtém os dados do perfil da loja autenticada.
+   */
+  async profile(request: Request, response: Response): Promise<Response> {
+    const sessionService = new SessionService();
+    // O idLoja é adicionado ao `request.user` pelo `authMiddleware`
+    const idLoja = request.user.idLoja;
+
+    try {
+      const loja = await sessionService.getProfile(idLoja);
+      return response.json({ loja });
+    } catch (error) {
+      if (error instanceof Error) {
+        // Se o erro for conhecido (ex: Loja não encontrada), retorna 404
+        return response.status(404).json({ message: error.message });
+      }
+      return response.status(500).json({ message: "Erro ao buscar perfil." });
+    }
   }
 }

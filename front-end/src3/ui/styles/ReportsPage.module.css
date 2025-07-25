@@ -1,0 +1,146 @@
+/* /src/styles/ReportsPage.module.css */
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  width: 100%;
+}
+
+.header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.logo {
+  width: 45px;
+  height: auto;
+  opacity: 0.8;
+}
+
+.reportsCard {
+  width: 100%;
+  max-width: 900px;
+  background-color: rgba(0, 0, 0, 0.603);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.208);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.281);
+  padding: 3rem 4rem;
+  color: rgb(255, 255, 255);
+  text-align: center;
+}
+
+.titleSection {
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: rgb(255, 255, 255);
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.buttonGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.reportButton {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: rgb(255, 255, 255);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 1rem;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.reportButton:hover:not(:disabled) {
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
+  box-shadow: 0 0 7px rgba(0, 0, 0, 0.532);
+  transform: none;
+}
+
+.reportButton:active {
+  background-color: transparent !important;
+  border: 1px solid white !important;
+  box-shadow: none !important;
+  color: rgb(255, 255, 255) !important;
+}
+
+.reportButton:disabled {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+.reportButton:disabled:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.4);
+  box-shadow: none;
+  transform: none;
+}
+
+.secondaryButton {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: none;
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
+  box-shadow: 0 0 7px rgba(0, 0, 0, 0.532);
+}
+
+.secondaryButton:active {
+  background-color: transparent !important;
+  border: 1px solid white !important;
+  box-shadow: none !important;
+  color: rgb(255, 255, 255) !important;
+}
+
+.footer {
+  width: 100%;
+  text-align: center;
+  margin-top: 2rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .reportsCard {
+    padding: 2rem;
+  }
+  
+  .buttonGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+}

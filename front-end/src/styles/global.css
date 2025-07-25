@@ -37,7 +37,7 @@ footer {
   justify-content: center;
   align-items: center;
   position: relative;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .big-container {
@@ -77,6 +77,12 @@ label {
    ========================================================================== */
 
 /* --- Botões --- */
+.return-btn-fixed {
+  position: fixed;
+  top: 70px; /* distância de baixo */
+  right: 20px; /* distância da direita */
+  z-index: 9999;
+}
 
 .btn-delete {
   background: rgba(255, 255, 255, 0.052) !important;
@@ -280,7 +286,28 @@ input:focus {
   border-radius: 20px;
   height: 30px;
   border: solid 1px rgba(255, 255, 255, 0.27);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.086);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.174);
+}
+
+.card-item {
+  max-width: 200px;
+  max-height: 200px;
+}
+
+.card-item h5 {
+  font-size: 17px;
+}
+
+.card-title {
+  font-size: 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* permite até 2 linhas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 3.2em; /* altura máxima equivalente a 2 linhas */
+  line-height: 1.6em; /* altura de cada linha */
+  word-break: break-word;
 }
 
 .primaria:hover {
@@ -309,6 +336,16 @@ input:focus {
   box-shadow: 0 0 7px rgba(255, 255, 255, 0.532);
   color: rgb(0, 0, 0);
   font-weight: 350;
+  backdrop-filter: blur(40px);
+}
+
+.quartenary {
+  border-radius: 20px;
+  font-size: 13px;
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0 0 7px rgba(0, 0, 0, 0.216);
+  color: rgb(0, 0, 0);
+  font-weight: 500;
   backdrop-filter: blur(40px);
 }
 

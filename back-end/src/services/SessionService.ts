@@ -18,6 +18,7 @@ interface LojaDTO {
 }
 
 export class SessionService {
+  // O método create permanece o mesmo
   async create({ email, senha }: ISessionRequest) {
     const lojaRepository = AppDataSource.getRepository(Loja);
     const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
@@ -63,7 +64,6 @@ export class SessionService {
       id_loja: loja.id_loja,
       expiresAt: refreshTokenExpiresAt,
     });
-
     await refreshTokenRepository.save(newRefreshToken);
 
     const lojaDTO: LojaDTO = {
@@ -72,13 +72,12 @@ export class SessionService {
       email: loja.email,
     };
 
-    return {
-      loja: lojaDTO,
-      accessToken,
-      refreshToken,
-    };
+    return { loja: lojaDTO, accessToken, refreshToken };
   }
 
+  /**
+   * Lógica de negócio para atualizar um token.
+   */
   async refresh(refreshToken: string) {
     const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
     const lojaRepository = AppDataSource.getRepository(Loja);
@@ -87,10 +86,12 @@ export class SessionService {
     const foundToken = await Promise.any(
       allTokens.map(async (token) => {
         const match = await bcrypt.compare(refreshToken, token.hashedToken);
-        return match ? token : Promise.reject();
+        // Garante que o token encontrado não foi revogado (caso a lógica mude no futuro)
+        return match && !token.revokedAt ? token : Promise.reject();
       })
     ).catch(() => null);
 
+    // Verifica se o token foi encontrado e se não expirou.
     if (!foundToken || foundToken.expiresAt < new Date()) {
       throw new Error("Refresh token inválido ou expirado.");
     }
@@ -120,16 +121,42 @@ export class SessionService {
     return { loja: lojaDTO, accessToken };
   }
 
+  /**
+   * Lógica de negócio para fazer logout.
+   * AGORA REMOVE O REFRESH TOKEN DO BANCO DE DADOS.
+   */
   async logout(refreshToken: string) {
+    if (!refreshToken) {
+      return;
+    }
+
     const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
     const allTokens = await refreshTokenRepository.find();
-
     for (const token of allTokens) {
       const match = await bcrypt.compare(refreshToken, token.hashedToken);
       if (match) {
+        // Remove o token do banco de dados
         await refreshTokenRepository.remove(token);
         break;
       }
     }
+  }
+
+  // O método getProfile permanece o mesmo
+  async getProfile(idLoja: string): Promise<LojaDTO> {
+    const lojaRepository = AppDataSource.getRepository(Loja);
+    const loja = await lojaRepository.findOneBy({ id_loja: idLoja });
+
+    if (!loja) {
+      throw new Error("Loja não encontrada.");
+    }
+
+    const lojaDTO: LojaDTO = {
+      idLoja: loja.id_loja,
+      nome: loja.nome,
+      email: loja.email,
+    };
+
+    return lojaDTO;
   }
 }

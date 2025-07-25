@@ -1,0 +1,108 @@
+/* ================================================================== */
+/* CÓDIGO REFATORADO PARA TABELA E AÇÕES (ADICIONAR)         */
+/* ================================================================== */
+
+/* Container da tabela com efeito de vidro */
+.table-container {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background-color: rgba(10, 5, 30, 0.5); /* Fundo escuro e semitransparente */
+  padding: 1.5rem;
+  border-radius: 1rem; /* Bordas mais arredondadas */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Estilização principal da tabela */
+.sales-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #f0f0f0; /* Cor de texto ligeiramente menos intensa que branco puro */
+}
+
+/* Cabeçalho da tabela */
+.sales-table thead tr {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.sales-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Células da tabela */
+.sales-table td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle; /* Alinhamento vertical perfeito */
+}
+
+/* Linhas do corpo da tabela */
+.sales-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s ease;
+}
+
+.sales-table tbody tr:last-child {
+  border-bottom: none; /* Remove a borda da última linha */
+}
+
+.sales-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.07); /* Efeito suave ao passar o mouse */
+}
+
+/* --- Novos Estilos para Botões de Ação --- */
+
+/* Estilo base para os botões */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0 4px; /* Espaçamento entre botões */
+}
+
+/* Efeito de hover principal: eleva e ilumina a borda */
+.btn-action:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Efeito de brilho específico por ação */
+.btn-view:hover {
+  background-color: rgba(23, 162, 184, 0.2);
+  box-shadow: 0 0 12px rgba(23, 162, 184, 0.6);
+}
+
+.btn-edit:hover {
+  background-color: rgba(255, 193, 7, 0.2);
+  box-shadow: 0 0 12px rgba(255, 193, 7, 0.6);
+}
+
+/* Renomeado para evitar conflito com a classe .btn-delete existente */
+.btn-delete-action:hover {
+  background-color: rgba(220, 53, 69, 0.2);
+  box-shadow: 0 0 12px rgba(220, 53, 69, 0.6);
+}
+
+/* Alinhamento da coluna de ações */
+.actions-column {
+  text-align: center;
+}
+
+/* Mensagem de "Nenhuma venda encontrada" */
+.no-sales-message td {
+  text-align: center;
+  padding: 2.5rem;
+  color: rgba(255, 255, 255, 0.6);
+}

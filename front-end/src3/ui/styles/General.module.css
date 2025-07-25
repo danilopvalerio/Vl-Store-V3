@@ -1,0 +1,247 @@
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.circle-box {
+  background-color: rgba(0, 0, 0, 0.282);
+  padding: 9px;
+  border-radius: 20px;
+  padding-left: 15px;
+}
+
+.fine-transparent-border {
+  border: solid 1px rgba(255, 255, 255, 0.208);
+}
+
+.quartenary {
+  background-color: rgba(0, 0, 0, 0.121);
+}
+
+.white-light {
+  box-shadow: 0 0 120px rgba(255, 255, 255, 0.447);
+}
+
+.small-shadow {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.281);
+}
+
+.btn-delete {
+  background: rgba(255, 255, 255, 0.052) !important;
+  color: white;
+  width: 30px;
+  height: 30px;
+  padding: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.104);
+}
+
+.btn-delete:hover {
+  background-color: rgba(68, 40, 40, 0.286);
+  font-weight: 700;
+  color: rgb(255, 255, 255);
+  width: 30px;
+  height: 30px;
+  padding: 0 !important;
+  border: none;
+  box-shadow: 0 0 7px rgba(255, 255, 255, 0.532);
+}
+
+.btn-delete:active {
+  background-color: rgba(68, 40, 40, 0.286);
+  font-weight: 700;
+  color: rgb(255, 255, 255);
+  width: 30px;
+  height: 30px;
+  padding: 0 !important;
+  border: none;
+  box-shadow: none;
+}
+
+.link {
+  background-color: rgb(19, 19, 19);
+  text-decoration: none;
+  color: rgb(255, 255, 255);
+  border-radius: 20px;
+}
+
+.link:hover {
+  text-decoration: none;
+  color: rgb(205, 205, 205);
+  background-color: rgb(39, 45, 52);
+  box-shadow: 0 0 7px white;
+}
+
+.quinary {
+  background-color: rgba(0, 0, 0, 0.603);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.input-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-form {
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.132);
+  color: rgb(255, 255, 255);
+  border: none;
+  font-size: 12px;
+  height: 35px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0);
+}
+
+.noBreak-line {
+  white-space: nowrap;
+}
+
+.input-form:focus {
+  border-radius: 20px;
+  background-color: transparent;
+  border: none;
+  color: rgb(255, 255, 255);
+  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.255);
+}
+
+.input-form:hover {
+  background-color: transparent !important;
+  color: rgb(255, 255, 255) !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.255);
+}
+
+.input-form::placeholder {
+  color: rgb(172, 172, 172);
+  font-size: 11px;
+}
+
+.terciary {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background-color: rgba(19, 19, 19, 0.575);
+  color: white;
+}
+
+.primaria {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: rgb(255, 255, 255);
+  font-weight: 600;
+  font-size: 13px;
+  margin: 10px 0px;
+  border-radius: 20px;
+}
+
+/* Correção: removido o seletor de tag 'button' */
+.primaria:hover {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0 0 7px rgba(0, 0, 0, 0.532);
+  color: rgb(0, 0, 0);
+}
+
+.primaria:active {
+  background-color: transparent !important;
+  border-color: white !important;
+  box-shadow: none !important;
+  color: rgb(255, 255, 255) !important;
+}
+
+.footerButton {
+  width: 160px;
+  max-width: 300px;
+}
+
+.header-panel {
+  background-color: rgba(0, 0, 0, 0.657);
+  width: 100%;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  top: 0;
+  left: 0;
+  position: relative;
+  z-index: 1000;
+}
+
+.footer-panel {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  background-color: rgba(0, 0, 0, 0.657);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 1000;
+}
+
+.big-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.logo {
+  width: 35px;
+}
+
+.btn-paginacao {
+  width: 80px !important;
+}
+
+.alert {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  max-width: 80%;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 1s ease-out; /* A animação 'fadeIn' agora é global */
+}
+
+.alert-success {
+  background-color: #d4eddabb;
+  color: #210035;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.fine-transparent-border-bottom {
+  border-bottom: solid 1px rgba(255, 255, 255, 0.208);
+}
+
+.fine-transparent-border-top {
+  border-top: solid 1px rgba(255, 255, 255, 0.208);
+}

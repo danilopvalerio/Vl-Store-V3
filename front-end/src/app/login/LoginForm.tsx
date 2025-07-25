@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
+// Import your configured api instance
+import api from "../../utils/api"; // Adjust the path if necessary
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEye,
@@ -14,16 +15,11 @@ import {
 
 export default function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState("funcionario");
+  const [email, setEmail] = useState("contato@sapatariaze.com");
+  const [password, setPassword] = useState("umaSenha@Forte123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-
-  const handleUserTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUserType(e.target.value);
-  };
 
   const togglePasswordVisibility = () => {
     setPasswordVisible((prev) => !prev);
@@ -34,61 +30,42 @@ export default function LoginForm() {
     setError("");
     setLoading(true);
 
+    if (!email || !password) {
+      setError("Email e senha são obrigatórios.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      if (!email || !password) {
-        setError("Email e senha são obrigatórios.");
-        setLoading(false);
-        return;
-      }
-
-      const targetRoute =
-        userType === "administrador" ? "login/loja" : "login/funcionario";
-
       const payload = {
         email: email.toLowerCase(),
         senha: password,
       };
 
-      const response = await axios.post(
-        `https://vl-store-v2.onrender.com/api/${targetRoute}`,
-        payload,
-        {
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      // Uando instancia de api aqui ao invés de usar axios diretamente.
+      const response = await api.post("/sessions", payload);
 
-      const data = response.data;
+      if (response.status === 200 && response.data.accessToken) {
+        const { accessToken } = response.data;
 
-      if (response.status === 200 && data.success && data.data?.token) {
-        localStorage.setItem("jwtToken", data.data.token);
-        if (data.data.loja) {
-          localStorage.setItem("userData", JSON.stringify(data.data.loja));
-        } else if (data.data.usuario) {
-          localStorage.setItem("userData", JSON.stringify(data.data.usuario));
-        }
-
-        axios.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${data.data.token}`;
-        router.push("/menuPage");
+        // Após a sessão ser iniciada com sucesso, armazenamos o accessToken no sessionStorage
+        sessionStorage.setItem("accessToken", accessToken);
+        router.push("/menu");
       } else {
-        setError(data.message || "Usuário ou senha incorretos.");
+        setError(response.data.message || "Usuário ou senha incorretos.");
       }
     } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message || `Erro na requisição: ${err.message}`
-        );
-      } else if (err instanceof Error) {
-        setError(`Erro inesperado: ${err.message}`);
-      } else {
-        setError("Erro desconhecido. Tente novamente.");
-      }
+      // The interceptor will handle 401s, so we mostly catch other errors here
+      setError(
+        err.response?.data?.message ||
+          "Erro no login. Verifique suas credenciais."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // ... O resto do seu JSX continua o mesmo
   return (
     <div className="mx-auto login-register-block fine-transparent-border dark-shadow d-flex justify-content-center align-items-center overflow-hidden w-75 rounded-5">
       <div className="row w-100 shadow overflow-hidden">
@@ -147,43 +124,6 @@ export default function LoginForm() {
                   icon={passwordVisible ? faEyeSlash : faEye}
                 />
               </span>
-            </div>
-
-            {/* Tipo de usuário */}
-            <div className="row justify-content-center">
-              <div className="col-10 d-flex justify-content-between">
-                <div className="col-4 d-flex align-items-center justify-content-center gap-2">
-                  <input
-                    className="radio-clean"
-                    type="radio"
-                    name="userType"
-                    id="adminRadio"
-                    value="administrador"
-                    checked={userType === "administrador"}
-                    onChange={handleUserTypeChange}
-                    disabled={loading}
-                  />
-                  <label className="mb-0" htmlFor="adminRadio">
-                    Administrador
-                  </label>
-                </div>
-
-                <div className="col-4 d-flex align-items-center justify-content-center gap-2">
-                  <input
-                    className="radio-clean"
-                    type="radio"
-                    name="userType"
-                    id="employeeRadio"
-                    value="funcionario"
-                    checked={userType === "funcionario"}
-                    onChange={handleUserTypeChange}
-                    disabled={loading}
-                  />
-                  <label className="mb-0" htmlFor="employeeRadio">
-                    Funcionário
-                  </label>
-                </div>
-              </div>
             </div>
 
             {/* Botão */}

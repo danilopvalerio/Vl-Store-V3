@@ -113,22 +113,25 @@ export class ProdutoService {
     idLoja: string,
     page: number = 1,
     limit: number = 10
-  ): Promise<PaginatedResult<Produto>> {
+  ): Promise<PaginatedResult<Produto> & { totalPages: number }> {
     const produtoRepository = AppDataSource.getRepository(Produto);
     const skip = (page - 1) * limit;
 
     const [produtos, total] = await produtoRepository.findAndCount({
-      where: { idLoja: idLoja },
-      skip: skip,
+      where: { idLoja },
+      skip,
       take: limit,
       order: { nome: "ASC" },
     });
 
+    const totalPages = Math.ceil(total / limit);
+
     return {
       data: produtos,
-      total: total,
-      page: page,
-      limit: limit,
+      total,
+      page,
+      limit,
+      totalPages,
     };
   }
 }
