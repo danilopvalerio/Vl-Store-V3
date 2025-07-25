@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2021" /* Versão do JavaScript final */,
+    "module": "commonjs" /* Sistema de módulos do Node.js */,
+    "rootDir": "./src" /* Onde seu código .ts fica */,
+    "outDir": "./dist" /* Onde o código .js compilado vai */,
+    "esModuleInterop": true /* Melhora a compatibilidade entre módulos */,
+    "forceConsistentCasingInFileNames": true /* Evita erros de case em nomes de arquivos */,
+    "strict": true /* Habilita checagens de tipo mais rígidas */,
+    "skipLibCheck": true /* Pula a verificação de tipos das libs */,
+    "emitDecoratorMetadata": true /* ESSENCIAL para o TypeORM */,
+    "experimentalDecorators": true /* ESSENCIAL para o TypeORM */
+  }
+}

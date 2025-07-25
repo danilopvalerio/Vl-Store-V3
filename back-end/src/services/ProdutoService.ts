@@ -1,0 +1,134 @@
+// src/services/ProdutoService.ts
+
+import { AppDataSource } from "../database/data-source";
+import Produto from "../models/Produto";
+
+/**
+ * Interface para criação de um novo Produto.
+ */
+export interface ProdutoCreateDTO {
+  referencia: string;
+  nome: string;
+  categoria: string;
+  material: string;
+  genero: string;
+  idLoja: string;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+/**
+ * Tipo para atualização de um Produto, permitindo campos opcionais.
+ */
+export type ProdutoUpdateDTO = Partial<ProdutoCreateDTO>;
+
+/**
+ * Serviço para operações CRUD no modelo Produto.
+ */
+export class ProdutoService {
+  /**
+   * Cria um novo produto no banco de dados.
+   */
+  async create(data: ProdutoCreateDTO): Promise<Produto> {
+    const produtoRepository = AppDataSource.getRepository(Produto);
+
+    const produtoExistente = await produtoRepository.findOneBy({
+      referencia: data.referencia,
+    });
+
+    if (produtoExistente) {
+      throw new Error("Já existe um produto com essa referência.");
+    }
+
+    const produtoNovo = produtoRepository.create(data);
+    await produtoRepository.save(produtoNovo);
+    return produtoNovo;
+  }
+
+  /**
+   * Retorna todos os produtos de uma loja específica.
+   */
+  async findAll(idLoja: string): Promise<Produto[]> {
+    const produtoRepository = AppDataSource.getRepository(Produto);
+    return await produtoRepository.findBy({ idLoja });
+  }
+
+  /**
+   * Encontra um produto pela sua referência.
+   */
+  async findById(referencia: string): Promise<Produto> {
+    const produtoRepository = AppDataSource.getRepository(Produto);
+    const produto = await produtoRepository.findOneBy({ referencia });
+
+    if (!produto) {
+      throw new Error("Produto não encontrado.");
+    }
+    return produto;
+  }
+
+  /**
+   * Atualiza um produto existente.
+   */
+  async update(referencia: string, data: ProdutoUpdateDTO): Promise<Produto> {
+    const produtoRepository = AppDataSource.getRepository(Produto);
+    const produto = await this.findById(referencia); // Reutiliza o findById
+
+    if (data.referencia && data.referencia !== referencia) {
+      const produtoComMesmaReferencia = await produtoRepository.findOneBy({
+        referencia: data.referencia,
+      });
+      if (produtoComMesmaReferencia) {
+        throw new Error("Esta referência já está em uso por outro produto.");
+      }
+    }
+
+    produtoRepository.merge(produto, data);
+    return await produtoRepository.save(produto);
+  }
+
+  /**
+   * Exclui um produto do banco de dados.
+   */
+  async delete(referencia: string): Promise<void> {
+    const produtoRepository = AppDataSource.getRepository(Produto);
+    const result = await produtoRepository.delete({ referencia });
+
+    if (result.affected === 0) {
+      throw new Error("Produto não encontrado.");
+    }
+  }
+
+  /**
+   * Retorna produtos de uma loja específica de forma paginada.
+   * @param idLoja O ID da loja para filtrar os produtos.
+   * @param page O número da página.
+   * @param limit O número de produtos por página.
+   */
+  async findPaginated(
+    idLoja: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<PaginatedResult<Produto>> {
+    const produtoRepository = AppDataSource.getRepository(Produto);
+    const skip = (page - 1) * limit;
+
+    const [produtos, total] = await produtoRepository.findAndCount({
+      where: { idLoja: idLoja },
+      skip: skip,
+      take: limit,
+      order: { nome: "ASC" },
+    });
+
+    return {
+      data: produtos,
+      total: total,
+      page: page,
+      limit: limit,
+    };
+  }
+}
