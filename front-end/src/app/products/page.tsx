@@ -1,3 +1,4 @@
+// products/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,10 +6,33 @@ import { useRouter } from "next/navigation";
 import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+
 import ProductCard from "./ProductCardComponent";
+import ProductDetailModal from "./ProductDetailModal";
+// ➕ IMPORTAR O NOVO MODAL
+import AddProductModal from "./AddProductModal";
+
+// --- Interfaces (sem alterações) ---
+interface ProductSummary {
+  referencia: string;
+  nome: string;
+  categoria: string;
+  material: string;
+  genero: string;
+  idLoja: string;
+}
+interface ProductVariation {
+  id_variacao?: string;
+  descricao: string;
+  quantidade: number;
+  valor: number;
+}
+interface ProductDetail extends ProductSummary {
+  variacoes: ProductVariation[];
+}
 
 const ProductPage = () => {
-  const [produtos, setProdutos] = useState([]);
+  const [produtos, setProdutos] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -16,11 +40,25 @@ const ProductPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
 
+  // --- ESTADOS PARA CONTROLAR OS MODAIS ---
+  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(
+    null
+  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpening, setIsModalOpening] = useState(false);
+  // ➕ NOVO ESTADO para o modal de adicionar produto
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const LIMIT = 6;
 
-  const pushAddProductPage = () => router.push("/AddProductPage");
+  // --- Funções de Navegação ---
   const pushBackToMenu = () => router.push("/menu");
 
+  // ➕ NOVAS FUNÇÕES para controlar o modal de adicionar
+  const handleOpenAddModal = () => setIsAddModalOpen(true);
+  const handleCloseAddModal = () => setIsAddModalOpen(false);
+
+  // --- Funções de Busca e Paginação (sem alterações) ---
   const handleSearch = async (page = 1) => {
     setLoading(true);
     try {
@@ -29,16 +67,13 @@ const ProductPage = () => {
         router.push("/login");
         return;
       }
-
       const parsedData = JSON.parse(userData);
       const idLoja = parsedData.id_loja;
-
       const response = await api.get(
         `/produtos/loja/${idLoja}/busca/${encodeURIComponent(
           searchTerm
-        )}?page=${page}`
+        )}?page=${page}&limit=${LIMIT}`
       );
-
       setProdutos(response.data.data);
       setTotalItems(response.data.count);
       setTotalPages(response.data.totalPages);
@@ -56,7 +91,6 @@ const ProductPage = () => {
       const response = await api.get(
         `/produtos/paginated?page=${page}&limit=${LIMIT}`
       );
-
       setProdutos(response.data.data);
       setCurrentPage(response.data.page);
       setTotalPages(response.data.totalPages);
@@ -69,19 +103,13 @@ const ProductPage = () => {
   };
 
   useEffect(() => {
-    const accessToken = sessionStorage.getItem("accessToken");
-    if (!accessToken) {
-      router.push("/login");
-    } else {
-      fetchProducts(1);
-    }
+    fetchProducts(1);
   }, []);
 
   const handleClearSearch = () => {
     setSearchTerm("");
     fetchProducts(1);
   };
-
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       const nextPage = currentPage + 1;
@@ -90,7 +118,6 @@ const ProductPage = () => {
         : fetchProducts(nextPage);
     }
   };
-
   const handlePrevPage = () => {
     if (currentPage > 1) {
       const prevPage = currentPage - 1;
@@ -99,101 +126,189 @@ const ProductPage = () => {
         : fetchProducts(prevPage);
     }
   };
+  const handleOpenModal = async (referencia: string) => {
+    if (isModalOpening) return;
+    setIsModalOpening(true);
+    try {
+      const response = await api.get(`/produtos/${referencia}`);
+      setSelectedProduct(response.data);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes do produto:", error);
+      alert("Não foi possível carregar os detalhes do produto.");
+    } finally {
+      setIsModalOpening(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProduct(null);
+  };
+
+  // Esta função agora serve para ambos os modais
+  const handleProductUpdate = () => {
+    // Fecha ambos os modais para garantir
+    setIsModalOpen(false);
+    setIsAddModalOpen(false);
+    // Recarrega os produtos
+    if (searchTerm.trim() !== "") {
+      handleSearch(currentPage);
+    } else {
+      fetchProducts(currentPage);
+    }
+  };
 
   return (
-    <div className="d-flex justify-content-between align-items-center flex-column min-vh-100">
-      <header className="w-100">
-        <div className="header-panel d-flex justify-content-between align-items-center p-2">
+    <div
+      className={`d-flex justify-content-between align-items-center flex-column min-vh-100`}
+    >
+      <header className={`w-100`}>
+        <div className={`header-panel`}>
           <img
             src="/images/vl-store-logo.svg"
             alt="VL Store Logo"
-            className="img logo"
+            className={`img logo`}
           />
         </div>
       </header>
+      {/* 💡 LÓGICA ATUALIZADA: Só mostra o conteúdo principal se NENHUM modal estiver aberto */}
+      {!isModalOpen && !isAddModalOpen && (
+        <div
+          className={`row w-75 dark-shadow overflow-hidden rounded-5 mt-4 mb-4`}
+        >
+          <header
+            className={`col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 terciary`}
+          >
+            <h3 className={`m-3`}>Produtos</h3>
+          </header>
 
-      <div className="menu row w-75 white-light overflow-hidden rounded-5 mt-4 mb-4">
-        <div className="col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 terciary">
-          <h3 className="m-3">Produtos</h3>
+          <div
+            className={`col-12 secondary p-4 d-flex flex-column align-items-center`}
+          >
+            <div className={`w-100 mb-3`}>
+              <input
+                className={`w-100 p-2 `}
+                type="text"
+                placeholder="Digite o produto..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              />
+            </div>
+
+            <div
+              className={`d-flex gap-2 w-100 flex-wrap justify-content-between`}
+            >
+              <button
+                className={`css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center`}
+                onClick={() => handleSearch()}
+              >
+                {" "}
+                Pesquisar{" "}
+              </button>
+              <button
+                className={`css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center`}
+                onClick={handleClearSearch}
+              >
+                {" "}
+                Limpar{" "}
+              </button>
+              {/* --- 🔄 FUNÇÃO MODIFICADA no botão --- */}
+              <button
+                className={`css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center`}
+                onClick={handleOpenAddModal}
+              >
+                {" "}
+                Adicionar Produto{" "}
+              </button>
+            </div>
+
+            <div className={`w-100 mt-4`}>
+              {loading ? (
+                <div className={`text-center`}>
+                  {" "}
+                  <p>Carregando produtos...</p>{" "}
+                </div>
+              ) : (
+                <div className={`row g-4`}>
+                  {produtos.length > 0 ? (
+                    produtos.map((produto) => (
+                      <div
+                        key={produto.referencia}
+                        className={`col-12 col-md-6 col-lg-4 d-flex align-items-stretch`}
+                        style={{ cursor: isModalOpening ? "wait" : "pointer" }}
+                      >
+                        <ProductCard
+                          product={produto}
+                          onClick={() => handleOpenModal(produto.referencia)}
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className={`col-12 text-center`}>
+                      {" "}
+                      <p>Nenhum produto encontrado</p>{" "}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div
+              className={`d-flex justify-content-center align-items-center gap-3 mt-4`}
+            >
+              <button
+                className={`css-button-fully-rounded--white d-flex align-items-center justify-content-center`}
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+              >
+                {" "}
+                Anterior{" "}
+              </button>
+              <span>{`${currentPage} de ${totalPages}`}</span>
+              <button
+                className={`css-button-fully-rounded--white d-flex align-items-center justify-content-center`}
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                {" "}
+                Próxima{" "}
+              </button>
+            </div>
+          </div>
         </div>
-
-        <div className="col-12 secondary p-4 d-flex flex-column align-items-center">
-          <div className="w-100 mb-3">
-            <input
-              className="input-form primaria p-2 w-100"
-              type="text"
-              placeholder="Digite o produto..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <div className="d-flex gap-2 w-100 flex-wrap justify-content-between">
-            <button
-              className="btn primaria col-12 col-md-3 d-flex align-items-center justify-content-center"
-              onClick={() => handleSearch()}
-              // disabled={!searchTerm.trim()}
-            >
-              Pesquisar
-            </button>
-            <button
-              className="btn primaria col-12 col-md-3 d-flex align-items-center justify-content-center"
-              onClick={handleClearSearch}
-              // disabled={!searchTerm.trim()}
-            >
-              Limpar
-            </button>
-
-            <button
-              className="btn primaria col-12 col-md-3 d-flex align-items-center justify-content-center"
-              onClick={pushAddProductPage}
-            >
-              Adicionar Produto
-            </button>
-          </div>
-
-          <div className="w-100 mt-4">
-            {loading ? (
-              <p className="text-center">Carregando produtos...</p>
-            ) : produtos.length > 0 ? (
-              produtos.map((produto, index) => (
-                <ProductCard key={index} product={produto} />
-              ))
-            ) : (
-              <p className="text-center">Nenhum produto encontrado</p>
-            )}
-          </div>
-
-          <div className="d-flex justify-content-center align-items-center gap-3 mt-4">
-            <button
-              className="btn primaria  d-flex align-items-center justify-content-center"
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-            >
-              Anterior
-            </button>
-            <span>{`${currentPage} de ${totalPages}`}</span>
-            <button
-              className="btn primaria  d-flex align-items-center justify-content-center"
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages || totalPages === 0}
-            >
-              Próxima
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <footer className="w-100 footer-panel text-center p-3">
-        <small>VL Store © 2025</small>
+      )}
+      {/* 💡 LÓGICA ATUALIZADA: Só mostra os botões de voltar/footer se NENHUM modal estiver aberto */}
+      {!isModalOpen && !isAddModalOpen && (
+        <>
+          <button
+            className={`return-btn-fixed css-button-fully-rounded--white`}
+            onClick={pushBackToMenu}
+            aria-label="Voltar"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+        </>
+      )}
+      {/* Renderiza o modal de detalhes se o estado for true */}
+      {isModalOpen && (
+        <ProductDetailModal
+          product={selectedProduct}
+          onClose={handleCloseModal}
+          onProductUpdate={handleProductUpdate}
+        />
+      )}
+      {/* ➕ RENDERIZAÇÃO CONDICIONAL do novo modal */}     {" "}
+      {isAddModalOpen && (
+        <AddProductModal
+          onClose={handleCloseAddModal}
+          onSaveSuccess={handleProductUpdate}
+        />
+      )}
+      <footer className={`w-100 footer-panel text-center p-3`}>
+        <small>VL Store © {new Date().getFullYear()}</small>
       </footer>
-      <button
-        className="btn primaria return-btn-fixed shadow"
-        onClick={pushBackToMenu}
-        aria-label="Voltar"
-      >
-        <FontAwesomeIcon icon={faArrowLeft} />
-      </button>
     </div>
   );
 };

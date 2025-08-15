@@ -1,3 +1,5 @@
+// SessionController.ts
+
 import { Request, Response } from "express";
 import { SessionService } from "../services/SessionService";
 
@@ -43,7 +45,10 @@ export class SessionController {
     if (!refreshToken) {
       return response
         .status(401)
-        .json({ message: "Refresh token não encontrado." });
+        .json({
+          code: "REFRESH_TOKEN_EXPIRED",
+          message: "Refresh token não encontrado.",
+        });
     }
 
     try {

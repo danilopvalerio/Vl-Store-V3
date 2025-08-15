@@ -3,6 +3,17 @@ import { useRouter } from "next/navigation";
 import Head from "next/head";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faBox, // Produtos
+  faUsers, // Funcionários
+  faShoppingCart, // Vendas
+  faCashRegister, // Caixas
+  faChartBar, // Relatórios
+  faUser, // Conta
+} from "@fortawesome/free-solid-svg-icons";
+
+import styles from "../../styles/products.module.css";
 
 // Interface para os dados da loja que virão do backend
 interface LojaData {
@@ -22,7 +33,6 @@ const MenuPage: React.FC = () => {
       const accessToken = sessionStorage.getItem("accessToken");
 
       try {
-        // 1. Tenta usar o access token
         const response = await axios.get(
           "http://localhost:3000/api/sessions/profile",
           {
@@ -37,7 +47,6 @@ const MenuPage: React.FC = () => {
           setLojaData(response.data.loja);
         }
       } catch (error: any) {
-        // 2. Access token pode ter expirado. Tenta usar refresh token.
         if (error.response?.status === 401) {
           try {
             const refreshResponse = await axios.post(
@@ -49,7 +58,6 @@ const MenuPage: React.FC = () => {
             const newAccessToken = refreshResponse.data.accessToken;
             sessionStorage.setItem("accessToken", newAccessToken);
 
-            // Retry o profile com o novo token
             const retryResponse = await axios.get(
               "http://localhost:3000/api/sessions/profile",
               {
@@ -98,83 +106,130 @@ const MenuPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="d-flex vh-100 justify-content-center align-items-center">
+      <div
+        className={`d-flex vh-100 justify-content-center align-items-center`}
+      >
         Carregando...
       </div>
     );
   }
 
   return (
-    <div className="d-flex justify-content-between align-items-center flex-column min-vh-100">
-      <Head>
-        <title>VL Store</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
-
-      <header className="w-100">
-        <div className="header-panel">
+    <div
+      className={`menu-container d-flex justify-content-between align-items-center flex-column min-vh-100`}
+    >
+      <header className={`w-100`}>
+        <div className={`header-panel `}>
           <img
             src="/images/vl-store-logo.svg"
             alt="VL Store Logo"
-            className="img logo"
+            className={`img logo`}
           />
         </div>
       </header>
 
-      <div className="menu row w-75 white-light overflow-hidden rounded-5">
-        <div className="col-md-6 d-flex flex-column justify-content-center align-items-center text-center p-2 terciary">
-          <h4 className="m-3">VL Store</h4>
-          <h4 className="m-3">Bem-vindo, {lojaData?.nome || "Usuário"}!</h4>
-          <p className="w-75">Sistema de Gestão Comercial</p>
+      <div className={`row w-75 dark-shadow overflow-hidden rounded-5`}>
+        <div
+          className={`col-md-6 d-flex flex-column justify-content-center align-items-center text-center p-2 terciary`}
+        >
+          <h4 className={`m-3 royal-blue-text`}>
+            Bem-vindo, {lojaData?.nome || "Usuário"}!
+          </h4>
+          <p className={`w-75 royal-blue-text`}>
+            VL Store - Sistema de Gestão Comercial
+          </p>
         </div>
 
         <div className="col-md-6 secondary pt-3 d-flex flex-column justify-content-center align-items-center text-center p-1 pt-4 pb-4">
-          <button
-            className="btn primaria col-9 col-lg-5 mb-3"
-            onClick={() => navigateTo("/products")}
-          >
-            Produtos
-          </button>
-          <button
-            className="btn primaria col-9 col-lg-5 mb-3"
-            onClick={() => navigateTo("/employeesPage")}
-          >
-            Funcionários
-          </button>
-          <button
-            className="btn primaria col-9 col-lg-5 mb-3"
-            onClick={() => navigateTo("/salesPage")}
-          >
-            Vendas
-          </button>
-          <button
-            className="btn primaria col-9 col-lg-5 mb-3"
-            onClick={() => navigateTo("/cashierPage")}
-          >
-            Caixas
-          </button>
-          <button
-            className="btn primaria col-9 col-lg-5 mb-3"
-            onClick={() => navigateTo("/reportsPage")}
-          >
-            Relatórios
-          </button>
-          <button
-            className="btn primaria col-9 col-lg-5 mb-2"
-            onClick={() => navigateTo("/accountPage")}
-            disabled={isViewOnly}
-          >
-            Conta
-          </button>
+          <div className="position-relative col-9 col-lg-5 mb-3">
+            <button
+              className="css-button-fully-rounded--white w-100 ps-5 text-start"
+              onClick={() => navigateTo("/products")}
+            >
+              <FontAwesomeIcon
+                icon={faBox}
+                className="position-absolute top-50 start-0 translate-middle-y ms-3"
+              />
+              Produtos
+            </button>
+          </div>
+
+          <div className="position-relative col-9 col-lg-5 mb-3">
+            <button
+              className="css-button-fully-rounded--white w-100 ps-5 text-start"
+              onClick={() => navigateTo("/employeesPage")}
+            >
+              <FontAwesomeIcon
+                icon={faUsers}
+                className="position-absolute top-50 start-0 translate-middle-y ms-3"
+              />
+              Funcionários
+            </button>
+          </div>
+
+          <div className="position-relative col-9 col-lg-5 mb-3">
+            <button
+              className="css-button-fully-rounded--white w-100 ps-5 text-start"
+              onClick={() => navigateTo("/salesPage")}
+            >
+              <FontAwesomeIcon
+                icon={faShoppingCart}
+                className="position-absolute top-50 start-0 translate-middle-y ms-3"
+              />
+              Vendas
+            </button>
+          </div>
+
+          <div className="position-relative col-9 col-lg-5 mb-3">
+            <button
+              className="css-button-fully-rounded--white w-100 ps-5 text-start"
+              onClick={() => navigateTo("/cashierPage")}
+            >
+              <FontAwesomeIcon
+                icon={faCashRegister}
+                className="position-absolute top-50 start-0 translate-middle-y ms-3"
+              />
+              Caixas
+            </button>
+          </div>
+
+          <div className="position-relative col-9 col-lg-5 mb-3">
+            <button
+              className="css-button-fully-rounded--white w-100 ps-5 text-start"
+              onClick={() => navigateTo("/reportsPage")}
+            >
+              <FontAwesomeIcon
+                icon={faChartBar}
+                className="position-absolute top-50 start-0 translate-middle-y ms-3"
+              />
+              Relatórios
+            </button>
+          </div>
+
+          <div className="position-relative col-9 col-lg-5 mb-3">
+            <button
+              className="css-button-fully-rounded--white w-100 ps-5 text-start"
+              onClick={() => navigateTo("/accountPage")}
+              disabled={isViewOnly}
+            >
+              <FontAwesomeIcon
+                icon={faUser}
+                className="position-absolute top-50 start-0 translate-middle-y ms-3"
+              />
+              Conta
+            </button>
+          </div>
         </div>
       </div>
 
-      <button
-        className="btn primaria mb-4 col-3 mx-auto d-flex justify-content-center align-items-center"
-        onClick={handleLogout}
-      >
-        Sair
-      </button>
+      <footer className="footer-panel w-100">
+        <button
+          className={`logout-btn css-button-fully-rounded--white col-3 mx-auto d-flex justify-content-center align-items-center`}
+          onClick={handleLogout}
+        >
+          Sair
+        </button>
+      </footer>
     </div>
   );
 };

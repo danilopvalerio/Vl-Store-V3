@@ -70,7 +70,7 @@ export default function LoginForm() {
     <div className="mx-auto login-register-block fine-transparent-border dark-shadow d-flex justify-content-center align-items-center overflow-hidden w-75 rounded-5">
       <div className="row w-100 shadow overflow-hidden">
         <div className="col-md-6 d-flex flex-column justify-content-center align-items-center text-center p-4 terciary">
-          <h4 className="m-3">Bem-vindo!</h4>
+          <h4 className="m-3 royal-blue-text">Bem-vindo!</h4>
           <p className="w-75">
             Insira os seus dados de login para ter acesso ao sistema.
           </p>
@@ -90,7 +90,7 @@ export default function LoginForm() {
               />
               <input
                 type="email"
-                className="p-2 ps-5 border col-12"
+                className="p-2 ps-5 col-12"
                 placeholder="Digite seu email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -130,7 +130,7 @@ export default function LoginForm() {
             <div className="row mt-3 gap-1">
               <button
                 type="submit"
-                className="primaria col-11 col-lg-5 mx-auto d-flex justify-content-center align-items-center"
+                className="css-button-fully-rounded--white col-11 col-lg-5 mx-auto d-flex justify-content-center align-items-center"
                 disabled={loading}
               >
                 {loading ? "Entrando..." : "Entrar"}

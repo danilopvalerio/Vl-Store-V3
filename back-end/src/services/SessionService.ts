@@ -38,6 +38,9 @@ export class SessionService {
       throw new Error("E-mail ou senha incorretos.");
     }
 
+    // Remove refresh tokens antigos dessa loja antes de gerar um novo
+    await refreshTokenRepository.delete({ id_loja: loja.id_loja });
+
     const accessToken = jwt.sign(
       { id_loja: loja.id_loja },
       process.env.ACCESS_TOKEN_SECRET as string,
@@ -92,8 +95,8 @@ export class SessionService {
     ).catch(() => null);
 
     // Verifica se o token foi encontrado e se não expirou.
-    if (!foundToken || foundToken.expiresAt < new Date()) {
-      throw new Error("Refresh token inválido ou expirado.");
+    if (!foundToken) {
+      throw new Error("Refresh token inválido/expirado.");
     }
 
     const loja = await lojaRepository.findOneBy({
@@ -131,14 +134,30 @@ export class SessionService {
     }
 
     const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
-    const allTokens = await refreshTokenRepository.find();
-    for (const token of allTokens) {
-      const match = await bcrypt.compare(refreshToken, token.hashedToken);
-      if (match) {
-        // Remove o token do banco de dados
-        await refreshTokenRepository.remove(token);
-        break;
+
+    try {
+      // Extrai o id_loja do payload do refresh token sem precisar validar assinatura
+      const decoded = jwt.decode(refreshToken) as { id_loja: string } | null;
+
+      if (!decoded?.id_loja) {
+        return; // Token inválido
       }
+
+      // Busca todos os tokens dessa loja no banco
+      const tokensDaLoja = await refreshTokenRepository.find({
+        where: { id_loja: decoded.id_loja },
+      });
+
+      // Compara com bcrypt e remove se encontrar
+      for (const token of tokensDaLoja) {
+        const match = await bcrypt.compare(refreshToken, token.hashedToken);
+        if (match) {
+          await refreshTokenRepository.remove(token); // Invalida
+          break;
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao fazer logout:", err);
     }
   }
 

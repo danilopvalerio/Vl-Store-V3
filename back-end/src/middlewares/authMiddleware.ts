@@ -56,8 +56,6 @@ export function authMiddleware(
     // 6. Passa para o próximo middleware ou controller
     return next();
   } catch (error) {
-    return response
-      .status(401)
-      .json({ message: "Token JWT inválido ou expirado." });
+    return response.status(401).json({ code: "ACCESS_TOKEN_EXPIRED" });
   }
 }

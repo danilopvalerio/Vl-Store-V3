@@ -125,20 +125,20 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="mx-auto mt-5 w-75 rounded-5 mb-5 dark-shadow d-flex justify-content-center align-items-center overflow-hidden">
+    <div className="mx-auto mt-5 register-form w-75 rounded-5 mb-5 dark-shadow d-flex justify-content-center align-items-center overflow-hidden">
       <div className="row w-100 shadow overflow-hidden">
-        <div className="col-md-6 terciary d-flex flex-column justify-content-center align-items-center text-center p-4 quartenary">
-          <h4 className="m-3">Bem-vindo!</h4>
-          <p className="w-75">
+        <div className="col-md-12 terciary d-flex flex-column justify-content-center align-items-center text-center p-4 ">
+          <h4 className="m-3 royal-blue-text">Bem-vindo!</h4>
+          <p className="w-75 royal-blue-text">
             Já possui conta?{" "}
-            <Link className="royal-blue-text" href="/login">
+            <Link className=" royal-blue-text fst-italic" href="/login">
               Entrar
             </Link>
           </p>
         </div>
 
-        <div className="col-md-6 secondary">
-          <h3 className="text-center mb-4 mt-3 royal-blue-text">Cadastro</h3>
+        <div className="col-md-12">
+          <h3 className="text-center mt-3 royal-blue-text">Cadastro</h3>
 
           {success && (
             <div className="alert alert-success">
@@ -158,7 +158,7 @@ export default function RegisterForm() {
                 />
                 <input
                   type="text"
-                  className="p-2 ps-5 border w-100"
+                  className="p-2 ps-5 w-100"
                   placeholder="Digite o nome da sua loja"
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
@@ -169,7 +169,7 @@ export default function RegisterForm() {
             </div>
 
             {/* --- Campo E-mail --- */}
-            <div className="col-12 col-md-6 mb-3">
+            <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">E-mail:</label>
               <div className="position-relative">
                 <FontAwesomeIcon
@@ -178,7 +178,7 @@ export default function RegisterForm() {
                 />
                 <input
                   type="email"
-                  className="p-2 ps-5 border w-100"
+                  className="p-2 ps-5  w-100"
                   placeholder="Digite o seu e-mail"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -189,7 +189,7 @@ export default function RegisterForm() {
             </div>
 
             {/* --- Campo CPF/CNPJ --- */}
-            <div className="col-12 col-md-6 mb-3">
+            <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">CPF ou CNPJ:</label>
               <div className="position-relative">
                 <FontAwesomeIcon
@@ -201,7 +201,7 @@ export default function RegisterForm() {
                     { mask: "000.000.000-00" },
                     { mask: "00.000.000/0000-00" },
                   ]}
-                  className="p-2 ps-5 border w-100"
+                  className="p-2 ps-5  w-100"
                   placeholder="Digite o CPF ou CNPJ"
                   value={cpfCnpj}
                   onAccept={(value: string) => setCpfCnpj(value)}
@@ -212,7 +212,7 @@ export default function RegisterForm() {
             </div>
 
             {/* --- Campo Data de Nascimento --- */}
-            <div className="col-12 col-md-6 mb-3">
+            <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">Data de Nascimento:</label>
               <div className="position-relative">
                 <FontAwesomeIcon
@@ -221,7 +221,7 @@ export default function RegisterForm() {
                 />
                 <IMaskInput
                   mask="00/00/0000"
-                  className="p-2 ps-5 border w-100"
+                  className="p-2 ps-5  w-100"
                   placeholder="DD/MM/AAAA"
                   value={birthDate}
                   onAccept={(value: string) => setBirthDate(value)}
@@ -232,7 +232,7 @@ export default function RegisterForm() {
             </div>
 
             {/* --- Campo Telefone --- */}
-            <div className="col-12 col-md-6 mb-3">
+            <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">Telefone:</label>
               <div className="position-relative">
                 <FontAwesomeIcon
@@ -241,7 +241,7 @@ export default function RegisterForm() {
                 />
                 <IMaskInput
                   mask="(00) 00000-0000"
-                  className="p-2 ps-5 border w-100"
+                  className="p-2 ps-5  w-100"
                   placeholder="(99) 99999-9999"
                   value={telephone}
                   onAccept={(value: string) => setTelephone(value)}
@@ -252,7 +252,7 @@ export default function RegisterForm() {
             </div>
 
             {/* --- Campo Senha --- */}
-            <div className="col-12 col-md-6 mb-3">
+            <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">Senha:</label>
               <div className="position-relative">
                 <FontAwesomeIcon
@@ -261,7 +261,7 @@ export default function RegisterForm() {
                 />
                 <input
                   type="password"
-                  className="p-2 ps-5 border w-100"
+                  className="p-2 ps-5  w-100"
                   placeholder="Digite sua senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -272,7 +272,7 @@ export default function RegisterForm() {
             </div>
 
             {/* --- Campo Confirmar Senha --- */}
-            <div className="col-12 col-md-6 mb-3">
+            <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">Repita a Senha:</label>
               <div className="position-relative">
                 <FontAwesomeIcon
@@ -281,7 +281,7 @@ export default function RegisterForm() {
                 />
                 <input
                   type="password"
-                  className="p-2 ps-5 border w-100"
+                  className="p-2 ps-5  w-100"
                   placeholder="Confirme sua senha"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -295,7 +295,7 @@ export default function RegisterForm() {
             <div className="col-12 mt-3">
               <button
                 type="submit"
-                className="btn primaria w-100"
+                className="css-button-fully-rounded--white col-11 col-lg-5 mx-auto d-flex justify-content-center align-items-center w-100"
                 disabled={loading}
               >
                 {loading ? "Cadastrando..." : "Cadastrar"}

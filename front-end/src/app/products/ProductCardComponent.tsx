@@ -1,93 +1,55 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import axios from "axios";
+// Nenhum import de 'useRouter' ou 'axios' é mais necessário aqui.
 
-export interface ProdutoCreateDTO {
+// A interface pode ser simplificada para conter apenas o que o card exibe.
+export interface ProductSummary {
   referencia: string;
   nome: string;
   categoria: string;
   material: string;
-  genero: string;
-  idLoja: string;
 }
 
+// A interface de props agora declara a função 'onClick' que será recebida.
 interface ProductCardProps {
-  product: ProdutoCreateDTO;
+  product: ProductSummary;
+  onClick: (referencia: string) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const router = useRouter();
-
-  const openDetailedProduct = async (referencia: string) => {
-    let accessToken = sessionStorage.getItem("accessToken");
-
-    try {
-      const product = await fetchProduct(accessToken!, referencia);
-      localStorage.setItem("selectedProduct", JSON.stringify(product));
-      router.push("/productDetail");
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        try {
-          const refreshResponse = await axios.post(
-            "http://localhost:3000/api/sessions/refresh",
-            {},
-            { withCredentials: true }
-          );
-
-          accessToken = refreshResponse.data.access_token;
-          if (accessToken) {
-            sessionStorage.setItem("accessToken", accessToken);
-            const product = await fetchProduct(accessToken, referencia);
-            localStorage.setItem("selectedProduct", JSON.stringify(product));
-            router.push("/productDetail");
-          } else {
-            router.push("/login");
-          }
-        } catch {
-          router.push("/login");
-        }
-      } else {
-        alert("Erro desconhecido, tente novamente mais tarde.");
-      }
-    }
-  };
-
-  const fetchProduct = async (token: string, referencia: string) => {
-    const userData = localStorage.getItem("userData");
-    if (!userData) throw new Error("Usuário não autenticado");
-
-    const { id_loja } = JSON.parse(userData);
-
-    const response = await axios.get(
-      `http://localhost:3000/api/produtos/loja/${id_loja}/referencia/${referencia}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      }
-    );
-
-    return response.data;
-  };
-
+const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
+  // Toda a lógica interna foi removida.
+  // O componente agora só recebe props e renderiza a UI.
   return (
-    <div className="col-12 col-md-4 col-lg-3">
-      <div
-        className="rounded-5 card-item quartenary shadow-sm h-100 d-flex flex-column justify-content-between p-4"
-        onClick={() => openDetailedProduct(product.referencia)}
-        style={{ cursor: "pointer" }}
-      >
-        <div>
-          <h5 className="card-title mb-3">{product.nome}</h5>
-          <p className="text-muted mb-1">
-            <strong>Categoria:</strong> {product.categoria}
-          </p>
-          <p className="text-muted mb-3">
-            <strong>Material:</strong> {product.material}
-          </p>
-        </div>
+    // A classe da coluna foi ajustada para um layout de grid mais consistente.
+    <div
+      className="rounded-5 card-item css-button-fully-rounded--white h-100 d-flex flex-column justify-content-between p-3 "
+      // Ao clicar, ele chama a função 'onClick' que foi passada pelo componente pai.
+      onClick={() => onClick(product.referencia)}
+      style={{ cursor: "pointer" }}
+    >
+      <div>
+        <h5 className="card-title mb-3">{product.nome}</h5>
+        <p className="mb-1">
+          <strong>
+            Referência
+            <br />
+          </strong>{" "}
+          {product.referencia}
+        </p>
+        <p className="mb-1">
+          <strong>
+            Categoria
+            <br />
+          </strong>{" "}
+          {product.categoria}
+        </p>
+        <p className="mb-3">
+          <strong>
+            Material
+            <br />
+          </strong>{" "}
+          {product.material}
+        </p>
       </div>
     </div>
   );
