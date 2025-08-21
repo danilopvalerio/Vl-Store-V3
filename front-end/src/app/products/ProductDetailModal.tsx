@@ -247,6 +247,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <h4 className="m-0 w-100 text-center primary-color">
           Detalhes do Produto
         </h4>
+
         <button
           className="btn"
           onClick={onClose}
@@ -264,6 +265,20 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <form onSubmit={(e) => e.preventDefault()}>
           <div className="row g-3 mb-4">
             {/* Campos de Nome, Categoria, Material, Gênero... */}
+            <div className="col-md-12">
+              <label htmlFor="nome" className="form-label ps-2 ">
+                Referência
+              </label>
+              <input
+                id="referencia"
+                name="referencia"
+                className="w-100 p-2 border-input fw-bold"
+                placeholder="Ex: Camiseta Polo Levi's"
+                value={productData.referencia}
+                onChange={handleGeneralChange}
+                disabled
+              />
+            </div>
             <div className="col-md-6">
               <label htmlFor="nome" className="form-label ps-2">
                 Nome do Produto
@@ -354,11 +369,26 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       placeholder="Qtd."
                       value={v.quantidade}
                       onChange={(e) => handleVariationChange(i, e)}
+                      min={0}
+                      step={1} // bloqueia decimais
+                      onKeyDown={(e) => {
+                        // Permite apenas números, backspace, delete, setas
+                        if (
+                          !/[0-9]/.test(e.key) &&
+                          e.key !== "Backspace" &&
+                          e.key !== "Delete" &&
+                          e.key !== "ArrowLeft" &&
+                          e.key !== "ArrowRight" &&
+                          e.key !== "Tab"
+                        ) {
+                          e.preventDefault();
+                        }
+                      }}
                     />
                   </div>
                   <div className="col-sm-3">
                     <input
-                      type="text"
+                      type="number"
                       name="valor"
                       className="w-100 p-2 border-input"
                       placeholder="Valor (R$)"

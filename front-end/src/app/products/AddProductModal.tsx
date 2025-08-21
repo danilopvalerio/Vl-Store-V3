@@ -252,7 +252,7 @@ const AddProductModal: React.FC<AddProductProps> = ({
                 </div>
                 <div className="col-sm-3">
                   <input
-                    type="text"
+                    type="number"
                     name="valor"
                     className="w-100 p-2 border-input"
                     placeholder="Valor (R$)"

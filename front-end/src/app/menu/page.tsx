@@ -1,21 +1,18 @@
 "use client";
 import { useRouter } from "next/navigation";
-import Head from "next/head";
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { isLoggedIn } from "../../utils/auth";
 import {
-  faBox, // Produtos
-  faUsers, // Funcionários
-  faShoppingCart, // Vendas
-  faCashRegister, // Caixas
-  faChartBar, // Relatórios
-  faUser, // Conta
+  faBox,
+  faUsers,
+  faShoppingCart,
+  faCashRegister,
+  faChartBar,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
+import api from "../../utils/api";
 
-import styles from "../../styles/products.module.css";
-
-// Interface para os dados da loja que virão do backend
 interface LojaData {
   id_loja: string;
   nome: string;
@@ -25,73 +22,36 @@ interface LojaData {
 const MenuPage: React.FC = () => {
   const router = useRouter();
   const [lojaData, setLojaData] = useState<LojaData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [checkingLogin, setCheckingLogin] = useState(true);
   const isViewOnly = false;
 
   useEffect(() => {
-    const verifyTokensAndFetchProfile = async () => {
-      const accessToken = sessionStorage.getItem("accessToken");
+    const verify = async () => {
+      const logged = await isLoggedIn();
+      if (!logged) {
+        router.push("/login");
+        return;
+      }
 
+      // Se logado, busca dados da loja
       try {
-        const response = await axios.get(
-          "http://localhost:3000/api/sessions/profile",
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-            withCredentials: true,
-          }
-        );
-
+        const response = await api.get(`/sessions/profile`);
         if (response.status === 200 && response.data.loja) {
           setLojaData(response.data.loja);
         }
-      } catch (error: any) {
-        if (error.response?.status === 401) {
-          try {
-            const refreshResponse = await axios.post(
-              "http://localhost:3000/api/sessions/refresh",
-              {},
-              { withCredentials: true }
-            );
-
-            const newAccessToken = refreshResponse.data.accessToken;
-            sessionStorage.setItem("accessToken", newAccessToken);
-
-            const retryResponse = await axios.get(
-              "http://localhost:3000/api/sessions/profile",
-              {
-                headers: {
-                  Authorization: `Bearer ${newAccessToken}`,
-                },
-                withCredentials: true,
-              }
-            );
-
-            if (retryResponse.status === 200 && retryResponse.data.loja) {
-              setLojaData(retryResponse.data.loja);
-            }
-          } catch (refreshError) {
-            console.error("Refresh token inválido. Redirecionando para login.");
-            router.push("/login");
-          }
-        } else {
-          console.error("Erro inesperado ao buscar perfil:", error);
-          router.push("/login");
-        }
+      } catch (error) {
+        console.error("Erro ao buscar perfil:", error);
       } finally {
-        setIsLoading(false);
+        setCheckingLogin(false);
       }
     };
 
-    verifyTokensAndFetchProfile();
+    verify();
   }, [router]);
 
   const handleLogout = async () => {
     try {
-      await axios.delete("http://localhost:3000/api/sessions/logout", {
-        withCredentials: true,
-      });
+      await api.delete(`/sessions/logout`);
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     } finally {
@@ -104,38 +64,35 @@ const MenuPage: React.FC = () => {
     router.push(path);
   };
 
-  if (isLoading) {
+  if (checkingLogin) {
     return (
-      <div
-        className={`d-flex vh-100 justify-content-center align-items-center`}
-      >
-        Carregando...
+      <div className="d-flex vh-100 justify-content-center align-items-center">
+        <h5 className="mx-auto bg-light rounded-5 p-3 d-flex align-items-center">
+          <span className="spinner me-2"></span>
+          Um momento
+        </h5>
       </div>
     );
   }
 
   return (
-    <div
-      className={`menu-container d-flex justify-content-between align-items-center flex-column min-vh-100`}
-    >
-      <header className={`w-100`}>
-        <div className={`header-panel `}>
+    <div className="menu-container d-flex justify-content-between align-items-center flex-column min-vh-100">
+      <header className="w-100">
+        <div className="header-panel">
           <img
             src="/images/vl-store-logo.svg"
             alt="VL Store Logo"
-            className={`img logo`}
+            className="img logo"
           />
         </div>
       </header>
 
-      <div className={`row w-75 dark-shadow overflow-hidden rounded-5`}>
-        <div
-          className={`col-md-6 d-flex flex-column justify-content-center align-items-center text-center p-2 terciary`}
-        >
-          <h4 className={`m-3 royal-blue-text`}>
+      <div className="row w-75 dark-shadow overflow-hidden rounded-5">
+        <div className="col-md-6 d-flex flex-column justify-content-center align-items-center text-center p-2 terciary">
+          <h4 className="m-3 royal-blue-text">
             Bem-vindo, {lojaData?.nome || "Usuário"}!
           </h4>
-          <p className={`w-75 royal-blue-text`}>
+          <p className="w-75 royal-blue-text">
             VL Store - Sistema de Gestão Comercial
           </p>
         </div>
@@ -224,7 +181,7 @@ const MenuPage: React.FC = () => {
 
       <footer className="footer-panel w-100">
         <button
-          className={`logout-btn css-button-fully-rounded--white col-3 mx-auto d-flex justify-content-center align-items-center`}
+          className="logout-btn css-button-fully-rounded--white col-3 mx-auto d-flex justify-content-center align-items-center"
           onClick={handleLogout}
         >
           Sair

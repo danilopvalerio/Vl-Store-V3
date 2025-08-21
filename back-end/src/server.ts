@@ -20,7 +20,7 @@ AppDataSource.initialize()
     // Isso precisa vir ANTES de app.use(routes)
     app.use(
       cors({
-        origin: "http://localhost:3001", // Permite que APENAS seu frontend faça requisições
+        origin: "http://localhost:3000", // Permite que APENAS seu frontend faça requisições
         credentials: true, // Permite o envio de cookies (essencial para sua autenticação)
       })
     );

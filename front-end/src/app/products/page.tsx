@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
-
+import { isLoggedIn } from "../../utils/auth";
 import ProductCard from "./ProductCardComponent";
 import ProductDetailModal from "./ProductDetailModal";
 // ➕ IMPORTAR O NOVO MODAL
@@ -27,6 +27,11 @@ interface ProductVariation {
   quantidade: number;
   valor: number;
 }
+interface LojaData {
+  id_loja: string;
+  nome: string;
+  email: string;
+}
 interface ProductDetail extends ProductSummary {
   variacoes: ProductVariation[];
 }
@@ -38,6 +43,8 @@ const ProductPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [lojaData, setLojaData] = useState<LojaData | null>(null);
+  const [checkingLogin, setCheckingLogin] = useState(true);
   const router = useRouter();
 
   // --- ESTADOS PARA CONTROLAR OS MODAIS ---
@@ -62,18 +69,14 @@ const ProductPage = () => {
   const handleSearch = async (page = 1) => {
     setLoading(true);
     try {
-      const userData = sessionStorage.getItem("userData");
-      if (!userData) {
-        router.push("/login");
-        return;
-      }
-      const parsedData = JSON.parse(userData);
-      const idLoja = parsedData.id_loja;
+      // Faz a requisição de busca de produtos
       const response = await api.get(
-        `/produtos/loja/${idLoja}/busca/${encodeURIComponent(
+        `/produtos/search?term=${encodeURIComponent(
           searchTerm
-        )}?page=${page}&limit=${LIMIT}`
+        )}&page=${page}&limit=${LIMIT}`
       );
+      console.log("passou");
+      // Atualiza estados
       setProdutos(response.data.data);
       setTotalItems(response.data.count);
       setTotalPages(response.data.totalPages);
@@ -103,6 +106,27 @@ const ProductPage = () => {
   };
 
   useEffect(() => {
+    const verify = async () => {
+      const logged = await isLoggedIn();
+      if (!logged) {
+        router.push("/login");
+        return;
+      }
+
+      // Se logado, busca dados da loja
+      try {
+        const response = await api.get(`/sessions/profile`);
+        if (response.status === 200 && response.data.loja) {
+          setLojaData(response.data.loja);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar perfil:", error);
+      } finally {
+        setCheckingLogin(false);
+      }
+    };
+
+    verify();
     fetchProducts(1);
   }, []);
 
@@ -150,6 +174,7 @@ const ProductPage = () => {
   const handleProductUpdate = () => {
     // Fecha ambos os modais para garantir
     setIsModalOpen(false);
+    setSelectedProduct(null);
     setIsAddModalOpen(false);
     // Recarrega os produtos
     if (searchTerm.trim() !== "") {
@@ -159,6 +184,16 @@ const ProductPage = () => {
     }
   };
 
+  if (checkingLogin && loading) {
+    return (
+      <div className="d-flex vh-100 justify-content-center align-items-center">
+        <h5 className="mx-auto bg-light rounded-5 p-3 d-flex align-items-center">
+          <span className="spinner me-2"></span>
+          Um momento
+        </h5>
+      </div>
+    );
+  }
   return (
     <div
       className={`d-flex justify-content-between align-items-center flex-column min-vh-100`}
@@ -228,7 +263,10 @@ const ProductPage = () => {
               {loading ? (
                 <div className={`text-center`}>
                   {" "}
-                  <p>Carregando produtos...</p>{" "}
+                  <h5 className="mx-auto text-center bg-light rounded-5 p-3 d-flex justify-content-center align-items-center">
+                    <span className="spinner me-2"></span>
+                    Carregando produtos...
+                  </h5>
                 </div>
               ) : (
                 <div className={`row g-4`}>

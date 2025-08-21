@@ -338,6 +338,21 @@ input:hover {
   accent-color: var(--color-primary);
 }
 
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 3px solid #ccc;
+  border-top: 3px solid #000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ==========================================================================
    6. Classes Utilitárias e Cards
    ========================================================================== */

@@ -20,6 +20,7 @@ produtoRoutes.get("/", produtoController.findAll);
 // IMPORTANTE: Esta rota deve vir ANTES da rota /:referencia para não haver conflito.
 produtoRoutes.get("/paginated", produtoController.findPaginated);
 
+produtoRoutes.get("/search", produtoController.search);
 // O parâmetro da rota foi corrigido para ':referencia'
 // para corresponder ao que o controller e o serviço esperam.
 produtoRoutes.get("/:referencia", produtoController.findById);

@@ -137,4 +137,41 @@ export class ProdutoController {
       return response.status(500).json({ message: "Internal Server Error" });
     }
   }
+
+  /**
+   * Busca produtos por um termo de pesquisa, de forma paginada.
+   * A busca é realizada em vários campos do produto e suas variações.
+   * A rota para este método seria algo como: GET /produtos/search?term=valor&page=1
+   */
+  async search(request: Request, response: Response): Promise<Response> {
+    const idLoja = request.user?.idLoja;
+    if (!idLoja) {
+      return response
+        .status(401)
+        .json({ message: "ID da loja não encontrado no token de acesso." });
+    }
+
+    const { term } = request.query;
+    if (!term || typeof term !== "string") {
+      return response
+        .status(400)
+        .json({ message: "O parâmetro de busca 'term' é obrigatório." });
+    }
+
+    const page = parseInt(request.query.page as string) || 1;
+    const limit = parseInt(request.query.limit as string) || 10;
+    const produtoService = new ProdutoService();
+
+    try {
+      const result = await produtoService.search(idLoja, term, page, limit);
+      return response.status(200).json(result);
+    } catch (error) {
+      if (error instanceof Error) {
+        return response
+          .status(500)
+          .json({ message: `Erro ao buscar produtos: ${error.message}` });
+      }
+      return response.status(500).json({ message: "Internal Server Error" });
+    }
+  }
 }
