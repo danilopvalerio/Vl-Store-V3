@@ -13,17 +13,20 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../utils/api";
 
-interface LojaData {
-  id_loja: string;
+interface UserData {
+  idLoja?: string;
+  cpf?: string;
   nome: string;
   email: string;
+  cargo?: string;
+  nomeLoja: string;
 }
 
 const MenuPage: React.FC = () => {
   const router = useRouter();
-  const [lojaData, setLojaData] = useState<LojaData | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [role, setRole] = useState<"admin" | "employee" | null>(null);
   const [checkingLogin, setCheckingLogin] = useState(true);
-  const isViewOnly = false;
 
   useEffect(() => {
     const verify = async () => {
@@ -33,11 +36,11 @@ const MenuPage: React.FC = () => {
         return;
       }
 
-      // Se logado, busca dados da loja
       try {
         const response = await api.get(`/sessions/profile`);
-        if (response.status === 200 && response.data.loja) {
-          setLojaData(response.data.loja);
+        if (response.status === 200 && response.data.user) {
+          setUserData(response.data.user);
+          setRole(response.data.role);
         }
       } catch (error) {
         console.error("Erro ao buscar perfil:", error);
@@ -90,14 +93,20 @@ const MenuPage: React.FC = () => {
       <div className="row w-75 dark-shadow overflow-hidden rounded-5">
         <div className="col-md-6 d-flex flex-column justify-content-center align-items-center text-center p-2 terciary">
           <h4 className="m-3 royal-blue-text">
-            Bem-vindo, {lojaData?.nome || "Usuário"}!
+            Bem-vindo, {userData?.nome || "Usuário"}!
           </h4>
+          {role === "employee" && (
+            <p className="w-75 royal-blue-text">
+              Loja vinculada: {userData?.nomeLoja}
+            </p>
+          )}
           <p className="w-75 royal-blue-text">
             VL Store - Sistema de Gestão Comercial
           </p>
         </div>
 
         <div className="col-md-6 secondary pt-3 d-flex flex-column justify-content-center align-items-center text-center p-1 pt-4 pb-4">
+          {/* Produtos */}
           <div className="position-relative col-9 col-lg-5 mb-3">
             <button
               className="css-button-fully-rounded--white w-100 ps-5 text-start"
@@ -111,19 +120,23 @@ const MenuPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="position-relative col-9 col-lg-5 mb-3">
-            <button
-              className="css-button-fully-rounded--white w-100 ps-5 text-start"
-              onClick={() => navigateTo("/employeesPage")}
-            >
-              <FontAwesomeIcon
-                icon={faUsers}
-                className="position-absolute top-50 start-0 translate-middle-y ms-3"
-              />
-              Funcionários
-            </button>
-          </div>
+          {/* Funcionários (apenas admin) */}
+          {role === "admin" && (
+            <div className="position-relative col-9 col-lg-5 mb-3">
+              <button
+                className="css-button-fully-rounded--white w-100 ps-5 text-start"
+                onClick={() => navigateTo("/employee")}
+              >
+                <FontAwesomeIcon
+                  icon={faUsers}
+                  className="position-absolute top-50 start-0 translate-middle-y ms-3"
+                />
+                Funcionários
+              </button>
+            </div>
+          )}
 
+          {/* Vendas */}
           <div className="position-relative col-9 col-lg-5 mb-3">
             <button
               className="css-button-fully-rounded--white w-100 ps-5 text-start"
@@ -137,6 +150,7 @@ const MenuPage: React.FC = () => {
             </button>
           </div>
 
+          {/* Caixas */}
           <div className="position-relative col-9 col-lg-5 mb-3">
             <button
               className="css-button-fully-rounded--white w-100 ps-5 text-start"
@@ -150,32 +164,37 @@ const MenuPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="position-relative col-9 col-lg-5 mb-3">
-            <button
-              className="css-button-fully-rounded--white w-100 ps-5 text-start"
-              onClick={() => navigateTo("/reportsPage")}
-            >
-              <FontAwesomeIcon
-                icon={faChartBar}
-                className="position-absolute top-50 start-0 translate-middle-y ms-3"
-              />
-              Relatórios
-            </button>
-          </div>
+          {/* Relatórios (apenas admin) */}
+          {role === "admin" && (
+            <div className="position-relative col-9 col-lg-5 mb-3">
+              <button
+                className="css-button-fully-rounded--white w-100 ps-5 text-start"
+                onClick={() => navigateTo("/reportsPage")}
+              >
+                <FontAwesomeIcon
+                  icon={faChartBar}
+                  className="position-absolute top-50 start-0 translate-middle-y ms-3"
+                />
+                Relatórios
+              </button>
+            </div>
+          )}
 
-          <div className="position-relative col-9 col-lg-5 mb-3">
-            <button
-              className="css-button-fully-rounded--white w-100 ps-5 text-start"
-              onClick={() => navigateTo("/accountPage")}
-              disabled={isViewOnly}
-            >
-              <FontAwesomeIcon
-                icon={faUser}
-                className="position-absolute top-50 start-0 translate-middle-y ms-3"
-              />
-              Conta
-            </button>
-          </div>
+          {/* Conta (apenas admin) */}
+          {role === "admin" && (
+            <div className="position-relative col-9 col-lg-5 mb-3">
+              <button
+                className="css-button-fully-rounded--white w-100 ps-5 text-start"
+                onClick={() => navigateTo("/accountPage")}
+              >
+                <FontAwesomeIcon
+                  icon={faUser}
+                  className="position-absolute top-50 start-0 translate-middle-y ms-3"
+                />
+                Conta
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

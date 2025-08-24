@@ -1,22 +1,24 @@
-// src/middlewares/authMiddleware.ts
-
+//src/middlewares/authMiddleware.ts
 import { Request, Response, NextFunction } from "express";
 import * as jwt from "jsonwebtoken";
 
-// Dados esperados no payload do JWT
+// Dados esperados no payload do JWT (com a role)
 interface ITokenPayload {
   id_loja: string;
+  user_role: "admin" | "employee"; // Adicionamos a role aqui
   iat: number;
   exp: number;
   sub: string;
 }
 
-// O que vamos adicionar à request
+// O que vamos adicionar à request (com a role)
 interface IUserPayload {
   idLoja: string;
+  sub: string;
+  user_role: "admin" | "employee"; // Adicionamos a role aqui
 }
 
-// Faz o TypeScript entender que `request.user` existe
+// Faz o TypeScript entender que `request.user` existe e tem a role
 declare global {
   namespace Express {
     interface Request {
@@ -30,30 +32,26 @@ export function authMiddleware(
   response: Response,
   next: NextFunction
 ) {
-  // 1. Pega o token do header Authorization (padrão Bearer Token)
   const authHeader = request.headers.authorization;
 
-  // 2. Verifica se o header está presente e no formato correto
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return response.status(401).json({ message: "Token JWT não fornecido." });
   }
 
-  // 3. Extrai o token do header
   const token = authHeader.replace("Bearer ", "");
 
   try {
-    // 4. Verifica e decodifica o token
     const decoded = jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET as string
     ) as ITokenPayload;
 
-    // 5. Extrai o ID da loja e anexa à requisição
     request.user = {
       idLoja: decoded.id_loja,
+      sub: decoded.sub, // pega o subject do token
+      user_role: decoded.user_role,
     };
 
-    // 6. Passa para o próximo middleware ou controller
     return next();
   } catch (error) {
     return response.status(401).json({ code: "ACCESS_TOKEN_EXPIRED" });

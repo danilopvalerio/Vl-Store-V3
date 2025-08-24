@@ -1,8 +1,6 @@
-// src/controllers/VariacaoController.ts
-
 import { Request, Response } from "express";
 import { VariacaoService } from "../services/VariacaoService";
-import { ProdutoService } from "../services/ProdutoService"; // Importado para validação de posse
+import { ProdutoService } from "../services/ProdutoService";
 
 export class VariacaoController {
   async create(request: Request, response: Response): Promise<Response> {
@@ -13,7 +11,6 @@ export class VariacaoController {
     const variacaoService = new VariacaoService();
 
     try {
-      // Verificação de Segurança: Garante que o produto pertence à loja do usuário
       const produto = await produtoService.findById(referenciaProduto);
       if (produto.idLoja !== idLoja) {
         return response
@@ -37,7 +34,6 @@ export class VariacaoController {
 
     try {
       const variacao = await variacaoService.findById(id);
-      // Verificação de Segurança
       if (variacao.produto.idLoja !== request.user.idLoja) {
         return response
           .status(403)
@@ -65,20 +61,24 @@ export class VariacaoController {
   ): Promise<Response> {
     const { referencia } = request.params;
     const variacaoService = new VariacaoService();
-
-    // A verificação de segurança aqui é implícita, pois o service já filtra por referência.
-    // Uma camada extra seria verificar se o produto pertence à loja, como no método create.
     const variacoes = await variacaoService.findAllByProduto(referencia);
     return response.json(variacoes);
   }
 
-  async findPaginated(request: Request, response: Response): Promise<Response> {
+  async findPaginatedByProduto(
+    request: Request,
+    response: Response
+  ): Promise<Response> {
     const { referencia } = request.params;
     const page = parseInt(request.query.page as string) || 1;
     const limit = parseInt(request.query.limit as string) || 15;
     const variacaoService = new VariacaoService();
 
-    const result = await variacaoService.findPaginated(referencia, page, limit);
+    const result = await variacaoService.findPaginatedByProduto(
+      referencia,
+      page,
+      limit
+    );
     return response.status(200).json(result);
   }
 
@@ -87,14 +87,11 @@ export class VariacaoController {
     const variacaoService = new VariacaoService();
 
     try {
-      // Verificação de Segurança antes de atualizar
       const variacaoExistente = await variacaoService.findById(id);
       if (variacaoExistente.produto.idLoja !== request.user.idLoja) {
-        return response
-          .status(403)
-          .json({
-            message: "Você não tem permissão para editar esta variação.",
-          });
+        return response.status(403).json({
+          message: "Você não tem permissão para editar esta variação.",
+        });
       }
 
       const variacaoAtualizada = await variacaoService.update(id, request.body);
@@ -112,14 +109,11 @@ export class VariacaoController {
     const variacaoService = new VariacaoService();
 
     try {
-      // Verificação de Segurança antes de deletar
       const variacaoExistente = await variacaoService.findById(id);
       if (variacaoExistente.produto.idLoja !== request.user.idLoja) {
-        return response
-          .status(403)
-          .json({
-            message: "Você não tem permissão para deletar esta variação.",
-          });
+        return response.status(403).json({
+          message: "Você não tem permissão para deletar esta variação.",
+        });
       }
 
       await variacaoService.delete(id);
@@ -128,6 +122,59 @@ export class VariacaoController {
       if (error instanceof Error) {
         return response.status(404).json({ message: error.message });
       }
+      return response.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  /**
+   * NOVO: Retorna todas as variações da loja de forma paginada.
+   */
+  async findPaginatedByLoja(
+    request: Request,
+    response: Response
+  ): Promise<Response> {
+    const idLoja = request.user.idLoja;
+    const page = parseInt(request.query.page as string) || 1;
+    const limit = parseInt(request.query.limit as string) || 10;
+    const variacaoService = new VariacaoService();
+
+    try {
+      const result = await variacaoService.findPaginatedByLoja(
+        idLoja,
+        page,
+        limit
+      );
+      return response.status(200).json(result);
+    } catch (error) {
+      return response.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  /**
+   * NOVO: Busca variações da loja por um termo, de forma paginada.
+   */
+  async searchByLoja(request: Request, response: Response): Promise<Response> {
+    const idLoja = request.user.idLoja;
+    const { term } = request.query;
+    if (!term || typeof term !== "string") {
+      return response
+        .status(400)
+        .json({ message: "O parâmetro de busca 'term' é obrigatório." });
+    }
+
+    const page = parseInt(request.query.page as string) || 1;
+    const limit = parseInt(request.query.limit as string) || 10;
+    const variacaoService = new VariacaoService();
+
+    try {
+      const result = await variacaoService.searchByLoja(
+        idLoja,
+        term,
+        page,
+        limit
+      );
+      return response.status(200).json(result);
+    } catch (error) {
       return response.status(500).json({ message: "Internal Server Error" });
     }
   }

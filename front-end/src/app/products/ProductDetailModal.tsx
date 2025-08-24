@@ -4,9 +4,9 @@
 import { useState, useEffect, useMemo } from "react";
 import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTimes, faTrash, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import ProductVariations from "./ProductVariations";
 
-// --- Interfaces ---
 interface Variation {
   id_variacao?: string;
   descricao: string;
@@ -21,70 +21,52 @@ interface Product {
   material: string;
   genero: string;
   idLoja: string;
-  variacoes?: Variation[];
 }
 
 interface ProductDetailModalProps {
   product: Product | null;
   onClose: () => void;
   onProductUpdate: () => void;
+  userRole: "admin" | "employee";
 }
 
 const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   onClose,
   onProductUpdate,
+  userRole,
 }) => {
   const [productData, setProductData] = useState<Product | null>(null);
   const [originalProduct, setOriginalProduct] = useState<Product | null>(null);
   const [currentVariations, setCurrentVariations] = useState<Variation[]>([]);
   const [originalVariations, setOriginalVariations] = useState<Variation[]>([]);
   const [deletedVariationIds, setDeletedVariationIds] = useState<string[]>([]);
-  const [isLoadingVariations, setIsLoadingVariations] = useState(true);
+  const [variationErrors, setVariationErrors] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  // ➕ Estado para controlar o loading das ações de salvar/deletar
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (product) {
       setProductData({ ...product });
       setOriginalProduct({ ...product });
-      setCurrentVariations([]);
-      setOriginalVariations([]);
       setDeletedVariationIds([]);
-      setIsLoadingVariations(true);
-
-      const fetchVariations = async () => {
-        try {
-          const response = await api.get(
-            `/produtos/${product.referencia}/variacoes`
-          );
-          const fetchedVariations = response.data || [];
-          setCurrentVariations(fetchedVariations);
-          setOriginalVariations(fetchedVariations);
-        } catch (err) {
-          console.error("Erro ao buscar variações:", err);
-          setError("Não foi possível carregar as variações.");
-        } finally {
-          setIsLoadingVariations(false);
-        }
-      };
-      fetchVariations();
     }
   }, [product]);
 
   const hasUnsavedChanges = useMemo(() => {
-    if (!originalProduct) return false;
+    if (!originalProduct || userRole === "employee") return false;
+
     const productChanged =
       productData?.nome !== originalProduct.nome ||
       productData?.categoria !== originalProduct.categoria ||
       productData?.material !== originalProduct.material ||
       productData?.genero !== originalProduct.genero;
-    if (productChanged) return true;
-    if (deletedVariationIds.length > 0) return true;
+
+    if (productChanged || deletedVariationIds.length > 0) return true;
     if (currentVariations.length !== originalVariations.length) return true;
-    const variationsChanged = currentVariations.some((currentVar) => {
+
+    return currentVariations.some((currentVar) => {
       if (!currentVar.id_variacao) return true;
       const originalVar = originalVariations.find(
         (v) => v.id_variacao === currentVar.id_variacao
@@ -96,66 +78,38 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         Number(currentVar.valor) !== Number(originalVar.valor)
       );
     });
-    return variationsChanged;
   }, [
     productData,
     originalProduct,
     currentVariations,
     originalVariations,
     deletedVariationIds,
+    userRole,
   ]);
 
   const handleGeneralChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    if (!productData) return;
+    if (!productData || userRole === "employee") return;
     const { name, value } = e.target;
     setProductData({ ...productData, [name]: value });
   };
 
-  const handleVariationChange = (
-    index: number,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    const updatedVariations = [...currentVariations];
-    updatedVariations[index] = {
-      ...updatedVariations[index],
-      [name]: name === "descricao" ? value : parseFloat(value) || 0,
-    };
-    setCurrentVariations(updatedVariations);
-  };
-
-  const showMessage = (setter: Function, message: string) => {
-    setter(message);
-    setTimeout(() => setter(""), 3000);
-  };
-
-  const addVariation = () => {
-    const newVariation: Variation = {
-      descricao: "",
-      quantidade: 0,
-      valor: "",
-    };
-    setCurrentVariations([...currentVariations, newVariation]);
-  };
-
-  const removeVariation = async (index: number) => {
-    const varToRemove = currentVariations[index];
-    if (varToRemove.id_variacao) {
-      setDeletedVariationIds([...deletedVariationIds, varToRemove.id_variacao]);
+  const validateVariations = (): string | null => {
+    for (const v of currentVariations) {
+      if (!v.descricao || v.descricao.trim() === "")
+        return "Descrição não pode ficar vazia.";
+      if (Number(v.valor) <= 0) return "Valor deve ser maior que 0.";
     }
-    setCurrentVariations(currentVariations.filter((_, i) => i !== index));
+    return null;
   };
 
-  const handleDelete = async () => {
-    if (!productData || isSubmitting) return;
+  const handleSave = async () => {
+    if (!productData || isSubmitting || userRole === "employee") return;
 
-    if (
-      !window.confirm(
-        "Tem certeza que deseja deletar este produto? Esta ação não pode ser desfeita."
-      )
-    ) {
+    const validationError = validateVariations();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -164,27 +118,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setSuccess("");
 
     try {
-      await api.delete(`/produtos/${productData.referencia}`);
-      showMessage(setSuccess, "Produto deletado com sucesso!");
-      onProductUpdate();
-      setTimeout(onClose, 1200);
-    } catch (err) {
-      console.error("Erro ao deletar produto:", err);
-      showMessage(setError, "Não foi possível deletar o produto.");
-      setIsSubmitting(false); // Libera a UI em caso de erro
-    }
-  };
-
-  const handleSave = async () => {
-    if (!productData || isSubmitting) return;
-
-    setIsSubmitting(true);
-    setError("");
-    setSuccess("");
-
-    try {
       const apiPromises: Promise<any>[] = [];
 
+      // Atualiza dados do produto
       if (JSON.stringify(productData) !== JSON.stringify(originalProduct)) {
         apiPromises.push(
           api.patch(`/produtos/${productData.referencia}`, {
@@ -197,18 +133,20 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         );
       }
 
+      // Criar novas variações
       const variationsToCreate = currentVariations.filter(
         (v) => !v.id_variacao
       );
-      for (const v of variationsToCreate) {
+      variationsToCreate.forEach((v) =>
         apiPromises.push(
           api.post("/variacoes", {
             referenciaProduto: productData.referencia,
             ...v,
           })
-        );
-      }
+        )
+      );
 
+      // Atualizar variações existentes
       const variationsToUpdate = currentVariations.filter((currentVar) => {
         if (!currentVar.id_variacao) return false;
         const originalVar = originalVariations.find(
@@ -219,21 +157,25 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           JSON.stringify(currentVar) !== JSON.stringify(originalVar)
         );
       });
-      for (const v of variationsToUpdate) {
-        apiPromises.push(api.patch(`/variacoes/${v.id_variacao}`, v));
-      }
+      variationsToUpdate.forEach((v) =>
+        apiPromises.push(api.patch(`/variacoes/${v.id_variacao}`, v))
+      );
 
-      for (const id of deletedVariationIds) {
-        apiPromises.push(api.delete(`/variacoes/${id}`));
-      }
+      // Deletar variações removidas
+      deletedVariationIds.forEach((id) =>
+        apiPromises.push(api.delete(`/variacoes/${id}`))
+      );
 
       await Promise.all(apiPromises);
-      showMessage(setSuccess, "Alterações salvas com sucesso!");
+
+      setSuccess("Alterações salvas com sucesso!");
       onProductUpdate();
-      setTimeout(onClose, 1200);
+      onClose();
     } catch (err) {
       console.error("Erro ao salvar:", err);
-      showMessage(setError, "Erro ao salvar as alterações.");
+      setError(
+        "Erro ao salvar as alterações. Verifique os campos e tente novamente."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -247,7 +189,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <h4 className="m-0 w-100 text-center primary-color">
           Detalhes do Produto
         </h4>
-
         <button
           className="btn"
           onClick={onClose}
@@ -264,18 +205,15 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
         <form onSubmit={(e) => e.preventDefault()}>
           <div className="row g-3 mb-4">
-            {/* Campos de Nome, Categoria, Material, Gênero... */}
             <div className="col-md-12">
-              <label htmlFor="nome" className="form-label ps-2 ">
+              <label htmlFor="referencia" className="form-label ps-2">
                 Referência
               </label>
               <input
                 id="referencia"
                 name="referencia"
                 className="w-100 p-2 border-input fw-bold"
-                placeholder="Ex: Camiseta Polo Levi's"
                 value={productData.referencia}
-                onChange={handleGeneralChange}
                 disabled
               />
             </div>
@@ -287,10 +225,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 id="nome"
                 name="nome"
                 className="w-100 p-2 border-input"
-                placeholder="Ex: Camiseta Polo Levi's"
                 value={productData.nome}
                 onChange={handleGeneralChange}
-                required
+                disabled={userRole === "employee"}
               />
             </div>
             <div className="col-md-6">
@@ -301,10 +238,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 id="categoria"
                 name="categoria"
                 className="w-100 p-2 border-input"
-                placeholder="Ex: Roupas"
                 value={productData.categoria}
                 onChange={handleGeneralChange}
-                required
+                disabled={userRole === "employee"}
               />
             </div>
             <div className="col-md-6">
@@ -315,10 +251,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 id="material"
                 name="material"
                 className="w-100 p-2 border-input"
-                placeholder="Ex: Algodão"
                 value={productData.material}
                 onChange={handleGeneralChange}
-                required
+                disabled={userRole === "employee"}
               />
             </div>
             <div className="col-md-6">
@@ -331,7 +266,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 className="w-100 ps-2 rounded-5 border-input"
                 value={productData.genero}
                 onChange={handleGeneralChange}
-                required
+                disabled={userRole === "employee"}
               >
                 <option value="">Selecione</option>
                 <option value="Masculino">Masculino</option>
@@ -341,115 +276,31 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
           </div>
 
-          <h5 className="mb-3">Variações</h5>
-          <div className="variations-container">
-            {isLoadingVariations ? (
-              <p>Carregando variações...</p>
-            ) : (
-              currentVariations.map((v, i) => (
-                <div
-                  key={v.id_variacao || `new-${i}`}
-                  className="row g-2 align-items-center mb-2 p-2 rounded"
-                >
-                  <div className="col-sm-5">
-                    <input
-                      type="text"
-                      name="descricao"
-                      className="w-100 p-2 border-input"
-                      placeholder="Descrição (Ex: GG, Azul)"
-                      value={v.descricao}
-                      onChange={(e) => handleVariationChange(i, e)}
-                    />
-                  </div>
-                  <div className="col-sm-3">
-                    <input
-                      type="number"
-                      name="quantidade"
-                      className="w-100 p-2 border-input"
-                      placeholder="Qtd."
-                      value={v.quantidade}
-                      onChange={(e) => handleVariationChange(i, e)}
-                      min={0}
-                      step={1} // bloqueia decimais
-                      onKeyDown={(e) => {
-                        // Permite apenas números, backspace, delete, setas
-                        if (
-                          !/[0-9]/.test(e.key) &&
-                          e.key !== "Backspace" &&
-                          e.key !== "Delete" &&
-                          e.key !== "ArrowLeft" &&
-                          e.key !== "ArrowRight" &&
-                          e.key !== "Tab"
-                        ) {
-                          e.preventDefault();
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="col-sm-3">
-                    <input
-                      type="number"
-                      name="valor"
-                      className="w-100 p-2 border-input"
-                      placeholder="Valor (R$)"
-                      value={v.valor}
-                      onChange={(e) => handleVariationChange(i, e)}
-                    />
-                  </div>
-                  <div className="col-sm-1 text-end">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-danger rounded-5"
-                      onClick={() => removeVariation(i)}
-                      aria-label="Remover variação"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-            {!isLoadingVariations && currentVariations.length === 0 && (
-              <p className="text-muted">
-                Nenhuma variação encontrada para este produto.
-              </p>
-            )}
-          </div>
+          <ProductVariations
+            referenciaProduto={productData.referencia}
+            userRole={userRole}
+            currentVariations={currentVariations}
+            setCurrentVariations={setCurrentVariations}
+            originalVariations={originalVariations}
+            setOriginalVariations={setOriginalVariations}
+            deletedVariationIds={deletedVariationIds}
+            setDeletedVariationIds={setDeletedVariationIds}
+            variationErrors={variationErrors}
+            setVariationErrors={setVariationErrors}
+          />
 
-          <button
-            type="button"
-            className="w-100 border-input primaria mb-3"
-            onClick={addVariation}
-          >
-            <FontAwesomeIcon icon={faPlus} /> Adicionar Variação
-          </button>
-
-          <footer className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-            <button
-              type="button"
-              className="primaria border-input ps-2 pe-2"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="primaria border-input ps-2 pe-2"
-              onClick={handleDelete}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Deletando..." : "Deletar"}
-            </button>
-            <button
-              type="button"
-              className="primaria border-input ps-2 pe-2"
-              onClick={handleSave}
-              disabled={!hasUnsavedChanges || isSubmitting}
-            >
-              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-            </button>
-          </footer>
+          {userRole === "admin" && (
+            <footer className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+              <button
+                type="button"
+                className="primaria border-input ps-2 pe-2"
+                onClick={handleSave}
+                disabled={!hasUnsavedChanges || isSubmitting}
+              >
+                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+              </button>
+            </footer>
+          )}
         </form>
       </div>
     </div>

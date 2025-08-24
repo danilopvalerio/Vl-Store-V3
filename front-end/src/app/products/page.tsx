@@ -9,10 +9,9 @@ import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { isLoggedIn } from "../../utils/auth";
 import ProductCard from "./ProductCardComponent";
 import ProductDetailModal from "./ProductDetailModal";
-// ➕ IMPORTAR O NOVO MODAL
 import AddProductModal from "./AddProductModal";
 
-// --- Interfaces (sem alterações) ---
+// --- Interfaces ---
 interface ProductSummary {
   referencia: string;
   nome: string;
@@ -45,38 +44,35 @@ const ProductPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [lojaData, setLojaData] = useState<LojaData | null>(null);
   const [checkingLogin, setCheckingLogin] = useState(true);
+  const [role, setRole] = useState<"admin" | "employee" | null>(null);
+
   const router = useRouter();
 
-  // --- ESTADOS PARA CONTROLAR OS MODAIS ---
+  // --- Estados para controlar os modais ---
   const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(
     null
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalOpening, setIsModalOpening] = useState(false);
-  // ➕ NOVO ESTADO para o modal de adicionar produto
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const LIMIT = 6;
 
-  // --- Funções de Navegação ---
+  // --- Navegação ---
   const pushBackToMenu = () => router.push("/menu");
 
-  // ➕ NOVAS FUNÇÕES para controlar o modal de adicionar
   const handleOpenAddModal = () => setIsAddModalOpen(true);
   const handleCloseAddModal = () => setIsAddModalOpen(false);
 
-  // --- Funções de Busca e Paginação (sem alterações) ---
+  // --- Busca e Paginação ---
   const handleSearch = async (page = 1) => {
     setLoading(true);
     try {
-      // Faz a requisição de busca de produtos
       const response = await api.get(
         `/produtos/search?term=${encodeURIComponent(
           searchTerm
         )}&page=${page}&limit=${LIMIT}`
       );
-      console.log("passou");
-      // Atualiza estados
       setProdutos(response.data.data);
       setTotalItems(response.data.count);
       setTotalPages(response.data.totalPages);
@@ -113,11 +109,11 @@ const ProductPage = () => {
         return;
       }
 
-      // Se logado, busca dados da loja
       try {
         const response = await api.get(`/sessions/profile`);
-        if (response.status === 200 && response.data.loja) {
-          setLojaData(response.data.loja);
+        if (response.status === 200) {
+          if (response.data.loja) setLojaData(response.data.loja);
+          if (response.data.role) setRole(response.data.role);
         }
       } catch (error) {
         console.error("Erro ao buscar perfil:", error);
@@ -170,13 +166,11 @@ const ProductPage = () => {
     setSelectedProduct(null);
   };
 
-  // Esta função agora serve para ambos os modais
   const handleProductUpdate = () => {
-    // Fecha ambos os modais para garantir
+    fetchProducts(1);
     setIsModalOpen(false);
     setSelectedProduct(null);
     setIsAddModalOpen(false);
-    // Recarrega os produtos
     if (searchTerm.trim() !== "") {
       handleSearch(currentPage);
     } else {
@@ -194,36 +188,30 @@ const ProductPage = () => {
       </div>
     );
   }
+
   return (
-    <div
-      className={`d-flex justify-content-between align-items-center flex-column min-vh-100`}
-    >
-      <header className={`w-100`}>
-        <div className={`header-panel`}>
+    <div className="d-flex justify-content-between align-items-center flex-column min-vh-100">
+      <header className="w-100">
+        <div className="header-panel">
           <img
             src="/images/vl-store-logo.svg"
             alt="VL Store Logo"
-            className={`img logo`}
+            className="img logo"
           />
         </div>
       </header>
-      {/* 💡 LÓGICA ATUALIZADA: Só mostra o conteúdo principal se NENHUM modal estiver aberto */}
+
+      {/* Conteúdo principal só se nenhum modal estiver aberto */}
       {!isModalOpen && !isAddModalOpen && (
-        <div
-          className={`row w-75 dark-shadow overflow-hidden rounded-5 mt-4 mb-4`}
-        >
-          <header
-            className={`col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 terciary`}
-          >
-            <h3 className={`m-3`}>Produtos</h3>
+        <div className="row w-75 dark-shadow overflow-hidden rounded-5 mt-4 mb-4">
+          <header className="col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 terciary">
+            <h3 className="m-3">Produtos</h3>
           </header>
 
-          <div
-            className={`col-12 secondary p-4 d-flex flex-column align-items-center`}
-          >
-            <div className={`w-100 mb-3`}>
+          <div className="col-12 secondary p-4 d-flex flex-column align-items-center">
+            <div className="w-100 mb-3">
               <input
-                className={`w-100 p-2 `}
+                className="w-100 p-2"
                 type="text"
                 placeholder="Digite o produto..."
                 value={searchTerm}
@@ -232,49 +220,46 @@ const ProductPage = () => {
               />
             </div>
 
-            <div
-              className={`d-flex gap-2 w-100 flex-wrap justify-content-between`}
-            >
+            <div className="d-flex gap-2 w-100 flex-wrap justify-content-between">
               <button
-                className={`css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center`}
+                className="css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center"
                 onClick={() => handleSearch()}
               >
-                {" "}
-                Pesquisar{" "}
+                Pesquisar
               </button>
               <button
-                className={`css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center`}
+                className="css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center"
                 onClick={handleClearSearch}
               >
-                {" "}
-                Limpar{" "}
+                Limpar
               </button>
-              {/* --- 🔄 FUNÇÃO MODIFICADA no botão --- */}
-              <button
-                className={`css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center`}
-                onClick={handleOpenAddModal}
-              >
-                {" "}
-                Adicionar Produto{" "}
-              </button>
+
+              {/* 🔒 Botão Adicionar só para admin */}
+              {role === "admin" && (
+                <button
+                  className="css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center"
+                  onClick={handleOpenAddModal}
+                >
+                  Adicionar Produto
+                </button>
+              )}
             </div>
 
-            <div className={`w-100 mt-4`}>
+            <div className="w-100 mt-4">
               {loading ? (
-                <div className={`text-center`}>
-                  {" "}
+                <div className="text-center">
                   <h5 className="mx-auto text-center bg-light rounded-5 p-3 d-flex justify-content-center align-items-center">
                     <span className="spinner me-2"></span>
                     Carregando produtos...
                   </h5>
                 </div>
               ) : (
-                <div className={`row g-4`}>
+                <div className="row g-4">
                   {produtos.length > 0 ? (
                     produtos.map((produto) => (
                       <div
                         key={produto.referencia}
-                        className={`col-12 col-md-6 col-lg-4 d-flex align-items-stretch`}
+                        className="col-12 col-md-6 col-lg-4 d-flex align-items-stretch"
                         style={{ cursor: isModalOpening ? "wait" : "pointer" }}
                       >
                         <ProductCard
@@ -284,67 +269,63 @@ const ProductPage = () => {
                       </div>
                     ))
                   ) : (
-                    <div className={`col-12 text-center`}>
-                      {" "}
-                      <p>Nenhum produto encontrado</p>{" "}
+                    <div className="col-12 text-center">
+                      <p>Nenhum produto encontrado</p>
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            <div
-              className={`d-flex justify-content-center align-items-center gap-3 mt-4`}
-            >
+            <div className="d-flex justify-content-center align-items-center gap-3 mt-4">
               <button
-                className={`css-button-fully-rounded--white d-flex align-items-center justify-content-center`}
+                className="css-button-fully-rounded--white d-flex align-items-center justify-content-center"
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
               >
-                {" "}
-                Anterior{" "}
+                Anterior
               </button>
               <span>{`${currentPage} de ${totalPages}`}</span>
               <button
-                className={`css-button-fully-rounded--white d-flex align-items-center justify-content-center`}
+                className="css-button-fully-rounded--white d-flex align-items-center justify-content-center"
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages || totalPages === 0}
               >
-                {" "}
-                Próxima{" "}
+                Próxima
               </button>
             </div>
           </div>
         </div>
       )}
-      {/* 💡 LÓGICA ATUALIZADA: Só mostra os botões de voltar/footer se NENHUM modal estiver aberto */}
+
       {!isModalOpen && !isAddModalOpen && (
-        <>
-          <button
-            className={`return-btn-fixed css-button-fully-rounded--white`}
-            onClick={pushBackToMenu}
-            aria-label="Voltar"
-          >
-            <FontAwesomeIcon icon={faArrowLeft} />
-          </button>
-        </>
+        <button
+          className="return-btn-fixed css-button-fully-rounded--white"
+          onClick={pushBackToMenu}
+          aria-label="Voltar"
+        >
+          <FontAwesomeIcon icon={faArrowLeft} />
+        </button>
       )}
-      {/* Renderiza o modal de detalhes se o estado for true */}
-      {isModalOpen && (
+
+      {isModalOpen && role && (
         <ProductDetailModal
           product={selectedProduct}
           onClose={handleCloseModal}
           onProductUpdate={handleProductUpdate}
+          userRole={role}
         />
       )}
-      {/* ➕ RENDERIZAÇÃO CONDICIONAL do novo modal */}     {" "}
-      {isAddModalOpen && (
+
+      {/* 🔒 Modal de adicionar só aparece para admin */}
+      {isAddModalOpen && role === "admin" && (
         <AddProductModal
           onClose={handleCloseAddModal}
           onSaveSuccess={handleProductUpdate}
         />
       )}
-      <footer className={`w-100 footer-panel text-center p-3`}>
+
+      <footer className="w-100 footer-panel text-center p-3">
         <small>VL Store © {new Date().getFullYear()}</small>
       </footer>
     </div>

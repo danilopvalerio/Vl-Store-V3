@@ -1,3 +1,4 @@
+//src/services/ValidationUtils.ts
 /**
  * Classe utilitária para validar informações diversas.
  * Contém métodos estáticos para verificar a conformidade dos dados de entrada

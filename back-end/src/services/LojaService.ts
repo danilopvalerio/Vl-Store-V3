@@ -1,3 +1,4 @@
+//src/services/LojaService.ts
 import { AppDataSource } from "../database/data-source";
 import Loja from "../models/Loja";
 import * as bcrypt from "bcryptjs";

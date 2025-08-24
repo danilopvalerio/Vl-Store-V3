@@ -286,14 +286,6 @@ const AddProductModal: React.FC<AddProductProps> = ({
           <footer className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
             <button
               type="button"
-              className="primaria border-input ps-2 pe-2"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
               className="primaria border-input ps-4 pe-4"
               onClick={handleSave}
               disabled={isSaveDisabled}

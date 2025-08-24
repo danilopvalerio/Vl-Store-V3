@@ -45,7 +45,7 @@ produtoVariacaoRouter.get(
 // Listar variações de um produto com paginação
 produtoVariacaoRouter.get(
   "/produtos/:referencia/variacoes/paginated",
-  variacaoController.findPaginated
+  variacaoController.findPaginatedByLoja
 );
 
 export { variacaoRoutes, produtoVariacaoRouter };

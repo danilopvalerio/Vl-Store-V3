@@ -3,32 +3,25 @@
 import { Router } from "express";
 import { ProdutoController } from "../controllers/ProdutoController";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { ensureAdmin } from "../middlewares/ensureAdmin";
 
 const produtoRoutes = Router();
 const produtoController = new ProdutoController();
 
-// Aplica o middleware de autenticação a todas as rotas de produto
 produtoRoutes.use(authMiddleware);
 
-// Rota para criar um produto
-produtoRoutes.post("/", produtoController.create);
+produtoRoutes.post("/", ensureAdmin, produtoController.create);
 
-// Rota para retornar todos os produtos da loja do usuário
 produtoRoutes.get("/", produtoController.findAll);
 
-// Rota para buscar produtos de forma paginada
-// IMPORTANTE: Esta rota deve vir ANTES da rota /:referencia para não haver conflito.
 produtoRoutes.get("/paginated", produtoController.findPaginated);
 
 produtoRoutes.get("/search", produtoController.search);
-// O parâmetro da rota foi corrigido para ':referencia'
-// para corresponder ao que o controller e o serviço esperam.
+
 produtoRoutes.get("/:referencia", produtoController.findById);
 
-// Parâmetro corrigido para ':referencia'
-produtoRoutes.patch("/:referencia", produtoController.update);
+produtoRoutes.patch("/:referencia", ensureAdmin, produtoController.update);
 
-// Parâmetro corrigido para ':referencia'
-produtoRoutes.delete("/:referencia", produtoController.delete);
+produtoRoutes.delete("/:referencia", ensureAdmin, produtoController.delete);
 
 export default produtoRoutes;

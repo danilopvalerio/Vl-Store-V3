@@ -1,5 +1,7 @@
+//src/services/SessionService.ts
 import { AppDataSource } from "../database/data-source";
 import Loja from "../models/Loja";
+import Funcionario from "../models/Funcionario";
 import RefreshToken from "../models/RefreshToken";
 import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
@@ -9,6 +11,7 @@ import { SignOptions } from "jsonwebtoken";
 interface ISessionRequest {
   email: string;
   senha: string;
+  user_role: "admin" | "employee";
 }
 
 interface LojaDTO {
@@ -17,67 +20,146 @@ interface LojaDTO {
   email: string;
 }
 
+interface FuncionarioDTO {
+  cpf: string;
+  nome: string;
+  email: string;
+  cargo: string;
+  idLoja: string;
+  nomeLoja?: string;
+}
 export class SessionService {
-  // O método create permanece o mesmo
-  async create({ email, senha }: ISessionRequest) {
-    const lojaRepository = AppDataSource.getRepository(Loja);
+  async create({ email, senha, user_role }: ISessionRequest) {
     const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
 
-    const loja = await lojaRepository
-      .createQueryBuilder("loja")
-      .addSelect("loja.senha")
-      .where("loja.email = :email", { email })
-      .getOne();
+    if (user_role === "admin") {
+      const lojaRepository = AppDataSource.getRepository(Loja);
+      const loja = await lojaRepository
+        .createQueryBuilder("loja")
+        .addSelect("loja.senha")
+        .where("loja.email = :email", { email })
+        .getOne();
 
-    if (!loja) {
-      throw new Error("E-mail ou senha incorretos.");
+      if (!loja) {
+        throw new Error("E-mail ou senha incorretos.");
+      }
+
+      const senhaCorreta = await bcrypt.compare(senha, loja.senha);
+      if (!senhaCorreta) {
+        throw new Error("E-mail ou senha incorretos.");
+      }
+
+      const tokenPayload = { id_loja: loja.id_loja, user_role: "admin" };
+      const tokenSubject = loja.id_loja;
+
+      await refreshTokenRepository.delete({ id_loja: loja.id_loja });
+
+      const accessToken = jwt.sign(
+        tokenPayload,
+        process.env.ACCESS_TOKEN_SECRET as string,
+        {
+          expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || "15m",
+          subject: tokenSubject,
+        } as SignOptions
+      );
+
+      const refreshToken = jwt.sign(
+        tokenPayload,
+        process.env.REFRESH_TOKEN_SECRET as string,
+        {
+          expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
+          subject: tokenSubject,
+        } as SignOptions
+      );
+
+      const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+      const refreshTokenExpiresAt = addDays(new Date(), 7);
+
+      const newRefreshToken = refreshTokenRepository.create({
+        hashedToken: hashedRefreshToken,
+        id_loja: loja.id_loja,
+        expiresAt: refreshTokenExpiresAt,
+      });
+      await refreshTokenRepository.save(newRefreshToken);
+
+      const lojaDTO: LojaDTO = {
+        idLoja: loja.id_loja,
+        nome: loja.nome,
+        email: loja.email,
+      };
+
+      return { user: lojaDTO, accessToken, refreshToken, role: "admin" };
+    } else if (user_role === "employee") {
+      const funcionarioRepository = AppDataSource.getRepository(Funcionario);
+      const funcionario = await funcionarioRepository
+        .createQueryBuilder("funcionario")
+        .addSelect("funcionario.senha")
+        .where("funcionario.email = :email", { email })
+        .getOne();
+
+      if (!funcionario) {
+        throw new Error("E-mail ou senha incorretos.");
+      }
+
+      const senhaCorreta = await bcrypt.compare(senha, funcionario.senha);
+      if (!senhaCorreta) {
+        throw new Error("E-mail ou senha incorretos.");
+      }
+
+      const tokenPayload = {
+        id_loja: funcionario.idLoja,
+        user_role: "employee",
+      };
+      const tokenSubject = funcionario.cpf;
+
+      await refreshTokenRepository.delete({ id_loja: funcionario.idLoja });
+
+      const accessToken = jwt.sign(
+        tokenPayload,
+        process.env.ACCESS_TOKEN_SECRET as string,
+        {
+          expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || "15m",
+          subject: tokenSubject,
+        } as SignOptions
+      );
+
+      const refreshToken = jwt.sign(
+        tokenPayload,
+        process.env.REFRESH_TOKEN_SECRET as string,
+        {
+          expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
+          subject: tokenSubject,
+        } as SignOptions
+      );
+
+      const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+      const refreshTokenExpiresAt = addDays(new Date(), 7);
+
+      const newRefreshToken = refreshTokenRepository.create({
+        hashedToken: hashedRefreshToken,
+        id_loja: funcionario.idLoja,
+        expiresAt: refreshTokenExpiresAt,
+      });
+      await refreshTokenRepository.save(newRefreshToken);
+
+      const funcionarioDTO: FuncionarioDTO = {
+        cpf: funcionario.cpf,
+        nome: funcionario.nome,
+        email: funcionario.email,
+        cargo: funcionario.cargo,
+        idLoja: funcionario.idLoja,
+      };
+
+      return {
+        user: funcionarioDTO,
+        accessToken,
+        refreshToken,
+        role: "employee",
+      };
+    } else {
+      throw new Error("Tipo de usuário inválido.");
     }
-
-    const senhaCorreta = await bcrypt.compare(senha, loja.senha);
-    if (!senhaCorreta) {
-      throw new Error("E-mail ou senha incorretos.");
-    }
-
-    // Remove refresh tokens antigos dessa loja antes de gerar um novo
-    await refreshTokenRepository.delete({ id_loja: loja.id_loja });
-
-    const accessToken = jwt.sign(
-      { id_loja: loja.id_loja },
-      process.env.ACCESS_TOKEN_SECRET as string,
-      {
-        expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || "15m",
-        subject: loja.id_loja,
-      } as SignOptions
-    );
-
-    const refreshToken = jwt.sign(
-      { id_loja: loja.id_loja },
-      process.env.REFRESH_TOKEN_SECRET as string,
-      {
-        expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
-        subject: loja.id_loja,
-      } as SignOptions
-    );
-
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
-    const refreshTokenExpiresAt = addDays(new Date(), 7);
-
-    const newRefreshToken = refreshTokenRepository.create({
-      hashedToken: hashedRefreshToken,
-      id_loja: loja.id_loja,
-      expiresAt: refreshTokenExpiresAt,
-    });
-    await refreshTokenRepository.save(newRefreshToken);
-
-    const lojaDTO: LojaDTO = {
-      idLoja: loja.id_loja,
-      nome: loja.nome,
-      email: loja.email,
-    };
-
-    return { loja: lojaDTO, accessToken, refreshToken };
   }
-
   /**
    * Lógica de negócio para atualizar um token.
    */
@@ -89,7 +171,6 @@ export class SessionService {
     const foundToken = await Promise.any(
       allTokens.map(async (token) => {
         const match = await bcrypt.compare(refreshToken, token.hashedToken);
-        // Garante que o token encontrado não foi revogado (caso a lógica mude no futuro)
         return match && !token.revokedAt ? token : Promise.reject();
       })
     ).catch(() => null);
@@ -115,13 +196,7 @@ export class SessionService {
       } as SignOptions
     );
 
-    const lojaDTO: LojaDTO = {
-      idLoja: loja.id_loja,
-      nome: loja.nome,
-      email: loja.email,
-    };
-
-    return { loja: lojaDTO, accessToken };
+    return { accessToken };
   }
 
   /**
@@ -161,21 +236,58 @@ export class SessionService {
     }
   }
 
-  // O método getProfile permanece o mesmo
-  async getProfile(idLoja: string): Promise<LojaDTO> {
-    const lojaRepository = AppDataSource.getRepository(Loja);
-    const loja = await lojaRepository.findOneBy({ id_loja: idLoja });
+  /**
+   * Lógica de negócio para buscar o perfil do usuário (loja ou funcionário).
+   */
+  async getProfile(
+    userId: string,
+    role: "admin" | "employee"
+  ): Promise<LojaDTO | FuncionarioDTO> {
+    if (role === "admin") {
+      const lojaRepository = AppDataSource.getRepository(Loja);
+      // Para admin, o userId é o id_loja
+      const loja = await lojaRepository.findOneBy({ id_loja: userId });
 
-    if (!loja) {
-      throw new Error("Loja não encontrada.");
+      if (!loja) {
+        throw new Error("Perfil da loja não encontrado.");
+      }
+
+      const lojaDTO: LojaDTO = {
+        idLoja: loja.id_loja,
+        nome: loja.nome,
+        email: loja.email,
+      };
+      return lojaDTO;
+    } else if (role === "employee") {
+      const lojaRepository = AppDataSource.getRepository(Loja);
+      const funcionarioRepository = AppDataSource.getRepository(Funcionario);
+
+      const funcionario = await funcionarioRepository.findOneBy({
+        cpf: userId,
+      });
+
+      if (!funcionario) {
+        throw new Error("Perfil do funcionário não encontrado.");
+      }
+
+      const loja = await lojaRepository.findOneBy({
+        id_loja: funcionario.idLoja,
+      });
+      if (!loja) {
+        throw new Error("Perfil da loja não encontrado.");
+      }
+
+      const funcionarioDTO: FuncionarioDTO = {
+        cpf: funcionario.cpf,
+        nome: funcionario.nome,
+        email: funcionario.email,
+        cargo: funcionario.cargo,
+        idLoja: funcionario.idLoja,
+        nomeLoja: loja.nome,
+      };
+      return funcionarioDTO;
+    } else {
+      throw new Error("Tipo de perfil inválido.");
     }
-
-    const lojaDTO: LojaDTO = {
-      idLoja: loja.id_loja,
-      nome: loja.nome,
-      email: loja.email,
-    };
-
-    return lojaDTO;
   }
 }

@@ -168,6 +168,16 @@ footer {
   color: var(--color-primary);
 }
 
+.css-button-fully-rounded--white:disabled {
+  background-color: #c4c4c4;
+  cursor: not-allowed;
+}
+
+.input-error {
+  border: 2px solid red;
+  border-radius: 5px;
+}
+
 .primary-color {
   color: var(--color-primary);
 }
@@ -332,9 +342,13 @@ input:hover {
   accent-color: var(--color-white);
 }
 .radio-clean:focus {
+  outline: none;
+  box-shadow: none;
   accent-color: var(--color-primary);
 }
 .radio-clean:checked {
+  outline: none;
+  box-shadow: none;
   accent-color: var(--color-primary);
 }
 
@@ -400,7 +414,7 @@ input:hover {
 }
 
 .dark-shadow {
-  box-shadow: 0 0 50px rgba(5, 2, 86, 0.595);
+  box-shadow: 0 0 40px rgba(0, 6, 91, 0.404);
 }
 .white-light {
   box-shadow: 0 0 50px rgba(255, 255, 255, 0.971);
@@ -438,7 +452,7 @@ input:hover {
 .modal-content {
   width: 90%;
   max-width: 600px;
-  max-height: 500px;
+  max-height: 540px;
   border-radius: 12px;
   display: flex;
   flex-direction: column;

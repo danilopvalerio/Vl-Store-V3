@@ -39,6 +39,12 @@ export default class Funcionario {
   @UpdateDateColumn({ name: "ultima_atualizacao" })
   ultimaAtualizacao!: Date;
 
+  @Column({ type: "varchar", length: 255, nullable: false, unique: true })
+  email!: string;
+
+  @Column({ type: "varchar", length: 255, nullable: false, select: false }) // select: false para não vir por padrão
+  senha!: string;
+
   // --- Relacionamentos ---
   @ManyToOne(() => Loja, (loja) => loja.funcionarios, { onDelete: "CASCADE" })
   @JoinColumn({ name: "id_loja" })

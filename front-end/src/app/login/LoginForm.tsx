@@ -20,9 +20,16 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  // CORREÇÃO: Definindo 'admin' como padrão e ajustando o tipo
+  const [userType, setUserType] = useState<"admin" | "employee">("admin");
 
   const togglePasswordVisibility = () => {
     setPasswordVisible((prev) => !prev);
+  };
+
+  // CORREÇÃO: Função para lidar com a mudança do tipo de usuário
+  const handleUserTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserType(e.target.value as "admin" | "employee");
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -30,19 +37,21 @@ export default function LoginForm() {
     setError("");
     setLoading(true);
 
-    if (!email || !password) {
-      setError("Email e senha são obrigatórios.");
+    if (!email || !password || !userType) {
+      setError("Email, senha e tipo de usuário são obrigatórios.");
       setLoading(false);
       return;
     }
 
     try {
+      // CORREÇÃO: O payload agora envia 'user_role' com os valores corretos
       const payload = {
         email: email.toLowerCase(),
         senha: password,
+        user_role: userType,
       };
 
-      // Uando instancia de api aqui ao invés de usar axios diretamente.
+      // Usando instancia de api aqui ao invés de usar axios diretamente.
       const response = await api.post("/sessions", payload);
 
       if (response.status === 200 && response.data.accessToken) {
@@ -50,6 +59,7 @@ export default function LoginForm() {
 
         // Após a sessão ser iniciada com sucesso, armazenamos o accessToken no sessionStorage
         sessionStorage.setItem("accessToken", accessToken);
+
         router.push("/menu");
       } else {
         setError(response.data.message || "Usuário ou senha incorretos.");
@@ -65,7 +75,6 @@ export default function LoginForm() {
     }
   };
 
-  // ... O resto do seu JSX continua o mesmo
   return (
     <div className="mx-auto login-register-block fine-transparent-border dark-shadow d-flex justify-content-center align-items-center overflow-hidden w-75 rounded-5">
       <div className="row w-100 shadow overflow-hidden">
@@ -124,6 +133,40 @@ export default function LoginForm() {
                   icon={passwordVisible ? faEyeSlash : faEye}
                 />
               </span>
+            </div>
+
+            <div className="row justify-content-center mb-3">
+              <div className="col-6 d-flex justify-content-center align-items-center">
+                <input
+                  className="radio-clean me-2"
+                  type="radio"
+                  name="userType"
+                  id="adminRadio"
+                  value="admin" // CORREÇÃO: Valor alinhado com o backend
+                  checked={userType === "admin"} // CORREÇÃO: Descomentado
+                  onChange={handleUserTypeChange} // CORREÇÃO: Descomentado
+                  disabled={loading}
+                />
+                <label className="form-check-label" htmlFor="adminRadio">
+                  Administrador
+                </label>
+              </div>
+
+              <div className="col-6 d-flex justify-content-center align-items-center">
+                <input
+                  className="radio-clean me-2"
+                  type="radio"
+                  name="userType"
+                  id="employeeRadio"
+                  value="employee" // CORREÇÃO: Valor alinhado com o backend
+                  checked={userType === "employee"} // CORREÇÃO: Descomentado
+                  onChange={handleUserTypeChange} // CORREÇÃO: Descomentado
+                  disabled={loading}
+                />
+                <label className="form-check-label" htmlFor="employeeRadio">
+                  Funcionário
+                </label>
+              </div>
             </div>
 
             {/* Botão */}

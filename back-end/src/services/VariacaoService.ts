@@ -1,10 +1,8 @@
-// src/services/VariacaoService.ts
-
 import { AppDataSource } from "../database/data-source";
 import Variacao from "../models/ProdutoVariacao";
 import Produto from "../models/Produto";
+import { Brackets } from "typeorm";
 
-// Interface corrigida para usar 'referenciaProduto'
 export interface ProdutoVariacaoCreateDTO {
   referenciaProduto: string;
   descricao: string;
@@ -12,11 +10,13 @@ export interface ProdutoVariacaoCreateDTO {
   valor: number;
 }
 
+// Interface atualizada para incluir totalPages
 export interface PaginatedResult<T> {
   data: T[];
   total: number;
   page: number;
   limit: number;
+  totalPages: number;
 }
 
 export type ProdutoVariacaoUpdateDTO = Partial<ProdutoVariacaoCreateDTO>;
@@ -26,7 +26,6 @@ export class VariacaoService {
     const variacaoRepository = AppDataSource.getRepository(Variacao);
     const produtoRepository = AppDataSource.getRepository(Produto);
 
-    // Busca o produto pela referência correta
     const produto = await produtoRepository.findOneBy({
       referencia: data.referenciaProduto,
     });
@@ -47,7 +46,6 @@ export class VariacaoService {
 
   async findById(id_variacao: string): Promise<Variacao> {
     const variacaoRepository = AppDataSource.getRepository(Variacao);
-    // Carrega a variação junto com o produto para futuras verificações de segurança
     const variacao = await variacaoRepository.findOne({
       where: { id_variacao },
       relations: { produto: true },
@@ -64,7 +62,7 @@ export class VariacaoService {
     data: ProdutoVariacaoUpdateDTO
   ): Promise<Variacao> {
     const variacaoRepository = AppDataSource.getRepository(Variacao);
-    const variacao = await this.findById(id_variacao); // Reutiliza o findById
+    const variacao = await this.findById(id_variacao);
 
     if (
       data.referenciaProduto &&
@@ -107,7 +105,7 @@ export class VariacaoService {
     });
   }
 
-  async findPaginated(
+  async findPaginatedByProduto(
     referenciaProduto: string,
     page: number = 1,
     limit: number = 15
@@ -119,9 +117,70 @@ export class VariacaoService {
       where: { produto: { referencia: referenciaProduto } },
       skip,
       take: limit,
-      order: { descricao: "ASC" },
+      order: { dataCriacao: "ASC" }, // ordem pela data de criação
     });
 
-    return { data: variacoes, total, page, limit };
+    const totalPages = Math.ceil(total / limit);
+    return { data: variacoes, total, page, limit, totalPages };
+  }
+
+  /**
+   * NOVO: Retorna todas as variações de uma loja de forma paginada.
+   */
+  async findPaginatedByLoja(
+    idLoja: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<PaginatedResult<Variacao>> {
+    const variacaoRepository = AppDataSource.getRepository(Variacao);
+    const skip = (page - 1) * limit;
+
+    const [variacoes, total] = await variacaoRepository.findAndCount({
+      where: { produto: { idLoja: idLoja } },
+      relations: ["produto"], // Inclui os dados do produto na resposta
+      skip,
+      take: limit,
+      order: { produto: { nome: "ASC" }, descricao: "ASC" },
+    });
+
+    const totalPages = Math.ceil(total / limit);
+    return { data: variacoes, total, page, limit, totalPages };
+  }
+
+  /**
+   * NOVO: Busca variações de uma loja por um termo, de forma paginada.
+   */
+  async searchByLoja(
+    idLoja: string,
+    term: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<PaginatedResult<Variacao>> {
+    const variacaoRepository = AppDataSource.getRepository(Variacao);
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = variacaoRepository.createQueryBuilder("variacao");
+
+    queryBuilder
+      .innerJoinAndSelect("variacao.produto", "produto")
+      .where("produto.idLoja = :idLoja", { idLoja })
+      .andWhere(
+        new Brackets((qb) => {
+          const searchTerm = `%${term}%`;
+          qb.where("variacao.descricao ILIKE :term", { term: searchTerm })
+            .orWhere("produto.nome ILIKE :term", { term: searchTerm })
+            .orWhere("produto.referencia ILIKE :term", { term: searchTerm });
+        })
+      );
+
+    const [variacoes, total] = await queryBuilder
+      .orderBy("produto.nome", "ASC")
+      .addOrderBy("variacao.descricao", "ASC")
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    const totalPages = Math.ceil(total / limit);
+    return { data: variacoes, total, page, limit, totalPages };
   }
 }

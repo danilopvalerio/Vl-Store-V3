@@ -4,6 +4,7 @@ import { Router } from "express";
 import lojaRoutes from "./loja.routes";
 import sessionRoutes from "./session.routes";
 import produtoRoutes from "./produto.routes";
+import funcionarioRoutes from "./funcionario.routes";
 import { variacaoRoutes, produtoVariacaoRouter } from "./variacao.routes";
 
 const routes = Router();
@@ -25,6 +26,7 @@ routes.use("/produtos", produtoRoutes);
 // Direciona qualquer requisição que comece com /variacoes para o arquivo variacao.routes.ts
 routes.use("/variacoes", variacaoRoutes);
 
+routes.use("/funcionarios", funcionarioRoutes);
 // Usa o roteador para as rotas aninhadas de variações de produtos
 // (ex: /produtos/:referencia/variacoes)
 routes.use(produtoVariacaoRouter);
