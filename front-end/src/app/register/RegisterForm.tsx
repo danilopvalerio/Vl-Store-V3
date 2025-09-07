@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
 import { IMaskInput } from "react-imask";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -15,7 +14,7 @@ import {
   faLock,
 } from "@fortawesome/free-solid-svg-icons";
 
-// Supondo que este é o caminho correto para seu arquivo de utilitários
+import api from "../../utils/api"; // Instância api configurada
 import {
   isValidEmail,
   isValidCpfCnpj,
@@ -43,9 +42,7 @@ export default function RegisterForm() {
     setError("");
     setSuccess(false);
 
-    // --- Bloco de Validação ---
-
-    // 1. Verifica se todos os campos estão preenchidos
+    // --- Validações ---
     if (
       !storeName ||
       !email ||
@@ -59,33 +56,27 @@ export default function RegisterForm() {
       return;
     }
 
-    // 2. Valida o formato do e-mail
     if (!isValidEmail(email)) {
       setError("Por favor, insira um e-mail válido.");
       return;
     }
 
-    // 3. Valida o CPF ou CNPJ
     if (!isValidCpfCnpj(cpfCnpj)) {
       setError("O CPF ou CNPJ inserido é inválido.");
       return;
     }
 
-    // 4. Verifica se as senhas coincidem
     if (password !== confirmPassword) {
       setError("As senhas não coincidem.");
       return;
     }
 
-    // 5. Valida a força da senha
     if (!isValidPassword(password)) {
       setError(
         "A senha deve ter no mínimo 8 caracteres, com uma letra maiúscula, uma minúscula, um número e um caractere especial (@$!%*?&)."
       );
       return;
     }
-
-    // --- Fim do Bloco de Validação ---
 
     const storeData = {
       nome: storeName,
@@ -98,29 +89,26 @@ export default function RegisterForm() {
 
     try {
       setLoading(true);
-      await axios.post("http://localhost:3000/api/lojas", storeData);
 
-      setSuccess(true);
-      setLoading(false);
+      const response = await api.post("/lojas", storeData);
 
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
-    } catch (error) {
-      setLoading(false);
-      if (axios.isAxiosError(error) && error.response) {
-        if (error.response.status === 409) {
-          setError("Erro:" + error.response);
-        } else {
-          setError(
-            `Erro no cadastro: ${
-              error.response.data.message || "Tente novamente."
-            }`
-          );
-        }
+      if (response.status === 201) {
+        setSuccess(true);
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
       } else {
-        setError("Erro de conexão. Verifique sua internet e tente novamente.");
+        setError(
+          response.data?.message || "Erro no cadastro. Tente novamente."
+        );
       }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Erro de conexão. Verifique sua internet e tente novamente."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -131,7 +119,7 @@ export default function RegisterForm() {
           <h4 className="m-3 royal-blue-text">Bem-vindo!</h4>
           <p className="w-75 royal-blue-text">
             Já possui conta?{" "}
-            <Link className=" royal-blue-text fst-italic" href="/login">
+            <Link className="royal-blue-text fst-italic" href="/login">
               Entrar
             </Link>
           </p>
@@ -148,7 +136,7 @@ export default function RegisterForm() {
           {error && <div className="alert alert-danger">{error}</div>}
 
           <form className="row p-4" onSubmit={handleRegister}>
-            {/* --- Campo Nome da Loja --- */}
+            {/* Nome da Loja */}
             <div className="col-12 mb-3">
               <label className="mb-1">Nome:</label>
               <div className="position-relative">
@@ -168,7 +156,7 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* --- Campo E-mail --- */}
+            {/* E-mail */}
             <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">E-mail:</label>
               <div className="position-relative">
@@ -178,7 +166,7 @@ export default function RegisterForm() {
                 />
                 <input
                   type="email"
-                  className="p-2 ps-5  w-100"
+                  className="p-2 ps-5 w-100"
                   placeholder="Digite o seu e-mail"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -188,7 +176,7 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* --- Campo CPF/CNPJ --- */}
+            {/* CPF/CNPJ */}
             <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">CPF ou CNPJ:</label>
               <div className="position-relative">
@@ -201,7 +189,7 @@ export default function RegisterForm() {
                     { mask: "000.000.000-00" },
                     { mask: "00.000.000/0000-00" },
                   ]}
-                  className="p-2 ps-5  w-100"
+                  className="p-2 ps-5 w-100"
                   placeholder="Digite o CPF ou CNPJ"
                   value={cpfCnpj}
                   onAccept={(value: string) => setCpfCnpj(value)}
@@ -211,7 +199,7 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* --- Campo Data de Nascimento --- */}
+            {/* Data de Nascimento */}
             <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">Data de Nascimento:</label>
               <div className="position-relative">
@@ -221,7 +209,7 @@ export default function RegisterForm() {
                 />
                 <IMaskInput
                   mask="00/00/0000"
-                  className="p-2 ps-5  w-100"
+                  className="p-2 ps-5 w-100"
                   placeholder="DD/MM/AAAA"
                   value={birthDate}
                   onAccept={(value: string) => setBirthDate(value)}
@@ -231,7 +219,7 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* --- Campo Telefone --- */}
+            {/* Telefone */}
             <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">Telefone:</label>
               <div className="position-relative">
@@ -241,7 +229,7 @@ export default function RegisterForm() {
                 />
                 <IMaskInput
                   mask="(00) 00000-0000"
-                  className="p-2 ps-5  w-100"
+                  className="p-2 ps-5 w-100"
                   placeholder="(99) 99999-9999"
                   value={telephone}
                   onAccept={(value: string) => setTelephone(value)}
@@ -251,7 +239,7 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* --- Campo Senha --- */}
+            {/* Senha */}
             <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">Senha:</label>
               <div className="position-relative">
@@ -261,7 +249,7 @@ export default function RegisterForm() {
                 />
                 <input
                   type="password"
-                  className="p-2 ps-5  w-100"
+                  className="p-2 ps-5 w-100"
                   placeholder="Digite sua senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -271,7 +259,7 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* --- Campo Confirmar Senha --- */}
+            {/* Confirmar Senha */}
             <div className="col-12 col-lg-6 mb-3">
               <label className="mb-1">Repita a Senha:</label>
               <div className="position-relative">
@@ -281,7 +269,7 @@ export default function RegisterForm() {
                 />
                 <input
                   type="password"
-                  className="p-2 ps-5  w-100"
+                  className="p-2 ps-5 w-100"
                   placeholder="Confirme sua senha"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -291,7 +279,7 @@ export default function RegisterForm() {
               </div>
             </div>
 
-            {/* --- Botão de Envio --- */}
+            {/* Botão de Envio */}
             <div className="col-12 mt-3">
               <button
                 type="submit"

@@ -15,8 +15,8 @@ import {
 
 export default function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("contato@sapatariaze.com");
-  const [password, setPassword] = useState("umaSenha@Forte123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);

@@ -28,6 +28,35 @@ export default class Caixa {
   horaFechamento!: string;
 
   @Column({
+    name: "valor_abertura",
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    nullable: false,
+    default: 0,
+  })
+  valorAbertura!: number;
+
+  @Column({
+    name: "valor_fechamento",
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
+  valorFechamento!: number | null;
+
+  @Column({
+    name: "saldo_atual",
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    nullable: false,
+    default: 0,
+  })
+  saldoAtual!: number;
+
+  @Column({
     name: "funcionario_responsavel",
     type: "varchar",
     length: 20,

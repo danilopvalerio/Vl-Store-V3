@@ -6,6 +6,9 @@ import sessionRoutes from "./session.routes";
 import produtoRoutes from "./produto.routes";
 import funcionarioRoutes from "./funcionario.routes";
 import { variacaoRoutes, produtoVariacaoRouter } from "./variacao.routes";
+import movimentacaoRoutes from "./movimentacao.routes";
+import caixaRoutes from "./caixa.routes";
+import vendaRoutes from "./venda.routes";
 
 const routes = Router();
 
@@ -27,6 +30,12 @@ routes.use("/produtos", produtoRoutes);
 routes.use("/variacoes", variacaoRoutes);
 
 routes.use("/funcionarios", funcionarioRoutes);
+
+routes.use("/caixas", caixaRoutes);
+
+routes.use("/vendas", vendaRoutes);
+
+routes.use("/movimentacoes", movimentacaoRoutes);
 // Usa o roteador para as rotas aninhadas de variações de produtos
 // (ex: /produtos/:referencia/variacoes)
 routes.use(produtoVariacaoRouter);

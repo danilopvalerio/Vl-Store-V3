@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { SessionController } from "../controllers/SessionController";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { ensureAdmin } from "../middlewares/ensureAdmin";
 
 // Instancia o controlador de sessão e o roteador
 const sessionRoutes = Router();
