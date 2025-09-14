@@ -1,4 +1,3 @@
-// products/ProductDetailModal.tsx
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import api from "../../utils/api";
@@ -52,6 +51,13 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       setDeletedVariationIds([]);
     }
   }, [product]);
+
+  // Atualiza originalVariations na primeira vez que currentVariations chega
+  useEffect(() => {
+    if (currentVariations.length > 0 && originalVariations.length === 0) {
+      setOriginalVariations(currentVariations.map((v) => ({ ...v })));
+    }
+  }, [currentVariations, originalVariations.length]);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!originalProduct || userRole === "employee") return false;
@@ -117,7 +123,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setSuccess("");
 
     try {
-      // Aqui usamos unknown em vez de any
       const apiPromises: Promise<unknown>[] = [];
 
       // Atualiza dados do produto
@@ -166,11 +171,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         apiPromises.push(api.delete(`/variacoes/${id}`))
       );
 
-      // Await all e tratamos o tipo de resultado se necessário
       const results = await Promise.all(apiPromises);
       results.forEach((res) => {
         if (res && typeof res === "object") {
-          // ex: safe access
           console.log("API response ok", res);
         }
       });
@@ -288,8 +291,6 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             userRole={userRole}
             currentVariations={currentVariations}
             setCurrentVariations={setCurrentVariations}
-            originalVariations={originalVariations}
-            setOriginalVariations={setOriginalVariations}
             deletedVariationIds={deletedVariationIds}
             setDeletedVariationIds={setDeletedVariationIds}
             variationErrors={variationErrors}

@@ -1,5 +1,6 @@
 // utils/auth.ts
 import api from "./api";
+import { AxiosError } from "axios";
 
 /**
  * Verifica se o usuário está logado.
@@ -9,8 +10,11 @@ export const isLoggedIn = async (): Promise<boolean> => {
   try {
     await api.get(`/sessions/profile`);
     return true;
-  } catch (error: any) {
-    if (error.response?.status === 401) {
+  } catch (error: unknown) {
+    // Tenta tratar como AxiosError
+    const axiosError = error as AxiosError;
+
+    if (axiosError.response?.status === 401) {
       try {
         const refreshResponse = await api.get(`/sessions/refresh`);
         const newAccessToken = refreshResponse.data.accessToken;
@@ -23,7 +27,7 @@ export const isLoggedIn = async (): Promise<boolean> => {
         return false;
       }
     } else {
-      console.error("Erro inesperado ao verificar login:", error);
+      console.error("Erro inesperado ao verificar login:", axiosError);
       return false;
     }
   }

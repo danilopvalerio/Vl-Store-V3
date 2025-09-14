@@ -1,5 +1,5 @@
 "use client";
-
+import { AxiosError } from "axios";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -102,9 +102,11 @@ export default function RegisterForm() {
           response.data?.message || "Erro no cadastro. Tente novamente."
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<{ message: string }>;
       setError(
-        err.response?.data?.message ||
+        axiosError.response?.data?.message ||
+          axiosError.message ||
           "Erro de conexão. Verifique sua internet e tente novamente."
       );
     } finally {

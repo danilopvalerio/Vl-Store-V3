@@ -1,7 +1,6 @@
-// products/ProductVariations.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -22,8 +21,6 @@ interface ProductVariationsProps {
   userRole: "admin" | "employee";
   currentVariations: Variation[];
   setCurrentVariations: React.Dispatch<React.SetStateAction<Variation[]>>;
-  originalVariations: Variation[];
-  setOriginalVariations: React.Dispatch<React.SetStateAction<Variation[]>>;
   deletedVariationIds: string[];
   setDeletedVariationIds: React.Dispatch<React.SetStateAction<string[]>>;
   variationErrors: string[];
@@ -35,8 +32,6 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
   userRole,
   currentVariations,
   setCurrentVariations,
-  originalVariations,
-  setOriginalVariations,
   deletedVariationIds,
   setDeletedVariationIds,
   variationErrors,
@@ -44,34 +39,44 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 }) => {
   const [isLoadingVariations, setIsLoadingVariations] = useState(true);
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
+  const limit = 5;
 
   useEffect(() => {
-    fetchVariations(page, limit);
-  }, [referenciaProduto, page, limit]);
+    fetchVariations(page);
+  }, [referenciaProduto, page]);
 
-  const fetchVariations = async (pageNum: number, limitNum: number) => {
-    if (!referenciaProduto) return;
-    setIsLoadingVariations(true);
-    try {
-      const response = await api.get(
-        `/produtos/${referenciaProduto}/variacoes/paginated`,
-        {
-          params: { page: pageNum, limit: limitNum },
-        }
-      );
-      const { data, totalPages: tp } = response.data;
-      setCurrentVariations(data || []);
-      setOriginalVariations(data || []);
-      setTotalPages(tp || 1);
-      setVariationErrors(new Array(data.length).fill(""));
-    } catch (err) {
-      console.error("Erro ao buscar variações:", err);
-    } finally {
-      setIsLoadingVariations(false);
-    }
-  };
+  const fetchVariations = useCallback(
+    async (pageNum: number) => {
+      if (!referenciaProduto) return;
+      setIsLoadingVariations(true);
+      try {
+        const response = await api.get(
+          `/produtos/${referenciaProduto}/variacoes/paginated`,
+          { params: { page: pageNum, limit } }
+        );
+        const { data, totalPages: tp } = response.data;
+        setCurrentVariations(data || []);
+        setVariationErrors(new Array(data.length).fill(""));
+        setTotalPages(tp || 1);
+      } catch (err) {
+        console.error("Erro ao buscar variações:", err);
+      } finally {
+        setIsLoadingVariations(false);
+      }
+    },
+    [
+      referenciaProduto,
+      limit,
+      setCurrentVariations,
+      setVariationErrors,
+      setTotalPages,
+    ]
+  );
+
+  useEffect(() => {
+    fetchVariations(page);
+  }, [fetchVariations, page]);
 
   const handleVariationChange = (
     index: number,
@@ -182,6 +187,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
           ))
         )}
       </div>
+
       {userRole === "admin" && (
         <div className="w-100 d-flex justify-content-center mb-4 mt-4">
           <button

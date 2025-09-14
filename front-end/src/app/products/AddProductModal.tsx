@@ -1,6 +1,6 @@
 // products/AddProductModal.tsx
 "use client";
-
+import { AxiosError } from "axios";
 import { useState } from "react";
 import api from "../../utils/api"; // Make sure this path is correct
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -73,9 +73,9 @@ const AddProductModal: React.FC<AddProductProps> = ({
     setVariations(variations.filter((_, index) => index !== indexToRemove));
   };
 
-  const showMessage = (setter: Function, message: string) => {
-    setter(message);
-    setTimeout(() => setter(""), 4000);
+  const showMessage = (setter: (msg: string) => void, message: string) => {
+    setter(message); // mostra a mensagem
+    setTimeout(() => setter(""), 4000); // limpa depois de 4s
   };
 
   const handleSave = async () => {
@@ -109,12 +109,13 @@ const AddProductModal: React.FC<AddProductProps> = ({
       // ✨ Notifica o pai e fecha o componente/modal
       onSaveSuccess();
       setTimeout(onClose, 1200); // Dá tempo para o usuário ver a msg de sucesso
-    } catch (err: any) {
-      console.error("Erro ao salvar produto:", err);
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message?: string }>;
       const errorMessage =
-        err.response?.data?.message || "Ocorreu um erro ao salvar.";
+        axiosError.response?.data?.message || "Ocorreu um erro ao atualizar.";
       showMessage(setError, errorMessage);
-      setIsSubmitting(false); // Libera o botão em caso de erro
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
