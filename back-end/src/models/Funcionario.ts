@@ -1,4 +1,3 @@
-// src/models/Funcionario.ts
 import {
   Entity,
   PrimaryColumn,
@@ -19,19 +18,19 @@ export default class Funcionario {
   @PrimaryColumn({ type: "varchar", length: 20 })
   cpf!: string;
 
-  @Column({ type: "varchar", length: 255, nullable: false })
+  @Column({ type: "varchar", length: 255 })
   nome!: string;
 
   @Column({ type: "varchar", length: 100, nullable: true })
   cargo!: string;
 
-  @Column({ name: "data_nascimento", type: "date", nullable: false })
+  @Column({ name: "data_nascimento", type: "date" })
   dataNascimento!: Date;
 
   @Column({ type: "varchar", length: 20, nullable: true })
   telefone!: string;
 
-  @Column({ name: "id_loja", type: "uuid", nullable: false })
+  @Column({ name: "id_loja", type: "uuid" })
   idLoja!: string;
 
   @CreateDateColumn({ name: "data_criacao" })
@@ -40,23 +39,25 @@ export default class Funcionario {
   @UpdateDateColumn({ name: "ultima_atualizacao" })
   ultimaAtualizacao!: Date;
 
-  @Column({ type: "varchar", length: 255, nullable: false, unique: true })
+  @Column({ type: "varchar", length: 255, unique: true })
   email!: string;
 
-  @Column({ type: "varchar", length: 255, nullable: false, select: false }) // select: false para não vir por padrão
+  @Column({ type: "varchar", length: 255, select: false })
   senha!: string;
 
   // --- Relacionamentos ---
-  @ManyToOne(() => Loja, (loja) => loja.funcionarios, { onDelete: "CASCADE" })
+  @ManyToOne(() => Loja, (loja: Loja) => loja.funcionarios, {
+    onDelete: "CASCADE",
+  })
   @JoinColumn({ name: "id_loja" })
   loja!: Loja;
 
-  @OneToMany(() => Caixa, (caixa) => caixa.funcionarioResponsavel)
+  @OneToMany(() => Caixa, (caixa: Caixa) => caixa.funcionarioResponsavel)
   caixas!: Caixa[];
 
-  @OneToMany(() => Venda, (venda) => venda.funcionarioResponsavel)
+  @OneToMany(() => Venda, (venda: Venda) => venda.funcionarioResponsavel)
   vendas!: Venda[];
 
-  @OneToMany(() => LogSistema, (log) => log.funcionario)
+  @OneToMany(() => LogSistema, (log: LogSistema) => log.funcionario)
   logs!: LogSistema[];
 }

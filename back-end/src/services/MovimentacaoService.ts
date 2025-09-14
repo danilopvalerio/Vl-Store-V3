@@ -1,9 +1,10 @@
+// src/services/MovimentacaoService.ts
 import { AppDataSource } from "../database/data-source";
 import Movimentacao from "../models/Movimentacao";
 import Caixa from "../models/Caixa";
 import { VendaService } from "./VendaService";
 import { PaginatedResult } from "./ProdutoService";
-import { Brackets } from "typeorm";
+import { Brackets, SelectQueryBuilder, WhereExpressionBuilder } from "typeorm"; // WhereExpressionBuilder adicionado
 
 export interface MovimentacaoCreateDTO {
   descricao: string;
@@ -65,7 +66,9 @@ export class MovimentacaoService {
     limit: number
   ): Promise<PaginatedResult<Movimentacao>> {
     const skip = (page - 1) * limit;
-    const qb = AppDataSource.getRepository(Movimentacao)
+    const qb: SelectQueryBuilder<Movimentacao> = AppDataSource.getRepository(
+      Movimentacao
+    )
       .createQueryBuilder("movimentacao")
       .where(
         filter.idCaixa
@@ -76,7 +79,8 @@ export class MovimentacaoService {
 
     if (term) {
       qb.andWhere(
-        new Brackets((subQb) => {
+        new Brackets((subQb: WhereExpressionBuilder) => {
+          // TIPO CORRIGIDO
           subQb
             .where("movimentacao.descricao ILIKE :term", { term: `%${term}%` })
             .orWhere("movimentacao.tipo ILIKE :term", { term: `%${term}%` });
@@ -102,13 +106,10 @@ export class MovimentacaoService {
       );
     }
 
-    // REGRA DE NEGÓCIO: Se a movimentação está atrelada a uma venda, cancele a venda em vez de deletar a movimentação.
     if (movimentacao.idVenda) {
-      // Nota: A lógica do prompt era deletar a venda. Cancelar é uma prática muito melhor.
       const vendaService = new VendaService();
       await vendaService.cancel(movimentacao.idVenda, idLoja);
     } else {
-      // Se for uma movimentação avulsa (sangria, suprimento, despesa), pode ser removida.
       await repo.remove(movimentacao);
     }
   }

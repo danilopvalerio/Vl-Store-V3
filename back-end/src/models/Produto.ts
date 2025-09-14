@@ -5,8 +5,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  JoinColumn,
   OneToMany,
+  JoinColumn,
 } from "typeorm";
 import Loja from "./Loja";
 import ProdutoVariacao from "./ProdutoVariacao";
@@ -16,10 +16,10 @@ export default class Produto {
   @PrimaryColumn({ type: "varchar", length: 100 })
   referencia!: string;
 
-  @Column({ type: "varchar", length: 255, nullable: false })
+  @Column({ type: "varchar", length: 255 })
   nome!: string;
 
-  @Column({ type: "varchar", length: 100, nullable: false })
+  @Column({ type: "varchar", length: 100 })
   categoria!: string;
 
   @Column({ type: "varchar", length: 100, nullable: true })
@@ -28,7 +28,7 @@ export default class Produto {
   @Column({ type: "varchar", length: 50, nullable: true })
   genero!: string;
 
-  @Column({ name: "id_loja", type: "uuid", nullable: false })
+  @Column({ name: "id_loja", type: "uuid" })
   idLoja!: string;
 
   @CreateDateColumn({ name: "data_criacao" })
@@ -38,10 +38,13 @@ export default class Produto {
   ultimaAtualizacao!: Date;
 
   // --- Relacionamentos ---
-  @ManyToOne(() => Loja, (loja) => loja.produtos, { onDelete: "CASCADE" })
+  @ManyToOne(() => Loja, (loja: Loja) => loja.produtos, { onDelete: "CASCADE" })
   @JoinColumn({ name: "id_loja" })
   loja!: Loja;
 
-  @OneToMany(() => ProdutoVariacao, (variacao) => variacao.produto)
+  @OneToMany(
+    () => ProdutoVariacao,
+    (variacao: ProdutoVariacao) => variacao.produto
+  )
   variacoes!: ProdutoVariacao[];
 }

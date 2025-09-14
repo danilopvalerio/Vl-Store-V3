@@ -160,22 +160,20 @@ export class SessionService {
       throw new Error("Tipo de usuário inválido.");
     }
   }
-  /**
-   * Lógica de negócio para atualizar um token.
-   */
+
   async refresh(refreshToken: string) {
     const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
     const lojaRepository = AppDataSource.getRepository(Loja);
 
     const allTokens = await refreshTokenRepository.find();
     const foundToken = await Promise.any(
-      allTokens.map(async (token) => {
+      allTokens.map(async (token: RefreshToken) => {
+        // Tipagem correta
         const match = await bcrypt.compare(refreshToken, token.hashedToken);
         return match && !token.revokedAt ? token : Promise.reject();
       })
     ).catch(() => null);
 
-    // Verifica se o token foi encontrado e se não expirou.
     if (!foundToken) {
       throw new Error("Refresh token inválido/expirado.");
     }
@@ -199,10 +197,6 @@ export class SessionService {
     return { accessToken };
   }
 
-  /**
-   * Lógica de negócio para fazer logout.
-   * AGORA REMOVE O REFRESH TOKEN DO BANCO DE DADOS.
-   */
   async logout(refreshToken: string) {
     if (!refreshToken) {
       return;
@@ -211,23 +205,20 @@ export class SessionService {
     const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
 
     try {
-      // Extrai o id_loja do payload do refresh token sem precisar validar assinatura
       const decoded = jwt.decode(refreshToken) as { id_loja: string } | null;
 
       if (!decoded?.id_loja) {
-        return; // Token inválido
+        return;
       }
 
-      // Busca todos os tokens dessa loja no banco
       const tokensDaLoja = await refreshTokenRepository.find({
         where: { id_loja: decoded.id_loja },
       });
 
-      // Compara com bcrypt e remove se encontrar
       for (const token of tokensDaLoja) {
         const match = await bcrypt.compare(refreshToken, token.hashedToken);
         if (match) {
-          await refreshTokenRepository.remove(token); // Invalida
+          await refreshTokenRepository.remove(token);
           break;
         }
       }
@@ -236,16 +227,12 @@ export class SessionService {
     }
   }
 
-  /**
-   * Lógica de negócio para buscar o perfil do usuário (loja ou funcionário).
-   */
   async getProfile(
     userId: string,
     role: "admin" | "employee"
   ): Promise<LojaDTO | FuncionarioDTO> {
     if (role === "admin") {
       const lojaRepository = AppDataSource.getRepository(Loja);
-      // Para admin, o userId é o id_loja
       const loja = await lojaRepository.findOneBy({ id_loja: userId });
 
       if (!loja) {

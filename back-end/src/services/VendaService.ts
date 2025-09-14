@@ -1,24 +1,29 @@
+// src/services/VendaService.ts
 import { AppDataSource } from "../database/data-source";
-import { Brackets } from "typeorm";
+import {
+  Brackets,
+  EntityManager,
+  SelectQueryBuilder,
+  WhereExpressionBuilder,
+} from "typeorm";
 import Venda from "../models/Venda";
 import ItemVenda from "../models/ItemVenda";
 import Movimentacao from "../models/Movimentacao";
 import ProdutoVariacao from "../models/ProdutoVariacao";
 import Caixa from "../models/Caixa";
 import { PaginatedResult } from "./ProdutoService";
-import Funcionario from "../models/Funcionario"; // <-- Importação necessária
+import Funcionario from "../models/Funcionario";
 
 interface ItemVendaDTO {
   idVariacao: string;
   quantidade: number;
 }
 
-// ATUALIZADO: A interface agora espera tanto 'idCaixa' quanto 'cpfFuncionarioResponsavel' vindos da requisição.
 export interface VendaCreateDTO {
   formaPagamento: "DINHEIRO" | "CARTAO_CREDITO" | "CARTAO_DEBITO" | "PIX";
   idCaixa: string;
   cpfFuncionarioResponsavel: string;
-  idLoja: string; // Será preenchido pelo controller a partir do token de autenticação
+  idLoja: string;
   desconto?: number;
   acrescimo?: number;
   itens: ItemVendaDTO[];
@@ -38,10 +43,7 @@ export class VendaService {
   }
 
   async create(data: VendaCreateDTO): Promise<Venda> {
-    return AppDataSource.transaction(async (tm) => {
-      // --- ETAPA 1: VALIDAÇÕES ---
-
-      // NOVO: Valida se o vendedor (funcionário) informado existe e pertence à loja correta.
+    return AppDataSource.transaction(async (tm: EntityManager) => {
       const funcionario = await tm.findOneBy(Funcionario, {
         cpf: data.cpfFuncionarioResponsavel,
         idLoja: data.idLoja,
@@ -50,7 +52,6 @@ export class VendaService {
         throw new Error("Vendedor não encontrado ou não pertence a esta loja.");
       }
 
-      // Valida se o caixa informado existe, pertence à loja e está aberto.
       const caixa = await tm.findOneBy(Caixa, {
         id_caixa: data.idCaixa,
         idLoja: data.idLoja,
@@ -62,8 +63,6 @@ export class VendaService {
         );
       }
 
-      // --- ETAPA 2: PROCESSAMENTO E CRIAÇÃO DOS REGISTROS ---
-
       let valorTotal = 0;
       for (const item of data.itens) {
         const variacao = await tm.findOneBy(ProdutoVariacao, {
@@ -71,6 +70,9 @@ export class VendaService {
         });
         if (!variacao)
           throw new Error(`Variação ID ${item.idVariacao} não encontrada.`);
+
+        variacao.quantidade = variacao.quantidade ?? 0;
+
         if (variacao.quantidade < item.quantidade)
           throw new Error(
             `Estoque insuficiente para a variação ID ${item.idVariacao}.`
@@ -164,7 +166,7 @@ export class VendaService {
     limit: number
   ): Promise<PaginatedResult<Venda>> {
     const skip = (page - 1) * limit;
-    const qb = AppDataSource.getRepository(Venda)
+    const qb: SelectQueryBuilder<Venda> = AppDataSource.getRepository(Venda)
       .createQueryBuilder("venda")
       .leftJoinAndSelect("venda.funcionarioResponsavel", "funcionario")
       .leftJoinAndSelect("venda.itens", "itemVenda")
@@ -177,7 +179,7 @@ export class VendaService {
 
     if (term) {
       qb.andWhere(
-        new Brackets((subQb) => {
+        new Brackets((subQb: WhereExpressionBuilder) => {
           subQb
             .where("produto.nome ILIKE :term", { term: `%${term}%` })
             .orWhere("produto.referencia ILIKE :term", { term: `%${term}%` })
@@ -197,55 +199,57 @@ export class VendaService {
   }
 
   async cancel(id_venda: string, idLoja: string): Promise<Venda> {
-    return AppDataSource.transaction(async (transactionalEntityManager) => {
-      const vendaRepository = transactionalEntityManager.getRepository(Venda);
+    return AppDataSource.transaction(
+      async (transactionalEntityManager: EntityManager) => {
+        const vendaRepository = transactionalEntityManager.getRepository(Venda);
 
-      const venda = await vendaRepository.findOne({
-        where: { id_venda, idLoja },
-        relations: ["itens", "itens.variacao", "caixa"],
-      });
+        const venda = await vendaRepository.findOne({
+          where: { id_venda, idLoja },
+          relations: ["itens", "itens.variacao", "caixa"],
+        });
 
-      if (!venda) {
-        throw new Error("Venda não encontrada ou não pertence à sua loja.");
-      }
-      if (venda.statusVenda === "CANCELADA") {
-        throw new Error("Esta venda já foi cancelada.");
-      }
+        if (!venda) {
+          throw new Error("Venda não encontrada ou não pertence à sua loja.");
+        }
+        if (venda.statusVenda === "CANCELADA") {
+          throw new Error("Esta venda já foi cancelada.");
+        }
 
-      if (venda.caixa && venda.caixa.status === "FECHADO") {
-        throw new Error(
-          "Não é possível cancelar uma venda de um caixa que já foi fechado."
-        );
-      }
-
-      for (const item of venda.itens) {
-        if (item.variacao && item.quantidade && item.quantidade > 0) {
-          const variacaoRepository =
-            transactionalEntityManager.getRepository(ProdutoVariacao);
-          await variacaoRepository.increment(
-            { id_variacao: item.variacao.id_variacao },
-            "quantidade",
-            item.quantidade
+        if (venda.caixa && venda.caixa.status === "FECHADO") {
+          throw new Error(
+            "Não é possível cancelar uma venda de um caixa que já foi fechado."
           );
         }
+
+        for (const item of venda.itens) {
+          if (item.variacao && item.quantidade && item.quantidade > 0) {
+            const variacaoRepository =
+              transactionalEntityManager.getRepository(ProdutoVariacao);
+            await variacaoRepository.increment(
+              { id_variacao: item.variacao.id_variacao },
+              "quantidade",
+              item.quantidade
+            );
+          }
+        }
+
+        const movimentacaoRepository =
+          transactionalEntityManager.getRepository(Movimentacao);
+        const movimentacao = await movimentacaoRepository.findOneBy({
+          idVenda: id_venda,
+        });
+
+        if (movimentacao) {
+          movimentacao.descricao = `[CANCELADA] ${movimentacao.descricao}`;
+          movimentacao.valor = 0;
+          await movimentacaoRepository.save(movimentacao);
+        }
+
+        venda.statusVenda = "CANCELADA";
+        await vendaRepository.save(venda);
+
+        return venda;
       }
-
-      const movimentacaoRepository =
-        transactionalEntityManager.getRepository(Movimentacao);
-      const movimentacao = await movimentacaoRepository.findOneBy({
-        idVenda: id_venda,
-      });
-
-      if (movimentacao) {
-        movimentacao.descricao = `[CANCELADA] ${movimentacao.descricao}`;
-        movimentacao.valor = 0;
-        await movimentacaoRepository.save(movimentacao);
-      }
-
-      venda.statusVenda = "CANCELADA";
-      await vendaRepository.save(venda);
-
-      return venda;
-    });
+    );
   }
 }

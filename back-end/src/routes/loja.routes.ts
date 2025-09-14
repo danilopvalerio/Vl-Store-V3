@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Request, Response } from "express";
 import { LojaController } from "../controllers/LojaController";
 import { authMiddleware } from "../middlewares/authMiddleware"; // <-- Importe o middleware
 
@@ -12,9 +13,13 @@ lojaRoutes.post("/", lojaController.create);
 lojaRoutes.get("/", lojaController.findAll);
 
 // Rota estática específica primeiro
-lojaRoutes.get("/perfil", authMiddleware, (request, response) => {
-  return response.json({ message: "Você está em uma rota protegida!" });
-});
+lojaRoutes.get(
+  "/perfil",
+  authMiddleware,
+  (request: Request, response: Response) => {
+    return response.json({ message: "Você está em uma rota protegida!" });
+  }
+);
 
 // Rota protegida. O middleware é executado ANTES do controller.
 // Se o token não for válido, o middleware barra a requisição.

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Request, Response } from "express";
 
 // Importa os roteadores específicos de cada funcionalidade
 import lojaRoutes from "./loja.routes";
@@ -13,7 +14,7 @@ import vendaRoutes from "./venda.routes";
 const routes = Router();
 
 // Rota de teste
-routes.get("/", (request, response) => {
+routes.get("/", (request: Request, response: Response) => {
   return response.json({ message: "API da VL-Store no ar!" });
 });
 

@@ -18,21 +18,20 @@ export default class Caixa {
   @PrimaryGeneratedColumn("uuid")
   id_caixa!: string;
 
-  @Column({ name: "data_abertura", type: "date", nullable: false })
+  @Column({ name: "data_abertura", type: "date" })
   dataAbertura!: Date;
 
-  @Column({ name: "hora_abertura", type: "time", nullable: false })
+  @Column({ name: "hora_abertura", type: "time" })
   horaAbertura!: string;
 
   @Column({ name: "hora_fechamento", type: "time", nullable: true })
-  horaFechamento!: string;
+  horaFechamento!: string | null;
 
   @Column({
     name: "valor_abertura",
     type: "decimal",
     precision: 10,
     scale: 2,
-    nullable: false,
     default: 0,
   })
   valorAbertura!: number;
@@ -51,7 +50,6 @@ export default class Caixa {
     type: "decimal",
     precision: 10,
     scale: 2,
-    nullable: false,
     default: 0,
   })
   saldoAtual!: number;
@@ -62,13 +60,13 @@ export default class Caixa {
     length: 20,
     nullable: true,
   })
-  cpfFuncionarioResponsavel!: string;
+  cpfFuncionarioResponsavel!: string | null;
 
-  @Column({ name: "id_loja", type: "uuid", nullable: false })
+  @Column({ name: "id_loja", type: "uuid" })
   idLoja!: string;
 
-  @Column({ type: "varchar", length: 50, nullable: false })
-  status!: string; // Ex: 'ABERTO', 'FECHADO'
+  @Column({ type: "varchar", length: 50 })
+  status!: string;
 
   @CreateDateColumn({ name: "data_criacao" })
   dataCriacao!: Date;
@@ -77,20 +75,24 @@ export default class Caixa {
   ultimaAtualizacao!: Date;
 
   // --- Relacionamentos ---
-  @ManyToOne(() => Funcionario, (funcionario) => funcionario.caixas, {
-    onDelete: "SET NULL",
-    nullable: true,
-  })
+  @ManyToOne(
+    () => Funcionario,
+    (funcionario: Funcionario) => funcionario.caixas,
+    { onDelete: "SET NULL", nullable: true }
+  )
   @JoinColumn({ name: "funcionario_responsavel", referencedColumnName: "cpf" })
-  funcionarioResponsavel!: Funcionario;
+  funcionarioResponsavel!: Funcionario | null;
 
-  @ManyToOne(() => Loja, (loja) => loja.caixas, { onDelete: "CASCADE" })
+  @ManyToOne(() => Loja, (loja: Loja) => loja.caixas, { onDelete: "CASCADE" })
   @JoinColumn({ name: "id_loja" })
   loja!: Loja;
 
-  @OneToMany(() => Venda, (venda) => venda.caixa)
+  @OneToMany(() => Venda, (venda: Venda) => venda.caixa)
   vendas!: Venda[];
 
-  @OneToMany(() => Movimentacao, (movimentacao) => movimentacao.caixa)
+  @OneToMany(
+    () => Movimentacao,
+    (movimentacao: Movimentacao) => movimentacao.caixa
+  )
   movimentacoes!: Movimentacao[];
 }

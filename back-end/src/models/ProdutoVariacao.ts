@@ -1,5 +1,3 @@
-// ProdutoVariacao.ts
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,8 +5,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  JoinColumn,
   OneToMany,
+  JoinColumn,
 } from "typeorm";
 import Produto from "./Produto";
 import ItemVenda from "./ItemVenda";
@@ -18,17 +16,17 @@ export default class ProdutoVariacao {
   @PrimaryGeneratedColumn("uuid")
   id_variacao!: string;
 
-  @Column({ name: "id_produto", type: "varchar", length: 100, nullable: false })
+  @Column({ name: "id_produto", type: "varchar", length: 100 })
   idProduto!: string;
 
   @Column({ name: "descricao_variacao", type: "text", nullable: true })
   descricao!: string;
 
   @Column({ name: "quant_variacao", type: "integer", nullable: true })
-  quantidade!: number;
+  quantidade!: number | null;
 
   @Column({ type: "decimal", precision: 10, scale: 2, nullable: true })
-  valor!: number;
+  valor!: number | null;
 
   @CreateDateColumn({ name: "data_criacao" })
   dataCriacao!: Date;
@@ -37,12 +35,12 @@ export default class ProdutoVariacao {
   ultimaAtualizacao!: Date;
 
   // --- Relacionamentos ---
-  @ManyToOne(() => Produto, (produto) => produto.variacoes, {
+  @ManyToOne(() => Produto, (produto: Produto) => produto.variacoes, {
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "id_produto", referencedColumnName: "referencia" })
   produto!: Produto;
 
-  @OneToMany(() => ItemVenda, (item) => item.variacao)
+  @OneToMany(() => ItemVenda, (item: ItemVenda) => item.variacao)
   itensVenda!: ItemVenda[];
 }

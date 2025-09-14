@@ -15,14 +15,14 @@ export default class ItemVenda {
   @PrimaryGeneratedColumn("uuid")
   id_item_venda!: string;
 
-  @Column({ name: "id_venda", type: "uuid", nullable: false })
+  @Column({ name: "id_venda", type: "uuid" })
   idVenda!: string;
 
-  @Column({ name: "id_variacao", type: "uuid", nullable: false })
+  @Column({ name: "id_variacao", type: "uuid" })
   idVariacao!: string;
 
   @Column({ name: "quantidade_item", type: "integer", nullable: true })
-  quantidade!: number;
+  quantidade!: number | null;
 
   @CreateDateColumn({ name: "data_criacao" })
   dataCriacao!: Date;
@@ -31,13 +31,17 @@ export default class ItemVenda {
   ultimaAtualizacao!: Date;
 
   // --- Relacionamentos ---
-  @ManyToOne(() => Venda, (venda) => venda.itens, { onDelete: "CASCADE" })
+  @ManyToOne(() => Venda, (venda: Venda) => venda.itens, {
+    onDelete: "CASCADE",
+  })
   @JoinColumn({ name: "id_venda" })
   venda!: Venda;
 
-  @ManyToOne(() => ProdutoVariacao, (variacao) => variacao.itensVenda, {
-    onDelete: "CASCADE",
-  })
+  @ManyToOne(
+    () => ProdutoVariacao,
+    (variacao: ProdutoVariacao) => variacao.itensVenda,
+    { onDelete: "CASCADE" }
+  )
   @JoinColumn({ name: "id_variacao" })
   variacao!: ProdutoVariacao;
 }

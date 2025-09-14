@@ -20,32 +20,33 @@ export default class LogSistema {
     length: 20,
     nullable: true,
   })
-  cpfFuncionario!: string;
+  cpfFuncionario!: string | null;
 
-  @Column({ name: "id_loja", type: "uuid", nullable: false })
+  @Column({ name: "id_loja", type: "uuid" })
   idLoja!: string;
 
   @Column({ name: "tipo_acao", type: "varchar", length: 50, nullable: true })
-  tipoAcao!: string; // EX: 'INSERCAO', 'REMOCAO', 'EDICAO'
+  tipoAcao!: string | null;
 
-  @Column({ type: "text", nullable: false })
+  @Column({ type: "text" })
   descricao!: string;
 
   @Column({ name: "origem_ip", type: "varchar", length: 45, nullable: true })
-  origemIp!: string;
+  origemIp!: string | null;
 
   @CreateDateColumn({ name: "data_acao" })
   dataAcao!: Date;
 
   // --- Relacionamentos ---
-  @ManyToOne(() => Funcionario, (funcionario) => funcionario.logs, {
-    onDelete: "SET NULL",
-    nullable: true,
-  })
+  @ManyToOne(
+    () => Funcionario,
+    (funcionario: Funcionario) => funcionario.logs,
+    { onDelete: "SET NULL", nullable: true }
+  )
   @JoinColumn({ name: "cpf_funcionario", referencedColumnName: "cpf" })
-  funcionario!: Funcionario;
+  funcionario!: Funcionario | null;
 
-  @ManyToOne(() => Loja, (loja) => loja.logs, { onDelete: "CASCADE" })
+  @ManyToOne(() => Loja, (loja: Loja) => loja.logs, { onDelete: "CASCADE" })
   @JoinColumn({ name: "id_loja" })
   loja!: Loja;
 }

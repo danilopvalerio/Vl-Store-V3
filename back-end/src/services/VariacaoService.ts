@@ -1,7 +1,8 @@
+// src/services/VariacaoService.ts
 import { AppDataSource } from "../database/data-source";
 import Variacao from "../models/ProdutoVariacao";
 import Produto from "../models/Produto";
-import { Brackets } from "typeorm";
+import { Brackets, SelectQueryBuilder, WhereExpressionBuilder } from "typeorm"; // WhereExpressionBuilder adicionado
 
 export interface ProdutoVariacaoCreateDTO {
   referenciaProduto: string;
@@ -10,7 +11,6 @@ export interface ProdutoVariacaoCreateDTO {
   valor: number;
 }
 
-// Interface atualizada para incluir totalPages
 export interface PaginatedResult<T> {
   data: T[];
   total: number;
@@ -117,16 +117,13 @@ export class VariacaoService {
       where: { produto: { referencia: referenciaProduto } },
       skip,
       take: limit,
-      order: { dataCriacao: "ASC" }, // ordem pela data de criação
+      order: { dataCriacao: "ASC" },
     });
 
     const totalPages = Math.ceil(total / limit);
     return { data: variacoes, total, page, limit, totalPages };
   }
 
-  /**
-   * NOVO: Retorna todas as variações de uma loja de forma paginada.
-   */
   async findPaginatedByLoja(
     idLoja: string,
     page: number = 1,
@@ -137,7 +134,7 @@ export class VariacaoService {
 
     const [variacoes, total] = await variacaoRepository.findAndCount({
       where: { produto: { idLoja: idLoja } },
-      relations: ["produto"], // Inclui os dados do produto na resposta
+      relations: ["produto"],
       skip,
       take: limit,
       order: { produto: { nome: "ASC" }, descricao: "ASC" },
@@ -147,9 +144,6 @@ export class VariacaoService {
     return { data: variacoes, total, page, limit, totalPages };
   }
 
-  /**
-   * NOVO: Busca variações de uma loja por um termo, de forma paginada.
-   */
   async searchByLoja(
     idLoja: string,
     term: string,
@@ -159,13 +153,15 @@ export class VariacaoService {
     const variacaoRepository = AppDataSource.getRepository(Variacao);
     const skip = (page - 1) * limit;
 
-    const queryBuilder = variacaoRepository.createQueryBuilder("variacao");
+    const queryBuilder: SelectQueryBuilder<Variacao> =
+      variacaoRepository.createQueryBuilder("variacao");
 
     queryBuilder
       .innerJoinAndSelect("variacao.produto", "produto")
       .where("produto.idLoja = :idLoja", { idLoja })
       .andWhere(
-        new Brackets((qb) => {
+        new Brackets((qb: WhereExpressionBuilder) => {
+          // TIPO CORRIGIDO
           const searchTerm = `%${term}%`;
           qb.where("variacao.descricao ILIKE :term", { term: searchTerm })
             .orWhere("produto.nome ILIKE :term", { term: searchTerm })

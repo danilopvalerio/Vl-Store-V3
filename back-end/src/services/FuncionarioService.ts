@@ -4,7 +4,7 @@ import Funcionario from "../models/Funcionario";
 import Loja from "../models/Loja";
 import * as bcrypt from "bcryptjs";
 import { ValidationUtils } from "./ValidationUtils";
-import { Brackets } from "typeorm";
+import { Brackets, SelectQueryBuilder, WhereExpressionBuilder } from "typeorm"; // WhereExpressionBuilder adicionado
 
 export interface FuncionarioCreateDTO {
   cpf: string;
@@ -160,11 +160,12 @@ export class FuncionarioService {
     const funcionarioRepository = AppDataSource.getRepository(Funcionario);
     const skip = (page - 1) * limit;
 
-    const queryBuilder =
+    const queryBuilder: SelectQueryBuilder<Funcionario> =
       funcionarioRepository.createQueryBuilder("funcionario");
 
     queryBuilder.where("funcionario.idLoja = :idLoja", { idLoja }).andWhere(
-      new Brackets((qb) => {
+      new Brackets((qb: WhereExpressionBuilder) => {
+        // TIPO CORRIGIDO
         const searchTerm = `%${term}%`;
         qb.where("funcionario.nome ILIKE :term", { term: searchTerm })
           .orWhere("funcionario.cpf ILIKE :term", { term: searchTerm })

@@ -1,5 +1,11 @@
+// src/services/CaixaService.ts
 import { AppDataSource } from "../database/data-source";
-import { Brackets } from "typeorm";
+import {
+  Brackets,
+  EntityManager,
+  SelectQueryBuilder,
+  WhereExpressionBuilder,
+} from "typeorm"; // WhereExpressionBuilder adicionado
 import Caixa from "../models/Caixa";
 import Movimentacao from "../models/Movimentacao";
 import Funcionario from "../models/Funcionario";
@@ -29,46 +35,48 @@ export class CaixaService {
       throw new Error("Funcionário responsável não encontrado.");
     }
 
-    return AppDataSource.transaction(async (transactionalEntityManager) => {
-      const caixaRepository = transactionalEntityManager.getRepository(Caixa);
+    return AppDataSource.transaction(
+      async (transactionalEntityManager: EntityManager) => {
+        const caixaRepository = transactionalEntityManager.getRepository(Caixa);
 
-      // Garantir que funcionário não tem caixa aberto
-      const hasOpenCaixa = await caixaRepository.findOneBy({
-        cpfFuncionarioResponsavel: data.cpfFuncionarioResponsavel,
-        status: "ABERTO",
-      });
-      if (hasOpenCaixa) {
-        throw new Error(
-          "Este funcionário já possui um caixa aberto. É preciso fechá-lo antes de abrir um novo."
-        );
+        // Garantir que funcionário não tem caixa aberto
+        const hasOpenCaixa = await caixaRepository.findOneBy({
+          cpfFuncionarioResponsavel: data.cpfFuncionarioResponsavel,
+          status: "ABERTO",
+        });
+        if (hasOpenCaixa) {
+          throw new Error(
+            "Este funcionário já possui um caixa aberto. É preciso fechá-lo antes de abrir um novo."
+          );
+        }
+
+        const novoCaixa = caixaRepository.create({
+          dataAbertura: new Date(),
+          horaAbertura: new Date().toTimeString().split(" ")[0],
+          status: "ABERTO",
+          idLoja: data.idLoja,
+          cpfFuncionarioResponsavel: data.cpfFuncionarioResponsavel,
+          funcionarioResponsavel: funcionario,
+          valorAbertura: data.valorAbertura,
+          saldoAtual: data.valorAbertura,
+        });
+        await caixaRepository.save(novoCaixa);
+
+        // Movimentação inicial (suprimento)
+        const movimentacaoRepository =
+          transactionalEntityManager.getRepository(Movimentacao);
+        const movimentacaoInicial = movimentacaoRepository.create({
+          idCaixa: novoCaixa.id_caixa,
+          idLoja: data.idLoja,
+          tipo: "SUPRIMENTO",
+          descricao: "Valor inicial de abertura (fundo de troco)",
+          valor: data.valorAbertura,
+        });
+        await movimentacaoRepository.save(movimentacaoInicial);
+
+        return novoCaixa;
       }
-
-      const novoCaixa = caixaRepository.create({
-        dataAbertura: new Date(),
-        horaAbertura: new Date().toTimeString().split(" ")[0],
-        status: "ABERTO",
-        idLoja: data.idLoja,
-        cpfFuncionarioResponsavel: data.cpfFuncionarioResponsavel,
-        funcionarioResponsavel: funcionario,
-        valorAbertura: data.valorAbertura,
-        saldoAtual: data.valorAbertura,
-      });
-      await caixaRepository.save(novoCaixa);
-
-      // Movimentação inicial (suprimento)
-      const movimentacaoRepository =
-        transactionalEntityManager.getRepository(Movimentacao);
-      const movimentacaoInicial = movimentacaoRepository.create({
-        idCaixa: novoCaixa.id_caixa,
-        idLoja: data.idLoja,
-        tipo: "SUPRIMENTO",
-        descricao: "Valor inicial de abertura (fundo de troco)",
-        valor: data.valorAbertura,
-      });
-      await movimentacaoRepository.save(movimentacaoInicial);
-
-      return novoCaixa;
-    });
+    );
   }
 
   /**
@@ -96,7 +104,7 @@ export class CaixaService {
       vendasPix: 0,
     };
 
-    caixa.movimentacoes.forEach((mov) => {
+    caixa.movimentacoes.forEach((mov: Movimentacao) => {
       const valor = Number(mov.valor);
       switch (mov.tipo) {
         case "SUPRIMENTO":
@@ -232,14 +240,15 @@ export class CaixaService {
   ): Promise<PaginatedResult<Caixa>> {
     const caixaRepository = AppDataSource.getRepository(Caixa);
     const skip = (page - 1) * limit;
-    const queryBuilder = caixaRepository
+    const queryBuilder: SelectQueryBuilder<Caixa> = caixaRepository
       .createQueryBuilder("caixa")
       .leftJoinAndSelect("caixa.funcionarioResponsavel", "funcionario")
       .where("caixa.idLoja = :idLoja", { idLoja });
 
     if (term) {
       queryBuilder.andWhere(
-        new Brackets((qb) => {
+        new Brackets((qb: WhereExpressionBuilder) => {
+          // TIPO CORRIGIDO
           qb.where("caixa.status ILIKE :term", { term: `%${term}%` })
             .orWhere("funcionario.nome ILIKE :term", { term: `%${term}%` })
             .orWhere("funcionario.cpf ILIKE :term", { term: `%${term}%` })

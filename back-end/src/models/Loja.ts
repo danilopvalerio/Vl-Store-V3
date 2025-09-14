@@ -6,12 +6,12 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import Funcionario from "./Funcionario"; // Supondo que você criará Funcionario.ts
-import Produto from "./Produto"; // Supondo que você criará Produto.ts
-import Caixa from "./Caixa"; // Supondo que você criará Caixa.ts
-import Venda from "./Venda"; // Supondo que você criará Venda.ts
-import Movimentacao from "./Movimentacao"; // Supondo que você criará Movimentacao.ts
-import LogSistema from "./LogSistema"; // Supondo que você criará LogSistema.ts
+import Funcionario from "./Funcionario";
+import Produto from "./Produto";
+import Caixa from "./Caixa";
+import Venda from "./Venda";
+import Movimentacao from "./Movimentacao";
+import LogSistema from "./LogSistema";
 import RefreshToken from "./RefreshToken";
 
 @Entity("loja")
@@ -19,32 +19,27 @@ export default class Loja {
   @PrimaryGeneratedColumn("uuid")
   id_loja!: string;
 
-  @Column({ type: "varchar", length: 255, nullable: false })
+  @Column({ type: "varchar", length: 255 })
   nome!: string;
 
-  @Column({ type: "varchar", length: 255, nullable: false })
+  @Column({ type: "varchar", length: 255 })
   senha!: string;
 
-  @Column({ type: "varchar", length: 255, nullable: false, unique: true })
+  @Column({ type: "varchar", length: 255, unique: true })
   email!: string;
 
   @Column({
     name: "cpf_cnpj_proprietario_loja",
     type: "varchar",
     length: 20,
-    nullable: false,
     unique: true,
   })
   cpfCnpjProprietarioLoja!: string;
 
-  @Column({
-    name: "data_nasc_proprietario",
-    type: "date",
-    nullable: false,
-  })
+  @Column({ name: "data_nasc_proprietario", type: "date" })
   dataNascProprietario!: Date;
 
-  @Column({ type: "varchar", length: 20, nullable: false, unique: true })
+  @Column({ type: "varchar", length: 20, unique: true })
   telefone!: string;
 
   @CreateDateColumn({ name: "data_criacao" })
@@ -53,31 +48,28 @@ export default class Loja {
   @UpdateDateColumn({ name: "ultima_atualizacao" })
   ultimaAtualizacao!: Date;
 
-  // --- Relacionamentos (Opcional, mas recomendado) ---
-  // Uma loja pode ter vários funcionários.
-  @OneToMany(() => Funcionario, (funcionario) => funcionario.loja)
+  // --- Relacionamentos ---
+  @OneToMany(() => Funcionario, (funcionario: Funcionario) => funcionario.loja)
   funcionarios!: Funcionario[];
 
-  // Uma loja pode ter vários produtos.
-  @OneToMany(() => Produto, (produto) => produto.loja)
+  @OneToMany(() => Produto, (produto: Produto) => produto.loja)
   produtos!: Produto[];
 
-  // Uma loja pode ter vários registros de caixa.
-  @OneToMany(() => Caixa, (caixa) => caixa.loja)
+  @OneToMany(() => Caixa, (caixa: Caixa) => caixa.loja)
   caixas!: Caixa[];
 
-  // Uma loja pode ter várias vendas.
-  @OneToMany(() => Venda, (venda) => venda.loja)
+  @OneToMany(() => Venda, (venda: Venda) => venda.loja)
   vendas!: Venda[];
 
-  // Uma loja pode ter várias movimentações.
-  @OneToMany(() => Movimentacao, (movimentacao) => movimentacao.loja)
+  @OneToMany(
+    () => Movimentacao,
+    (movimentacao: Movimentacao) => movimentacao.loja
+  )
   movimentacoes!: Movimentacao[];
 
-  // Uma loja pode ter vários logs.
-  @OneToMany(() => LogSistema, (log) => log.loja)
+  @OneToMany(() => LogSistema, (log: LogSistema) => log.loja)
   logs!: LogSistema[];
 
-  @OneToMany(() => RefreshToken, (token) => token.loja)
+  @OneToMany(() => RefreshToken, (token: RefreshToken) => token.loja)
   refreshTokens!: RefreshToken[];
 }

@@ -3,7 +3,7 @@ import { AppDataSource } from "../database/data-source";
 import Loja from "../models/Loja";
 import * as bcrypt from "bcryptjs";
 import { Not } from "typeorm";
-import { ValidationUtils } from "./ValidationUtils"; // Importa a nova classe de validação
+import { ValidationUtils } from "./ValidationUtils";
 
 export interface LojaCreateDTO {
   nome: string;
@@ -63,7 +63,7 @@ export class LojaService {
     const lojas = await lojaRepository.find();
 
     // Mapeia o array para remover a senha de cada objeto
-    return lojas.map((loja) => {
+    return lojas.map((loja: Loja) => {
       const { senha, ...lojaSemSenha } = loja;
       return lojaSemSenha;
     });
