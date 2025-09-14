@@ -1,5 +1,6 @@
 // Nenhum "use client" aqui! Este agora é um Componente de Servidor.
 import LoginForm from "./LoginForm"; // Importamos o nosso novo componente interativo
+import Image from "next/image";
 
 export default function LoginPage() {
   // A única responsabilidade desta página é montar a estrutura.
@@ -8,12 +9,12 @@ export default function LoginPage() {
       <header className="w-100">
         <div className="header-panel">
           {/* MELHOR PRÁTICA: Envolva a imagem com um Link */}
-          <img
-            className="img logo"
-            // O caminho correto, absoluto a partir da pasta public
+          <Image
             src="/images/vl-store-logo.svg"
             alt="VL Store Logo"
-            style={{ cursor: "pointer" }}
+            width={45}
+            height={45}
+            priority
           />
         </div>
       </header>

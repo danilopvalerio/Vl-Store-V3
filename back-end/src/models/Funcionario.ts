@@ -1,3 +1,4 @@
+// src/models/Funcionario.ts
 import {
   Entity,
   PrimaryColumn,

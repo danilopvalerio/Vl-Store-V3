@@ -14,12 +14,10 @@ export default function RegisterPage() {
           <Link href="/initialPage">
             <Image
               src="/images/vl-store-logo.svg"
-              alt="Logo"
-              width={180}
-              height={40}
-              className="img logo"
-              style={{ cursor: "pointer" }}
-              priority // Adicionado para otimizar o carregamento da logo
+              alt="VL Store Logo"
+              width={45}
+              height={45}
+              priority
             />
           </Link>
         </div>

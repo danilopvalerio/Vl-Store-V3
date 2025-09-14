@@ -10,6 +10,7 @@ import { isLoggedIn } from "../../utils/auth";
 import EmployeeCard from "./EmployeeCard";
 import EmployeeDetailModal from "./EmployeeDetailModal";
 import AddEmployeeModal from "./AddEmployeeModal";
+import Image from "next/image";
 
 // --- Interfaces ---
 interface EmployeeSummary {
@@ -183,10 +184,12 @@ const EmployeePage = () => {
   return (
     <div className="d-flex justify-content-between align-items-center flex-column min-vh-100">
       <header className="w-100 header-panel">
-        <img
+        <Image
           src="/images/vl-store-logo.svg"
           alt="VL Store Logo"
-          className="img logo"
+          width={45}
+          height={45}
+          priority
         />
       </header>
 

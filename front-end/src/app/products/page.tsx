@@ -1,12 +1,11 @@
-// products/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
-import { isLoggedIn } from "../../utils/auth";
 import ProductCard from "./ProductCardComponent";
 import ProductDetailModal from "./ProductDetailModal";
 import AddProductModal from "./AddProductModal";
@@ -27,7 +26,7 @@ interface ProductVariation {
   valor: number;
 }
 interface LojaData {
-  id_loja: string;
+  idLoja: string;
   nome: string;
   email: string;
 }
@@ -40,11 +39,9 @@ const ProductPage = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [lojaData, setLojaData] = useState<LojaData | null>(null);
-  const [checkingLogin, setCheckingLogin] = useState(true);
   const [role, setRole] = useState<"admin" | "employee" | null>(null);
+  const [loja, setLoja] = useState<LojaData | null>(null);
 
   const router = useRouter();
 
@@ -60,7 +57,6 @@ const ProductPage = () => {
 
   // --- Navegação ---
   const pushBackToMenu = () => router.push("/menu");
-
   const handleOpenAddModal = () => setIsAddModalOpen(true);
   const handleCloseAddModal = () => setIsAddModalOpen(false);
 
@@ -74,7 +70,6 @@ const ProductPage = () => {
         )}&page=${page}&limit=${LIMIT}`
       );
       setProdutos(response.data.data);
-      setTotalItems(response.data.count);
       setTotalPages(response.data.totalPages);
       setCurrentPage(response.data.page);
     } catch (error) {
@@ -93,7 +88,6 @@ const ProductPage = () => {
       setProdutos(response.data.data);
       setCurrentPage(response.data.page);
       setTotalPages(response.data.totalPages);
-      setTotalItems(response.data.total);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
     } finally {
@@ -102,34 +96,29 @@ const ProductPage = () => {
   };
 
   useEffect(() => {
-    const verify = async () => {
-      const logged = await isLoggedIn();
-      if (!logged) {
-        router.push("/login");
-        return;
-      }
-
+    // Buscar perfil do usuário diretamente (sem isLoggedIn)
+    const fetchProfile = async () => {
       try {
         const response = await api.get(`/sessions/profile`);
         if (response.status === 200) {
-          if (response.data.loja) setLojaData(response.data.loja);
-          if (response.data.role) setRole(response.data.role);
+          setLoja(response.data);
+          setRole("admin"); // ou "employee" se quiser diferenciar
         }
       } catch (error) {
         console.error("Erro ao buscar perfil:", error);
-      } finally {
-        setCheckingLogin(false);
+        router.push("/login");
       }
     };
 
-    verify();
+    fetchProfile();
     fetchProducts(1);
-  }, []);
+  }, [router]);
 
   const handleClearSearch = () => {
     setSearchTerm("");
     fetchProducts(1);
   };
+
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       const nextPage = currentPage + 1;
@@ -138,6 +127,7 @@ const ProductPage = () => {
         : fetchProducts(nextPage);
     }
   };
+
   const handlePrevPage = () => {
     if (currentPage > 1) {
       const prevPage = currentPage - 1;
@@ -146,6 +136,7 @@ const ProductPage = () => {
         : fetchProducts(prevPage);
     }
   };
+
   const handleOpenModal = async (referencia: string) => {
     if (isModalOpening) return;
     setIsModalOpening(true);
@@ -167,45 +158,32 @@ const ProductPage = () => {
   };
 
   const handleProductUpdate = () => {
-    fetchProducts(1);
+    fetchProducts(currentPage);
     setIsModalOpen(false);
     setSelectedProduct(null);
     setIsAddModalOpen(false);
     if (searchTerm.trim() !== "") {
       handleSearch(currentPage);
-    } else {
-      fetchProducts(currentPage);
     }
   };
-
-  if (checkingLogin && loading) {
-    return (
-      <div className="d-flex vh-100 justify-content-center align-items-center">
-        <h5 className="mx-auto bg-light rounded-5 p-3 d-flex align-items-center">
-          <span className="spinner me-2"></span>
-          Um momento
-        </h5>
-      </div>
-    );
-  }
 
   return (
     <div className="d-flex justify-content-between align-items-center flex-column min-vh-100">
       <header className="w-100">
         <div className="header-panel">
-          <img
+          <Image
             src="/images/vl-store-logo.svg"
             alt="VL Store Logo"
-            className="img logo"
+            width={45}
+            height={45}
           />
         </div>
       </header>
 
-      {/* Conteúdo principal só se nenhum modal estiver aberto */}
       {!isModalOpen && !isAddModalOpen && (
         <div className="row w-75 dark-shadow overflow-hidden rounded-5 mt-4 mb-4">
           <header className="col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 terciary">
-            <h3 className="m-3">Produtos</h3>
+            <h3 className="m-3">Produtos {loja && `- ${loja.nome}`}</h3>
           </header>
 
           <div className="col-12 secondary p-4 d-flex flex-column align-items-center">
@@ -234,7 +212,6 @@ const ProductPage = () => {
                 Limpar
               </button>
 
-              {/* 🔒 Botão Adicionar só para admin */}
               {role === "admin" && (
                 <button
                   className="css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center"
@@ -317,7 +294,6 @@ const ProductPage = () => {
         />
       )}
 
-      {/* 🔒 Modal de adicionar só aparece para admin */}
       {isAddModalOpen && role === "admin" && (
         <AddProductModal
           onClose={handleCloseAddModal}

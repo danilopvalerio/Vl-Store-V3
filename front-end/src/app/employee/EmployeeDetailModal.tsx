@@ -1,7 +1,7 @@
 // app/employees/EmployeeDetailModal.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, SetStateAction, Dispatch } from "react";
 import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
@@ -51,7 +51,10 @@ const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
 
   const hasChanges = JSON.stringify(formData) !== JSON.stringify(originalData);
 
-  const showMessage = (setter: Function, message: string) => {
+  const showMessage = (
+    setter: Dispatch<SetStateAction<string>>,
+    message: string
+  ) => {
     setter(message);
     setTimeout(() => setter(""), 4000);
   };

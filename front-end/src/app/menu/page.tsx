@@ -11,6 +11,7 @@ import {
   faChartBar,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
+import Image from "next/image";
 import api from "../../utils/api";
 
 interface UserData {
@@ -82,10 +83,12 @@ const MenuPage: React.FC = () => {
     <div className="menu-container d-flex justify-content-between align-items-center flex-column min-vh-100">
       <header className="w-100">
         <div className="header-panel">
-          <img
+          <Image
             src="/images/vl-store-logo.svg"
             alt="VL Store Logo"
-            className="img logo"
+            width={45}
+            height={45}
+            priority
           />
         </div>
       </header>
