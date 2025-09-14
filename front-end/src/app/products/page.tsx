@@ -25,11 +25,6 @@ interface ProductVariation {
   quantidade: number;
   valor: number;
 }
-interface LojaData {
-  idLoja: string;
-  nome: string;
-  email: string;
-}
 interface ProductDetail extends ProductSummary {
   variacoes: ProductVariation[];
 }
@@ -41,7 +36,6 @@ const ProductPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [role, setRole] = useState<"admin" | "employee" | null>(null);
-  const [loja, setLoja] = useState<LojaData | null>(null);
 
   const router = useRouter();
 
@@ -101,7 +95,6 @@ const ProductPage = () => {
       try {
         const response = await api.get(`/sessions/profile`);
         if (response.status === 200) {
-          setLoja(response.data);
           setRole("admin"); // ou "employee" se quiser diferenciar
         }
       } catch (error) {
@@ -122,18 +115,22 @@ const ProductPage = () => {
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       const nextPage = currentPage + 1;
-      searchTerm.trim() !== ""
-        ? handleSearch(nextPage)
-        : fetchProducts(nextPage);
+      if (searchTerm.trim() !== "") {
+        handleSearch(nextPage);
+      } else {
+        fetchProducts(nextPage);
+      }
     }
   };
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
       const prevPage = currentPage - 1;
-      searchTerm.trim() !== ""
-        ? handleSearch(prevPage)
-        : fetchProducts(prevPage);
+      if (searchTerm.trim() !== "") {
+        handleSearch(prevPage);
+      } else {
+        fetchProducts(prevPage);
+      }
     }
   };
 
@@ -183,7 +180,7 @@ const ProductPage = () => {
       {!isModalOpen && !isAddModalOpen && (
         <div className="row w-75 dark-shadow overflow-hidden rounded-5 mt-4 mb-4">
           <header className="col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 terciary">
-            <h3 className="m-3">Produtos {loja && `- ${loja.nome}`}</h3>
+            <h3 className="m-3">Produtos</h3>
           </header>
 
           <div className="col-12 secondary p-4 d-flex flex-column align-items-center">

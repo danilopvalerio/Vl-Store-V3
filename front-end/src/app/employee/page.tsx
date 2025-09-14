@@ -33,7 +33,6 @@ const EmployeePage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [role, setRole] = useState<"admin" | "employee" | null>(null);
 
   const router = useRouter();
 
@@ -103,7 +102,6 @@ const EmployeePage = () => {
           router.push("/menu");
           return;
         }
-        setRole(response.data.role);
         // Fetch data only after confirming admin role
         await fetchEmployees(1);
       } catch (error) {
@@ -126,18 +124,22 @@ const EmployeePage = () => {
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       const nextPage = currentPage + 1;
-      searchTerm.trim() !== ""
-        ? handleSearch(nextPage)
-        : fetchEmployees(nextPage);
+      if (searchTerm.trim() !== "") {
+        handleSearch(nextPage);
+      } else {
+        fetchEmployees(nextPage);
+      }
     }
   };
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
       const prevPage = currentPage - 1;
-      searchTerm.trim() !== ""
-        ? handleSearch(prevPage)
-        : fetchEmployees(prevPage);
+      if (searchTerm.trim() !== "") {
+        handleSearch(prevPage);
+      } else {
+        fetchEmployees(prevPage);
+      }
     }
   };
 
@@ -165,9 +167,11 @@ const EmployeePage = () => {
     setIsDetailModalOpen(false);
     setSelectedEmployee(null);
     // Refetch current page to show changes
-    searchTerm.trim() !== ""
-      ? handleSearch(currentPage)
-      : fetchEmployees(currentPage);
+    if (searchTerm.trim() !== "") {
+      handleSearch(currentPage);
+    } else {
+      fetchEmployees(currentPage);
+    }
   };
 
   if (checkingAuth) {

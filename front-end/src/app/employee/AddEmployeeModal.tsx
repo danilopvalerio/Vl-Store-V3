@@ -1,6 +1,6 @@
 // app/employees/AddEmployeeModal.tsx
 "use client";
-
+import { AxiosError } from "axios";
 import { useState } from "react";
 import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -36,9 +36,9 @@ const AddEmployeeModal: React.FC<AddEmployeeProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const showMessage = (setter: Function, message: string) => {
-    setter(message);
-    setTimeout(() => setter(""), 4000);
+  const showMessage = (setter: (msg: string) => void, message: string) => {
+    setter(message); // mostra a mensagem
+    setTimeout(() => setter(""), 4000); // limpa depois de 4s
   };
 
   const handleSave = async () => {
@@ -55,6 +55,7 @@ const AddEmployeeModal: React.FC<AddEmployeeProps> = ({
       );
       return;
     }
+
     setIsSubmitting(true);
     setError("");
     setSuccess("");
@@ -64,9 +65,10 @@ const AddEmployeeModal: React.FC<AddEmployeeProps> = ({
       showMessage(setSuccess, "Funcionário cadastrado com sucesso!");
       onSaveSuccess();
       setTimeout(onClose, 1500);
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
       const errorMessage =
-        err.response?.data?.message || "Ocorreu um erro ao salvar.";
+        error.response?.data?.message || "Ocorreu um erro ao salvar.";
       showMessage(setError, errorMessage);
     } finally {
       setIsSubmitting(false);

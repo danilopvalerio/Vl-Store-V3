@@ -1,5 +1,5 @@
 "use client";
-
+import { AxiosError } from "axios";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -64,10 +64,10 @@ export default function LoginForm() {
       } else {
         setError(response.data.message || "Usuário ou senha incorretos.");
       }
-    } catch (err: any) {
-      // The interceptor will handle 401s, so we mostly catch other errors here
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<{ message: string }>;
       setError(
-        err.response?.data?.message ||
+        axiosErr?.response?.data?.message ||
           "Erro no login. Verifique suas credenciais."
       );
     } finally {

@@ -1,6 +1,5 @@
 // products/ProductDetailModal.tsx
 "use client";
-
 import { useState, useEffect, useMemo } from "react";
 import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -118,7 +117,8 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setSuccess("");
 
     try {
-      const apiPromises: Promise<any>[] = [];
+      // Aqui usamos unknown em vez de any
+      const apiPromises: Promise<unknown>[] = [];
 
       // Atualiza dados do produto
       if (JSON.stringify(productData) !== JSON.stringify(originalProduct)) {
@@ -166,7 +166,14 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         apiPromises.push(api.delete(`/variacoes/${id}`))
       );
 
-      await Promise.all(apiPromises);
+      // Await all e tratamos o tipo de resultado se necessário
+      const results = await Promise.all(apiPromises);
+      results.forEach((res) => {
+        if (res && typeof res === "object") {
+          // ex: safe access
+          console.log("API response ok", res);
+        }
+      });
 
       setSuccess("Alterações salvas com sucesso!");
       onProductUpdate();

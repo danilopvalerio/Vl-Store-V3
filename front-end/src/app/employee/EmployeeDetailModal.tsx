@@ -1,6 +1,6 @@
 // app/employees/EmployeeDetailModal.tsx
 "use client";
-
+import { AxiosError } from "axios";
 import { useState, useEffect, SetStateAction, Dispatch } from "react";
 import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -70,9 +70,10 @@ const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
       showMessage(setSuccess, "Dados atualizados com sucesso!");
       onUpdate();
       setTimeout(onClose, 1500);
-    } catch (err: any) {
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message?: string }>;
       const errorMessage =
-        err.response?.data?.message || "Ocorreu um erro ao atualizar.";
+        axiosError.response?.data?.message || "Ocorreu um erro ao atualizar.";
       showMessage(setError, errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -88,9 +89,10 @@ const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
       alert("Funcionário excluído com sucesso!");
       onUpdate();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message?: string }>;
       const errorMessage =
-        err.response?.data?.message ||
+        axiosError.response?.data?.message ||
         "Não foi possível excluir o funcionário.";
       showMessage(setError, errorMessage);
     } finally {
