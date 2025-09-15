@@ -11,15 +11,13 @@ export default function RegisterPage() {
       <header className="w-100">
         <div className="header-panel">
           {/* MELHOR PRÁTICA: Envolva a imagem com um Link para navegação */}
-          <Link href="/initialPage">
-            <Image
-              src="/images/vl-store-logo.svg"
-              alt="VL Store Logo"
-              width={45}
-              height={45}
-              priority
-            />
-          </Link>
+          <Image
+            src="/images/vl-store-logo.svg"
+            alt="VL Store Logo"
+            width={45}
+            height={45}
+            priority
+          />
         </div>
       </header>
 
