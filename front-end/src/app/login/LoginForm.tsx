@@ -1,6 +1,6 @@
 "use client";
 import { AxiosError } from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 // Import your configured api instance
@@ -22,6 +22,19 @@ export default function LoginForm() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   // CORREÇÃO: Definindo 'admin' como padrão e ajustando o tipo
   const [userType, setUserType] = useState<"admin" | "employee">("admin");
+
+  useEffect(() => {
+    const testApi = async () => {
+      try {
+        const response = await api.get("/"); // ou api.get("/") se quiser apenas testar o endpoint raiz
+        console.log("API está funcionando:" + String(response.data));
+      } catch (err) {
+        console.log("Erro ao acessar a API:" + String(err));
+      }
+    };
+
+    testApi();
+  }, []);
 
   const togglePasswordVisibility = () => {
     setPasswordVisible((prev) => !prev);
