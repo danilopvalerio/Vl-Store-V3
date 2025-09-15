@@ -10,6 +10,8 @@
 
 VL Store é um software de gestão comercial simplificado, projetado para oferecer a pequenos comércios uma solução eficiente para o gerenciamento de produtos, funcionários, vendas e caixa. Focado em usabilidade e escalabilidade, o sistema proporciona ao gestor controle total e visibilidade sobre as operações do seu negócio.
 
+Link de acesso: https://vl-store-v3.vercel.app/login
+
 ## Sobre o desenvolvimento do projeto
 
 A concepção deste projeto teve origem em uma ideia própria, idealizada e estruturada por mim, com o objetivo de propor um sistema que ne encaixasse no âmbito da disciplina de Programação Web, oferecida no curso de Bacharelado em Computação da Universidade Estadual da Paraíba (UEPB), sob a orientação do Prof. Allan Vilar de Carvalho, que posteriormente foi substituído pela Proff. Ana Isabella Muniz Leite. Desde o início, o projeto refletiu minha iniciativa e visão sobre como integrar conceitos teóricos adquiridos ao longo do curso em um sistema funcional e tecnicamente consistente.
