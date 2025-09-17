@@ -144,6 +144,7 @@ const MenuPage: React.FC = () => {
             <button
               className="css-button-fully-rounded--white w-100 ps-5 text-start"
               onClick={() => navigateTo("/salesPage")}
+              disabled
             >
               <FontAwesomeIcon
                 icon={faShoppingCart}
@@ -158,6 +159,7 @@ const MenuPage: React.FC = () => {
             <button
               className="css-button-fully-rounded--white w-100 ps-5 text-start"
               onClick={() => navigateTo("/cashierPage")}
+              disabled
             >
               <FontAwesomeIcon
                 icon={faCashRegister}
@@ -173,6 +175,7 @@ const MenuPage: React.FC = () => {
               <button
                 className="css-button-fully-rounded--white w-100 ps-5 text-start"
                 onClick={() => navigateTo("/reportsPage")}
+                disabled
               >
                 <FontAwesomeIcon
                   icon={faChartBar}
@@ -189,6 +192,7 @@ const MenuPage: React.FC = () => {
               <button
                 className="css-button-fully-rounded--white w-100 ps-5 text-start"
                 onClick={() => navigateTo("/accountPage")}
+                disabled
               >
                 <FontAwesomeIcon
                   icon={faUser}
