@@ -1,7 +1,6 @@
 // app/register/page.tsx
 // Nenhum "use client" aqui! Este agora é um Componente de Servidor.
 import RegisterForm from "./RegisterForm"; // Importamos o nosso novo componente interativo
-import Link from "next/link";
 import Image from "next/image";
 
 export default function RegisterPage() {
