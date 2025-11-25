@@ -1,3 +1,4 @@
+// src/server.ts
 import app from "./app";
 import { prisma } from "./database/prisma"; // Cliente Prisma
 

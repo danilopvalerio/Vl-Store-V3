@@ -1,3 +1,5 @@
+// src/app.ts
+
 import "dotenv/config"; // Carrega variáveis de ambiente
 import express from "express";
 import cookieParser from "cookie-parser";

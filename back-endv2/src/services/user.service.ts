@@ -1,79 +1,112 @@
-// src/services/user.service.ts
 import { UserRepository } from "../repositories/user.repository";
 import { hashPassword, comparePassword } from "../utils/hash";
 import { user as User } from "../generated/prisma/client";
+import { CreateUserDTO, UpdateUserDTO } from "../dtos/user.dto";
 
 export class UserService {
   private repo = new UserRepository();
 
-  // Register / create user
-  async createUser(email: string, senha: string, role = "USER"): Promise<User> {
-    const existing = await this.repo.findByEmail(email);
+  // --- CREATE ---
+  // Recebe o DTO (dados limpos do front) e retorna o Usuário criado
+  async createUser(data: CreateUserDTO): Promise<User> {
+    // 1. Regra de Negócio: Não pode ter dois e-mails iguais
+    const existing = await this.repo.findByEmail(data.email);
     if (existing) {
       throw new Error("Email already registered");
     }
 
-    const senha_hash = await hashPassword(senha);
-    return this.repo.create({ email, senha_hash, role });
+    // 2. Segurança: NUNCA salvar senha em texto puro. Criptografamos antes.
+    const senha_hash = await hashPassword(data.senha);
+
+    // 3. Define valor padrão se não vier nada
+    const role = data.role || "USER";
+
+    // 4. Chama o repo para salvar
+    return this.repo.create({
+      email: data.email,
+      senha_hash,
+      role,
+    });
   }
 
-  // Hard delete user
-  async deleteUser(user_id: string): Promise<User> {
+  // --- UPDATE ---
+  async updateUser(user_id: string, data: UpdateUserDTO): Promise<User> {
+    // 1. Verifica se o usuário existe antes de tentar atualizar
     const existing = await this.repo.findById(user_id);
     if (!existing) throw new Error("User not found");
+
+    // 2. Montamos um objeto só com o que veio para atualizar.
+    // 'Partial<User>' diz pro TypeScript: "Isso é um pedaço de um User"
+    const updateData: Partial<User> = {};
+
+    if (data.email) updateData.email = data.email;
+    if (data.role) updateData.role = data.role;
+
+    // ATENÇÃO: Booleanos precisam de cuidado.
+    // Se fizermos "if (data.ativo)", e vier 'false', ele não entra no if!
+    // Por isso checamos se é diferente de "undefined".
+    if (typeof data.ativo !== "undefined") {
+      updateData.ativo = data.ativo;
+    }
+
+    // Se o usuário mandou senha nova, a gente hasheia ela de novo.
+    if (data.senha) {
+      updateData.senha_hash = await hashPassword(data.senha);
+    }
+
+    // 3. Manda pro banco só os campos alterados
+    return this.repo.updateById(user_id, updateData);
+  }
+
+  // --- DELETE ---
+  async deleteUser(user_id: string): Promise<User> {
+    // Regra: Só deleta se existir.
+    const existing = await this.repo.findById(user_id);
+    if (!existing) throw new Error("User not found");
+
     return this.repo.deleteById(user_id);
   }
 
-  // Update partial (patch-like)
-  async updateUser(
-    user_id: string,
-    payload: Partial<{
-      email: string;
-      senha?: string;
-      ativo: boolean;
-      role: string;
-    }>
-  ): Promise<User> {
-    const existing = await this.repo.findById(user_id);
-    if (!existing) throw new Error("User not found");
+  // --- GETTERS & AUTH (Leituras) ---
 
-    const data: any = {};
-    if (payload.email) data.email = payload.email;
-    if (typeof payload.ativo !== "undefined") data.ativo = payload.ativo;
-    if (payload.role) data.role = payload.role;
-    if (payload.senha) {
-      data.senha_hash = await hashPassword(payload.senha);
-    }
-
-    return this.repo.updateById(user_id, data);
-  }
-
-  // Get by id
   async getUserById(user_id: string): Promise<User | null> {
     return this.repo.findById(user_id);
   }
 
-  // Get by email
   async getUserByEmail(email: string): Promise<User | null> {
     return this.repo.findByEmail(email);
   }
 
-  // Get all
   async getAllUsers(): Promise<User[]> {
     return this.repo.findAll();
   }
 
-  // Paginated
+  // Lógica de Login
+  async authenticate(email: string, senha: string): Promise<User> {
+    // 1. Acha o usuário pelo email
+    const user = await this.repo.findByEmail(email);
+    if (!user) throw new Error("Invalid credentials");
+
+    // 2. Compara a senha digitada com o hash do banco
+    const match = await comparePassword(senha, user.senha_hash);
+    if (!match) throw new Error("Invalid credentials");
+
+    return user;
+  }
+
+  // --- PAGINATION ---
+  // Apenas repassa para o repositório, mas poderíamos ter regras aqui
+  // (ex: limitar maximo de perPage a 100)
   async getUsersPaginated(page = 1, perPage = 10) {
     return this.repo.findPaginated(page, perPage);
   }
 
-  // Search paginated
   async searchUsers(term: string, page = 1, perPage = 10) {
+    // Limpeza básica: remove espaços em branco antes e depois
     const cleanedTerm = term?.trim() ?? "";
 
-    // Se o termo limpo estiver vazio → retorna vazio imediatamente
     if (cleanedTerm.length === 0) {
+      // Se o termo for vazio, retorna lista vazia para não pesar o banco
       return {
         data: [],
         total: 0,
@@ -82,20 +115,6 @@ export class UserService {
         totalPages: 0,
       };
     }
-
-    // CORREÇÃO PRINCIPAL: Passamos 'cleanedTerm' para garantir que espaços extras
-    // não quebrem a busca (ex: "example " virar "example")
     return this.repo.searchPaginated(cleanedTerm, page, perPage);
-  }
-
-  // Authenticate (login)
-  async authenticate(email: string, senha: string) {
-    const user = await this.repo.findByEmail(email);
-    if (!user) throw new Error("Invalid credentials");
-
-    const match = await comparePassword(senha, (user as any).senha_hash);
-    if (!match) throw new Error("Invalid credentials");
-
-    return user;
   }
 }

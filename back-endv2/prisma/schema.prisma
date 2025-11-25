@@ -193,7 +193,7 @@ model user {
   user_id            String          @id(map: "pk_user") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   email              String          @unique(map: "uk_user_email") @db.VarChar(255)
   senha_hash         String          @db.VarChar(255)
-  ativo              Boolean?        @default(true)
+  ativo              Boolean         @default(true)
   data_criacao       DateTime?       @default(now()) @db.Timestamp(6)
   ultima_atualizacao DateTime?       @default(now()) @db.Timestamp(6)
   role               String?         @default("USER") @db.VarChar(50)
@@ -212,7 +212,7 @@ model user_profile {
   user_id            String    @db.Uuid
   id_loja            String    @db.Uuid
   nome               String    @db.VarChar(255)
-  cpf                String?   @unique(map: "uk_profile_cpf") @db.VarChar(20)
+  cpf_cnpj           String?   @unique(map: "uk_profile_cpf_cnpj") @db.VarChar(20)
   cargo              String?   @db.VarChar(100)
   tipo_perfil        String?   @db.VarChar(50)
   ativo              Boolean?  @default(true)
