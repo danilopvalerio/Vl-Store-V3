@@ -1,3 +1,4 @@
+//src/controllers/user_profile.controller.ts
 import { Request, Response } from "express";
 import { UserProfileService } from "../services/user_profile.service";
 import {
@@ -99,17 +100,36 @@ export class UserProfileController {
     }
   }
 
-  // GET /profiles/paginated?page=1&perPage=10
+  private getLojaFilter(req: Request): string | undefined {
+    const user = req.user; // Injetado pelo authMiddleware
+    if (!user) return undefined; // Segurança
+
+    // Se for SUPER_ADMIN, retorna undefined (sem filtro, vê tudo)
+    if (user.role === "SUPER_ADMIN") {
+      return undefined;
+    }
+
+    // Se for ADMIN ou GERENTE, retorna o ID da loja dele
+    return user.lojaId;
+  }
+
+  // GET /profiles/paginated
   async getPaginated(req: Request, res: Response) {
     try {
-      // Converte query params (strings) para inteiros
       const page = toInt(req.query.page, 1);
       const perPage = toInt(req.query.perPage, 10);
+
+      // Obtém o ID da loja para filtrar (ou undefined se for Super Admin)
+      const filterLojaId = this.getLojaFilter(req);
 
       if (page <= 0 || perPage <= 0)
         return res.status(400).json({ error: "Invalid pagination parameters" });
 
-      const result = await profileService.getProfilesPaginated(page, perPage);
+      const result = await profileService.getProfilesPaginated(
+        page,
+        perPage,
+        filterLojaId
+      );
 
       res.json(result);
     } catch (err) {
@@ -118,19 +138,27 @@ export class UserProfileController {
     }
   }
 
-  // GET /profiles/search?term=gerente&page=1
+  // GET /profiles/search
   async searchPaginated(req: Request, res: Response) {
     try {
       const term = (req.query.term as string | undefined) ?? "";
       const page = toInt(req.query.page, 1);
       const perPage = toInt(req.query.perPage, 10);
 
+      // Obtém o ID da loja para filtrar
+      const filterLojaId = this.getLojaFilter(req);
+
       if (!isValidString(term))
         return res
           .status(400)
           .json({ error: "The 'term' parameter is required" });
 
-      const result = await profileService.searchProfiles(term, page, perPage);
+      const result = await profileService.searchProfiles(
+        term,
+        page,
+        perPage,
+        filterLojaId
+      );
 
       return res.json(result);
     } catch (err) {

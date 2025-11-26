@@ -1,3 +1,4 @@
+//src/controllers/loja.controller.ts
 import { Request, Response } from "express";
 import { LojaService } from "../services/loja.service";
 import {
