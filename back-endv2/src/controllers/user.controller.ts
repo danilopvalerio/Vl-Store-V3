@@ -18,18 +18,24 @@ export class UserController {
       const body = req.body as CreateUserDTO;
 
       if (!isValidEmail(body.email))
-        return res.status(400).json({ error: "Invalid e-mail" });
+        return res.status(400).json({ error: "E-mail inválido." });
 
       if (!isValidString(body.senha, 6, 255))
         return res
           .status(400)
-          .json({ error: "Invalid password (min 6 chars)" });
+          .json({ error: "Senha inválida (mínimo 6 caracteres)" });
 
-      // Validação de Telefones
-      if (!isValidPhoneArray(body.telefones)) {
-        return res
-          .status(400)
-          .json({ error: "Invalid phones (Max 2 strings)" });
+      // Validação de Telefones - podem ser opcionais
+      if (!body.telefones || body.telefones.length === 0) {
+        // Se não enviar ou enviar vazio, vira array vazio
+        body.telefones = [];
+      } else {
+        // Se enviou algo, deve ser válido
+        if (!isValidPhoneArray(body.telefones)) {
+          return res.status(400).json({
+            error: "Telefones inválidos (máximo 2 strings)",
+          });
+        }
       }
 
       const user = await userService.createUser(body);
@@ -37,7 +43,7 @@ export class UserController {
       // Retorna 201 Created (o objeto user já vem sem senha e com telefones)
       res.status(201).json(user);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
       res.status(400).json({ error: msg });
     }
   }
@@ -49,22 +55,23 @@ export class UserController {
       const body = req.body as UpdateUserDTO;
 
       if (!isValidUUID(id))
-        return res.status(400).json({ error: "Invalid ID" });
+        return res.status(400).json({ error: "ID inválido" });
       if (body.email && !isValidEmail(body.email))
-        return res.status(400).json({ error: "Invalid e-mail" });
+        return res.status(400).json({ error: "E-mail inválido." });
       if (body.senha && !isValidString(body.senha, 6))
-        return res.status(400).json({ error: "Invalid password" });
-
+        return res
+          .status(400)
+          .json({ error: "Senha inválida (mínimo 6 caracteres)" });
       if (!isValidPhoneArray(body.telefones)) {
         return res
           .status(400)
-          .json({ error: "Invalid phones (Max 2 strings)" });
+          .json({ error: "Telefones inválidos (máximo 2 strings)" });
       }
 
       const user = await userService.updateUser(id, body);
       res.json(user);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
       res.status(400).json({ error: msg });
     }
   }
@@ -74,12 +81,12 @@ export class UserController {
     try {
       const { id } = req.params;
       if (!isValidUUID(id))
-        return res.status(400).json({ error: "Invalid ID" });
+        return res.status(400).json({ error: "ID inválido" });
 
       await userService.deleteUser(id);
       res.status(204).send();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
       res.status(400).json({ error: msg });
     }
   }
@@ -89,14 +96,15 @@ export class UserController {
     try {
       const { id } = req.params;
       if (!isValidUUID(id))
-        return res.status(400).json({ error: "Invalid ID" });
+        return res.status(400).json({ error: "ID inválido" });
 
       const user = await userService.getUserById(id);
-      if (!user) return res.status(404).json({ error: "User not found" });
+      if (!user)
+        return res.status(404).json({ error: "Usuário não encontrado" });
 
       res.json(user);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
       res.status(400).json({ error: msg });
     }
   }
@@ -107,7 +115,7 @@ export class UserController {
       const users = await userService.getAllUsers();
       res.json(users);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Internal error";
+      const msg = err instanceof Error ? err.message : "Erro interno";
       res.status(500).json({ error: msg });
     }
   }
@@ -135,7 +143,9 @@ export class UserController {
       const filterLojaId = this.getLojaFilter(req);
 
       if (page <= 0 || perPage <= 0)
-        return res.status(400).json({ error: "Invalid pagination parameters" });
+        return res
+          .status(400)
+          .json({ error: "Parâmetros de paginação inválidos" });
 
       const result = await userService.getUsersPaginated(
         page,
@@ -144,7 +154,7 @@ export class UserController {
       );
       res.json(result);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Internal error";
+      const msg = err instanceof Error ? err.message : "Erro interno.";
       res.status(500).json({ error: msg });
     }
   }
@@ -162,7 +172,7 @@ export class UserController {
       if (!isValidString(term))
         return res
           .status(400)
-          .json({ error: "The 'term' parameter is required" });
+          .json({ error: "O parâmetro 'term' é obrigatório" });
 
       const result = await userService.searchUsers(
         term,
@@ -172,7 +182,7 @@ export class UserController {
       );
       return res.json(result);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Internal error";
+      const msg = err instanceof Error ? err.message : "Erro interno";
       return res.status(500).json({ error: msg });
     }
   }

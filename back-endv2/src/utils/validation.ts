@@ -33,3 +33,14 @@ export function isValidInt(value: any): boolean {
 export function toInt(value: any, fallback: number): number {
   return isValidInt(value) ? Number(value) : fallback;
 }
+
+export function isValidPhoneArray(phones?: string[]): boolean {
+  if (!phones) return true; // Se for undefined/null, passa (pois é opcional)
+  if (!Array.isArray(phones)) return false;
+
+  // Regra: Máximo 2 telefones
+  if (phones.length > 2) return false;
+
+  // Valida se cada item é uma string não vazia
+  return phones.every((p) => typeof p === "string" && p.trim().length > 0);
+}

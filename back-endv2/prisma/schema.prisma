@@ -196,7 +196,6 @@ model user {
   ativo              Boolean         @default(true)
   data_criacao       DateTime?       @default(now()) @db.Timestamp(6)
   ultima_atualizacao DateTime?       @default(now()) @db.Timestamp(6)
-  role               String?         @default("USER") @db.VarChar(50)
   caixa              caixa[]
   log_acesso         log_acesso[]
   log_sistema        log_sistema[]

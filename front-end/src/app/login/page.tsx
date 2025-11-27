@@ -1,31 +1,29 @@
 // Nenhum "use client" aqui! Este agora é um Componente de Servidor.
-import LoginForm from "./LoginForm"; // Importamos o nosso novo componente interativo
-import Image from "next/image";
+import LoginForm from "./LoginForm";
+import "../../styles/login.css";
 
 export default function LoginPage() {
-  // A única responsabilidade desta página é montar a estrutura.
   return (
-    <div className="d-flex justify-content-between flex-column min-vh-100">
-      <header className="w-100">
-        <div className="header-panel">
-          {/* MELHOR PRÁTICA: Envolva a imagem com um Link */}
-          <Image
-            src="/images/vl-store-logo.svg"
-            alt="VL Store Logo"
-            width={45}
-            height={45}
-            priority
-          />
+    <div className="d-flex flex-column min-vh-100">
+      <div className="row flex-fill m-0">
+        <div className="col-12 col-md-6 bg-gradient-vl d-flex flex-column justify-content-center align-items-center p-0 m-0 text-white">
+          <h1 className="mb-3 login-big-title">
+            Acesso <br />
+            ao VL Store.
+          </h1>
+          <p className="login-subtitle">
+            Acesse seu ambiente de administração e continue <br />
+            suas atividades.
+          </p>
         </div>
-      </header>
 
-      <main className="flex-grow-1 d-flex align-items-center">
-        {/* Aqui é onde o componente de cliente é renderizado */}
-        <LoginForm />
-      </main>
+        <div className="col-12 col-md-6 d-flex align-items-center justify-content-center bg-light">
+          <LoginForm />
+        </div>
+      </div>
 
-      <footer className="footer-panel w-100">
-        <p className="royal-blue-text m-0">
+      <footer>
+        <p className="m-0">
           © 2025 Danilo Valério. Todos os direitos reservados.
         </p>
       </footer>

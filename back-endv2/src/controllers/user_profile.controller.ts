@@ -29,7 +29,7 @@ export class UserProfileController {
       // 201 Created
       res.status(201).json(profile as UserProfileResponseDTO);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
       res.status(400).json({ error: msg });
     }
   }
@@ -41,16 +41,15 @@ export class UserProfileController {
       const body = req.body as UpdateUserProfileDTO;
 
       if (!isValidUUID(id))
-        return res.status(400).json({ error: "Invalid ID" });
+        return res.status(400).json({ error: "ID inválido" });
 
       // Se enviou nome, valida se não está vazio
       if (body.nome && !isValidString(body.nome))
-        return res.status(400).json({ error: "Invalid name" });
-
+        return res.status(400).json({ error: "Nome inválido" });
       const profile = await profileService.updateProfile(id, body);
       res.json(profile as UserProfileResponseDTO);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
       res.status(400).json({ error: msg });
     }
   }
@@ -60,14 +59,14 @@ export class UserProfileController {
     try {
       const { id } = req.params;
       if (!isValidUUID(id))
-        return res.status(400).json({ error: "Invalid ID" });
+        return res.status(400).json({ error: "ID inválido" });
 
       await profileService.deleteProfile(id);
 
       // 204 No Content
       res.status(204).send();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
       res.status(400).json({ error: msg });
     }
   }
@@ -77,14 +76,15 @@ export class UserProfileController {
     try {
       const { id } = req.params;
       if (!isValidUUID(id))
-        return res.status(400).json({ error: "Invalid ID" });
+        return res.status(400).json({ error: "ID inválido" });
 
       const profile = await profileService.getProfileById(id);
-      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      if (!profile)
+        return res.status(404).json({ error: "Perfil não encontrado" });
 
       res.json(profile as UserProfileResponseDTO);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
       res.status(400).json({ error: msg });
     }
   }
@@ -95,7 +95,7 @@ export class UserProfileController {
       const profiles = await profileService.getAllProfiles();
       res.json(profiles as UserProfileResponseDTO[]);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Internal error";
+      const msg = err instanceof Error ? err.message : "Erro interno";
       res.status(500).json({ error: msg });
     }
   }
@@ -123,7 +123,9 @@ export class UserProfileController {
       const filterLojaId = this.getLojaFilter(req);
 
       if (page <= 0 || perPage <= 0)
-        return res.status(400).json({ error: "Invalid pagination parameters" });
+        return res
+          .status(400)
+          .json({ error: "Parâmetros de paginação inválidos" });
 
       const result = await profileService.getProfilesPaginated(
         page,
@@ -133,7 +135,7 @@ export class UserProfileController {
 
       res.json(result);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Internal error";
+      const msg = err instanceof Error ? err.message : "Erro interno";
       res.status(500).json({ error: msg });
     }
   }
@@ -151,7 +153,7 @@ export class UserProfileController {
       if (!isValidString(term))
         return res
           .status(400)
-          .json({ error: "The 'term' parameter is required" });
+          .json({ error: "O parâmetro 'term' é obrigatório" });
 
       const result = await profileService.searchProfiles(
         term,
@@ -162,7 +164,7 @@ export class UserProfileController {
 
       return res.json(result);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Internal error";
+      const msg = err instanceof Error ? err.message : "Erro interno";
       return res.status(500).json({ error: msg });
     }
   }

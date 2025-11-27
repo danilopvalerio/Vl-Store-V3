@@ -1,105 +1,165 @@
 import { prisma } from "../database/prisma";
-import { user as User } from "../generated/prisma/client";
+import {
+  user as User,
+  telefone_user as TelefoneUser,
+  Prisma,
+} from "../generated/prisma/client";
+
+// Tipo auxiliar interno para quando o Prisma retorna User + Telefones
+type UserWithPhones = User & { telefone_user: TelefoneUser[] };
 
 export class UserRepository {
-  // Cria um usuário novo no banco
-  // SQL: INSERT INTO "user" (email, senha_hash, role) VALUES (...) RETURNING *;
-  async create(data: {
-    email: string;
-    senha_hash: string;
-    role?: string;
-  }): Promise<User> {
-    // O Prisma gera o ID (uuid) e pega a data atual automaticamente.
-    // O campo 'ativo' entra como 'true' (default do banco).
+  // Cria o usuário (Telefones são inseridos depois via Service ou Transaction externa)
+  async create(data: { email: string; senha_hash: string }): Promise<User> {
     return prisma.user.create({ data });
   }
 
-  // Deleta um usuário pelo ID
-  // SQL: DELETE FROM "user" WHERE user_id = '...' RETURNING *;
+  // --- GERENCIAMENTO DE TELEFONES ---
+  // Transaction: Apaga os antigos e insere os novos
+  async replacePhones(userId: string, phones: string[]): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      // 1. Remove todos os telefones desse usuário
+      await tx.telefone_user.deleteMany({ where: { id_user: userId } });
+
+      // 2. Insere os novos (se houver)
+      if (phones.length > 0) {
+        await tx.telefone_user.createMany({
+          data: phones.map((tel) => ({
+            id_user: userId,
+            telefone: tel,
+          })),
+        });
+      }
+    });
+  }
+
+  // --- LEITURAS ---
+
+  // Busca por ID (com telefones)
+  async findById(user_id: string): Promise<UserWithPhones | null> {
+    return prisma.user.findUnique({
+      where: { user_id },
+      include: { telefone_user: true },
+    });
+  }
+
+  async findPhoneInUse(
+    phones: string[],
+    excludeUserId?: string
+  ): Promise<string | null> {
+    // Busca o primeiro registro que bata com a lista de telefones
+    const found = await prisma.telefone_user.findFirst({
+      where: {
+        telefone: { in: phones }, // Verifica se está na lista
+        id_user: excludeUserId ? { not: excludeUserId } : undefined, // Ignora o próprio usuário (no caso de update)
+      },
+      select: { telefone: true }, // Só precisamos saber qual telefone deu conflito
+    });
+
+    return found ? found.telefone : null;
+  }
+
+  // Busca por Email (com telefones)
+  async findByEmail(email: string): Promise<UserWithPhones | null> {
+    return prisma.user.findUnique({
+      where: { email },
+      include: { telefone_user: true },
+    });
+  }
+
+  async findAll(): Promise<UserWithPhones[]> {
+    return prisma.user.findMany({
+      include: { telefone_user: true },
+    });
+  }
+
+  async findPaginated(page: number, perPage: number, lojaId?: string) {
+    const offset = (page - 1) * perPage;
+
+    // Filtro Base
+    const where: Prisma.userWhereInput = {};
+
+    // Se tiver lojaId, filtra usuários que tenham perfil nessa loja
+    if (lojaId) {
+      where.user_profile = {
+        some: {
+          id_loja: lojaId,
+        },
+      };
+    }
+
+    const total = await prisma.user.count({ where });
+
+    const data = await prisma.user.findMany({
+      where,
+      take: perPage,
+      skip: offset,
+      orderBy: { data_criacao: "desc" },
+      include: { telefone_user: true },
+    });
+
+    return {
+      data,
+      total,
+      page,
+      perPage,
+      totalPages: Math.ceil(total / perPage),
+    };
+  }
+
+  // --- BUSCA COM FILTRO DE LOJA ---
+  async searchPaginated(
+    term: string,
+    page: number,
+    perPage: number,
+    lojaId?: string
+  ) {
+    const offset = (page - 1) * perPage;
+
+    // Filtro de Texto (Email)
+    const textFilter: Prisma.userWhereInput = {
+      email: { contains: term, mode: "insensitive" },
+    };
+
+    // Filtro de Loja
+    const storeFilter: Prisma.userWhereInput = lojaId
+      ? {
+          user_profile: {
+            some: { id_loja: lojaId },
+          },
+        }
+      : {};
+
+    // Combina os dois (AND)
+    const where: Prisma.userWhereInput = {
+      AND: [textFilter, storeFilter],
+    };
+
+    const total = await prisma.user.count({ where });
+
+    const data = await prisma.user.findMany({
+      where,
+      take: perPage,
+      skip: offset,
+      orderBy: { email: "asc" },
+      include: { telefone_user: true },
+    });
+
+    return {
+      data,
+      total,
+      page,
+      perPage,
+      totalPages: Math.ceil(total / perPage),
+    };
+  }
+
   async deleteById(user_id: string): Promise<User> {
+    // O CASCADE do banco deleta os telefones automaticamente
     return prisma.user.delete({ where: { user_id } });
   }
 
-  // Atualiza dados. O segredo aqui é o 'Partial<User>'.
-  // Partial<User> significa: "Um objeto que pode ter ALGUNS campos de User, não precisa de todos".
-  // SQL: UPDATE "user" SET ... (só os campos que vieram) WHERE user_id = '...';
   async updateById(user_id: string, data: Partial<User>): Promise<User> {
     return prisma.user.update({ where: { user_id }, data });
-  }
-
-  // Busca um único usuário pelo ID (PK)
-  // SQL: SELECT * FROM "user" WHERE user_id = '...' LIMIT 1;
-  async findById(user_id: string): Promise<User | null> {
-    return prisma.user.findUnique({ where: { user_id } });
-  }
-
-  // Busca pelo Email (Unique Key)
-  // SQL: SELECT * FROM "user" WHERE email = '...' LIMIT 1;
-  async findByEmail(email: string): Promise<User | null> {
-    return prisma.user.findUnique({ where: { email } });
-  }
-
-  // Busca TODOS (cuidado, em tabelas grandes isso trava o banco)
-  // SQL: SELECT * FROM "user";
-  async findAll(): Promise<User[]> {
-    return prisma.user.findMany();
-  }
-
-  // Paginação "na unha" (Raw Query)
-  // Útil quando o Prisma padrão não resolve ou para performance extrema.
-  async findPaginated(page: number, perPage: number) {
-    // OFFSET é quantos registros pular. Ex: Pág 2 (10 itens) -> Pula os 10 primeiros.
-    const offset = (page - 1) * perPage;
-
-    // Passo 1: Contar o total para saber quantas páginas existem
-    // SQL: SELECT COUNT(1) AS count FROM "user";
-    const countResult: Array<{ count: bigint }> = await prisma.$queryRaw`
-      SELECT COUNT(1) AS count FROM "user"
-    `;
-    const total = Number(countResult[0]?.count ?? 0);
-
-    // Passo 2: Buscar os dados da página atual
-    // SQL: SELECT * FROM "user" ORDER BY data_criacao DESC LIMIT 10 OFFSET 10;
-    const data: User[] = await prisma.$queryRaw`
-      SELECT * FROM "user"
-      ORDER BY data_criacao DESC
-      LIMIT ${perPage} OFFSET ${offset}
-    `;
-
-    return {
-      data,
-      total,
-      page,
-      perPage,
-      totalPages: Math.ceil(total / perPage),
-    };
-  }
-
-  // Busca com filtro (LIKE)
-  async searchPaginated(term: string, page: number, perPage: number) {
-    const offset = (page - 1) * perPage;
-    const like = `%${term}%`; // Ex: '%danilo%' acha 'danilo', 'daniel', 'adanilo'
-
-    // SQL: SELECT COUNT(1) ... WHERE email ILIKE '%termo%'; (ILIKE ignora maiúscula/minúscula)
-    const countResult: Array<{ count: bigint }> = await prisma.$queryRaw`
-      SELECT COUNT(1) AS count FROM "user" WHERE email ILIKE ${like}
-    `;
-    const total = Number(countResult[0]?.count ?? 0);
-
-    // SQL: SELECT * ... WHERE email ILIKE '%termo%' ... LIMIT X OFFSET Y;
-    const data: User[] = await prisma.$queryRaw`
-      SELECT * FROM "user"
-      WHERE email ILIKE ${like}
-      ORDER BY email ASC
-      LIMIT ${perPage} OFFSET ${offset}
-    `;
-
-    return {
-      data,
-      total,
-      page,
-      perPage,
-      totalPages: Math.ceil(total / perPage),
-    };
   }
 }

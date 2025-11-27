@@ -1,0 +1,42 @@
+/* InfoCard.module.css */
+
+.card {
+  /* Fundo e Borda */
+  background-color: #ededed; /* Um cinza claro padrão, igual ao da foto */
+  border-top: 4px solid #f000ff; /* Cor magenta padrão (será sobrescrita pela prop) */
+  padding: 10px;
+  /* Aparência */
+  border-radius: 8px; /* Bordas levemente arredondadas */
+
+  /* Tamanho */
+  width: 300px; /* Um tamanho máximo razoável */
+  height: 150px; /* Uma altura mínima */
+
+  /* Fonte */
+  color: #333; /* Cor de fonte escura */
+  text-align: center;
+  margin: 0;
+  padding: 6px;
+}
+
+.iconWrapper {
+  color: #444;
+  font-size: 1rem;
+  margin: 0;
+  padding: 0;
+}
+
+.title {
+  font-size: 1rem; /* Tamanho do título (ex: "NOVAS VENDAS") */
+  font-weight: 600; /* Semi-bold */
+  color: #555;
+  text-transform: uppercase; /* Tudo em maiúsculo, igual à foto */
+  margin: 0;
+  padding: 0;
+}
+
+.value {
+  font-size: 3rem; /* Tamanho grande para o número */
+  font-weight: 700; /* Bold */
+  color: #111; /* Cor escura principal */
+}

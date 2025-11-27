@@ -1,120 +1,168 @@
 import { UserRepository } from "../repositories/user.repository";
 import { hashPassword, comparePassword } from "../utils/hash";
-import { user as User } from "../generated/prisma/client";
-import { CreateUserDTO, UpdateUserDTO } from "../dtos/user.dto";
+import {
+  CreateUserDTO,
+  UpdateUserDTO,
+  UserResponseDTO,
+} from "../dtos/user.dto";
+import {
+  user as User,
+  telefone_user as TelefoneUser,
+} from "../generated/prisma/client";
+
+function toDTO(
+  user: User & { telefone_user?: TelefoneUser[] }
+): UserResponseDTO {
+  const { senha_hash, ...rest } = user;
+  return {
+    ...rest,
+    telefones: user.telefone_user?.map((t) => t.telefone) || [],
+  };
+}
 
 export class UserService {
   private repo = new UserRepository();
 
   // --- CREATE ---
-  // Recebe o DTO (dados limpos do front) e retorna o Usuário criado
-  async createUser(data: CreateUserDTO): Promise<User> {
-    // 1. Regra de Negócio: Não pode ter dois e-mails iguais
+  async createUser(data: CreateUserDTO): Promise<UserResponseDTO> {
+    // 1. Regra: Email único
     const existing = await this.repo.findByEmail(data.email);
-    if (existing) {
-      throw new Error("Email already registered");
+    if (existing) throw new Error("O e-mail já está cadastrado");
+
+    // Normaliza telefones para array vazio caso undefined/null
+    const telefones = Array.isArray(data.telefones) ? data.telefones : [];
+
+    if (telefones.length > 0) {
+      // 2. Regra: Máximo 2 telefones
+      if (telefones.length > 2) {
+        throw new Error("Máximo 2 telefones permitidos");
+      }
+
+      // 3. Regra: Telefone único
+      const phoneInUse = await this.repo.findPhoneInUse(telefones);
+      if (phoneInUse) {
+        throw new Error(`O telefone '${phoneInUse}' já está em uso`);
+      }
     }
 
-    // 2. Segurança: NUNCA salvar senha em texto puro. Criptografamos antes.
     const senha_hash = await hashPassword(data.senha);
 
-    // 3. Define valor padrão se não vier nada
-    const role = data.role || "USER";
-
-    // 4. Chama o repo para salvar
-    return this.repo.create({
+    // 4. Cria o User
+    const user = await this.repo.create({
       email: data.email,
       senha_hash,
-      role,
     });
+
+    // 5. Se tiver telefones, salva eles
+    if (telefones.length > 0) {
+      await this.repo.replacePhones(user.user_id, telefones);
+    }
+
+    const fullUser = await this.repo.findById(user.user_id);
+    return toDTO(fullUser!);
   }
 
   // --- UPDATE ---
-  async updateUser(user_id: string, data: UpdateUserDTO): Promise<User> {
-    // 1. Verifica se o usuário existe antes de tentar atualizar
+  async updateUser(
+    user_id: string,
+    data: UpdateUserDTO
+  ): Promise<UserResponseDTO> {
     const existing = await this.repo.findById(user_id);
-    if (!existing) throw new Error("User not found");
+    if (!existing) throw new Error("Usuário não encontrado");
 
-    // 2. Montamos um objeto só com o que veio para atualizar.
-    // 'Partial<User>' diz pro TypeScript: "Isso é um pedaço de um User"
+    if (data.telefones) {
+      // Regra: Máximo 2 telefones
+      if (data.telefones.length > 2) {
+        throw new Error("Máximo 2 telefones permitidos");
+      }
+
+      // NOVA REGRA: Telefone único (com exceção para o próprio usuário)
+      // Passamos o user_id atual para ignorar os números que já pertencem a ele
+      const phoneInUse = await this.repo.findPhoneInUse(
+        data.telefones,
+        user_id
+      );
+      if (phoneInUse) {
+        throw new Error(
+          `O telefone '${phoneInUse}' já está em uso por outro usuário`
+        );
+      }
+    }
+
+    // Prepara dados do User
     const updateData: Partial<User> = {};
-
     if (data.email) updateData.email = data.email;
-    if (data.role) updateData.role = data.role;
+    if (typeof data.ativo !== "undefined") updateData.ativo = data.ativo;
+    if (data.senha) updateData.senha_hash = await hashPassword(data.senha);
 
-    // ATENÇÃO: Booleanos precisam de cuidado.
-    // Se fizermos "if (data.ativo)", e vier 'false', ele não entra no if!
-    // Por isso checamos se é diferente de "undefined".
-    if (typeof data.ativo !== "undefined") {
-      updateData.ativo = data.ativo;
+    // Atualiza tabela User
+    await this.repo.updateById(user_id, updateData);
+
+    // Atualiza tabela Telefones (se o campo foi enviado)
+    if (data.telefones) {
+      await this.repo.replacePhones(user_id, data.telefones);
     }
 
-    // Se o usuário mandou senha nova, a gente hasheia ela de novo.
-    if (data.senha) {
-      updateData.senha_hash = await hashPassword(data.senha);
-    }
-
-    // 3. Manda pro banco só os campos alterados
-    return this.repo.updateById(user_id, updateData);
+    const updated = await this.repo.findById(user_id);
+    return toDTO(updated!);
   }
 
-  // --- DELETE ---
-  async deleteUser(user_id: string): Promise<User> {
-    // Regra: Só deleta se existir.
+  // ... (Demais métodos delete, getters, etc continuam iguais)
+  async deleteUser(user_id: string): Promise<void> {
     const existing = await this.repo.findById(user_id);
-    if (!existing) throw new Error("User not found");
-
-    return this.repo.deleteById(user_id);
+    if (!existing) throw new Error("Usuário não encontrado");
+    await this.repo.deleteById(user_id);
   }
 
-  // --- GETTERS & AUTH (Leituras) ---
-
-  async getUserById(user_id: string): Promise<User | null> {
-    return this.repo.findById(user_id);
+  async getUserById(user_id: string): Promise<UserResponseDTO | null> {
+    const user = await this.repo.findById(user_id);
+    return user ? toDTO(user) : null;
   }
 
-  async getUserByEmail(email: string): Promise<User | null> {
-    return this.repo.findByEmail(email);
-  }
-
-  async getAllUsers(): Promise<User[]> {
-    return this.repo.findAll();
-  }
-
-  // Lógica de Login
-  async authenticate(email: string, senha: string): Promise<User> {
-    // 1. Acha o usuário pelo email
+  async getUserByEmail(email: string): Promise<UserResponseDTO | null> {
     const user = await this.repo.findByEmail(email);
-    if (!user) throw new Error("Invalid credentials");
+    return user ? toDTO(user) : null;
+  }
 
-    // 2. Compara a senha digitada com o hash do banco
+  async getAllUsers(): Promise<UserResponseDTO[]> {
+    const users = await this.repo.findAll();
+    return users.map(toDTO);
+  }
+
+  async authenticate(email: string, senha: string): Promise<UserResponseDTO> {
+    const user = await this.repo.findByEmail(email);
+    if (!user) throw new Error("Credenciais inválidas");
+
     const match = await comparePassword(senha, user.senha_hash);
-    if (!match) throw new Error("Invalid credentials");
+    if (!match) throw new Error("Credenciais inválidas");
 
-    return user;
+    return toDTO(user);
   }
 
-  // --- PAGINATION ---
-  // Apenas repassa para o repositório, mas poderíamos ter regras aqui
-  // (ex: limitar maximo de perPage a 100)
-  async getUsersPaginated(page = 1, perPage = 10) {
-    return this.repo.findPaginated(page, perPage);
+  async getUsersPaginated(page = 1, perPage = 10, lojaId?: string) {
+    const result = await this.repo.findPaginated(page, perPage, lojaId);
+    return {
+      ...result,
+      data: result.data.map(toDTO),
+    };
   }
 
-  async searchUsers(term: string, page = 1, perPage = 10) {
-    // Limpeza básica: remove espaços em branco antes e depois
+  // Adicionado parâmetro lojaId
+  async searchUsers(term: string, page = 1, perPage = 10, lojaId?: string) {
     const cleanedTerm = term?.trim() ?? "";
-
     if (cleanedTerm.length === 0) {
-      // Se o termo for vazio, retorna lista vazia para não pesar o banco
-      return {
-        data: [],
-        total: 0,
-        page,
-        perPage,
-        totalPages: 0,
-      };
+      return { data: [], total: 0, page, perPage, totalPages: 0 };
     }
-    return this.repo.searchPaginated(cleanedTerm, page, perPage);
+
+    const result = await this.repo.searchPaginated(
+      cleanedTerm,
+      page,
+      perPage,
+      lojaId
+    );
+    return {
+      ...result,
+      data: result.data.map(toDTO),
+    };
   }
 }

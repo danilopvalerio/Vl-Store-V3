@@ -1,3 +1,4 @@
+//src/repositories/loja.repository.ts
 import { prisma } from "../database/prisma";
 import { loja as Loja } from "../generated/prisma/client";
 

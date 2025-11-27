@@ -1,5 +1,9 @@
+//src/repositories/user_profile.repository.ts
 import { prisma } from "../database/prisma";
-import { user_profile as UserProfile } from "../generated/prisma/client";
+import {
+  Prisma,
+  user_profile as UserProfile,
+} from "../generated/prisma/client";
 
 export class UserProfileRepository {
   // Cria o perfil
@@ -54,25 +58,24 @@ export class UserProfileRepository {
     return prisma.user_profile.findMany();
   }
 
-  // Paginação via SQL Raw
-  async findPaginated(page: number, perPage: number) {
-    // Cálculo do OFFSET (pular registros anteriores)
+  async findPaginated(page: number, perPage: number, lojaId?: string) {
     const offset = (page - 1) * perPage;
 
-    // 1. Contar total de registros
-    // SQL: SELECT COUNT(1) AS count FROM "user_profile";
-    const countResult: Array<{ count: bigint }> = await prisma.$queryRaw`
-      SELECT COUNT(1) AS count FROM "user_profile"
-    `;
-    const total = Number(countResult[0]?.count ?? 0);
+    // Monta o filtro dinâmico
+    const where: Prisma.user_profileWhereInput = {};
+    if (lojaId) {
+      where.id_loja = lojaId;
+    }
 
-    // 2. Buscar os dados da página
-    // SQL: SELECT * FROM "user_profile" ORDER BY nome ASC LIMIT X OFFSET Y;
-    const data: UserProfile[] = await prisma.$queryRaw`
-      SELECT * FROM "user_profile"
-      ORDER BY nome ASC
-      LIMIT ${perPage} OFFSET ${offset}
-    `;
+    const total = await prisma.user_profile.count({ where });
+
+    const data = await prisma.user_profile.findMany({
+      where,
+      take: perPage,
+      skip: offset,
+      orderBy: { nome: "asc" },
+      // include: { user: true } // Opcional: se quiser trazer dados do login
+    });
 
     return {
       data,
@@ -83,33 +86,38 @@ export class UserProfileRepository {
     };
   }
 
-  // Busca textual em múltiplos campos (Nome OU cpf_cnpj OU Cargo...)
-  async searchPaginated(term: string, page: number, perPage: number) {
+  // --- BUSCA TEXTUAL COM FILTRO DE LOJA ---
+  async searchPaginated(
+    term: string,
+    page: number,
+    perPage: number,
+    lojaId?: string
+  ) {
     const offset = (page - 1) * perPage;
-    const like = `%${term}%`; // Prepara termo para ILIKE (ex: %maria%)
 
-    // 1. Conta quantos registros batem com o filtro
-    // SQL: SELECT COUNT(1) ... WHERE nome ILIKE '%term%' OR cpf_cnpj ILIKE ...
-    const countResult: Array<{ count: bigint }> = await prisma.$queryRaw`
-      SELECT COUNT(1) AS count FROM "user_profile"
-      WHERE nome ILIKE ${like}
-         OR cpf_cnpj ILIKE ${like}
-         OR cargo ILIKE ${like}
-         OR tipo_perfil ILIKE ${like}
-    `;
-    const total = Number(countResult[0]?.count ?? 0);
+    // Filtro base: Termo de busca
+    const searchCondition: Prisma.user_profileWhereInput = {
+      OR: [
+        { nome: { contains: term, mode: "insensitive" } },
+        { cpf_cnpj: { contains: term, mode: "insensitive" } },
+        { cargo: { contains: term, mode: "insensitive" } },
+        { tipo_perfil: { contains: term, mode: "insensitive" } },
+      ],
+    };
 
-    // 2. Busca os dados filtrados
-    // SQL: SELECT * ... WHERE (filtros OR) ORDER BY nome LIMIT X OFFSET Y;
-    const data: UserProfile[] = await prisma.$queryRaw`
-      SELECT * FROM "user_profile"
-      WHERE nome ILIKE ${like}
-         OR cpf_cnpj ILIKE ${like}
-         OR cargo ILIKE ${like}
-         OR tipo_perfil ILIKE ${like}
-      ORDER BY nome ASC
-      LIMIT ${perPage} OFFSET ${offset}
-    `;
+    // Combina com o filtro de loja (se existir)
+    const where: Prisma.user_profileWhereInput = lojaId
+      ? { AND: [{ id_loja: lojaId }, searchCondition] }
+      : searchCondition;
+
+    const total = await prisma.user_profile.count({ where });
+
+    const data = await prisma.user_profile.findMany({
+      where,
+      take: perPage,
+      skip: offset,
+      orderBy: { nome: "asc" },
+    });
 
     return {
       data,

@@ -1,10 +1,7 @@
+// src/controllers/session.controller.ts
 import { Request, Response } from "express";
 import { SessionService } from "../services/session.service";
-import {
-  LoginDTO,
-  RegisterStoreOwnerDTO,
-  RefreshTokenDTO,
-} from "../dtos/session.dto";
+import { LoginDTO, RegisterStoreOwnerDTO } from "../dtos/session.dto";
 import {
   isValidEmail,
   isValidString,
@@ -12,6 +9,16 @@ import {
 } from "../utils/validation";
 
 const sessionService = new SessionService();
+
+// Configuração dos Cookies
+// Em produção (HTTPS), secure deve ser true. Em localhost, false.
+const COOKIE_OPTIONS = {
+  httpOnly: true, // O JavaScript do navegador NÃO consegue ler
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const, // Proteção contra CSRF
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+  path: "/", // Disponível em todas as rotas
+};
 
 export class SessionController {
   // POST /auth/login
@@ -24,10 +31,17 @@ export class SessionController {
         return res.status(400).json({ error: "Senha requerida" });
 
       const result = await sessionService.authenticate(body);
-      res.json(result);
+
+      // 1. Envia o Refresh Token no Cookie (Invisível pro JS)
+      res.cookie("refreshToken", result.refreshToken, COOKIE_OPTIONS);
+
+      // 2. Retorna no JSON apenas o Access Token e User
+      res.json({
+        accessToken: result.accessToken,
+        user: result.user,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro na autenticação";
-      // Não dê muitos detalhes no 401 por segurança
       res.status(401).json({ error: msg });
     }
   }
@@ -35,14 +49,18 @@ export class SessionController {
   // POST /auth/refresh
   async refresh(req: Request, res: Response) {
     try {
-      const { refreshToken } = req.body as RefreshTokenDTO;
+      // Tenta pegar do Cookie (req.cookies vem do cookie-parser)
+      const refreshToken = req.cookies.refreshToken;
+
       if (!refreshToken)
-        return res.status(400).json({ error: "Token obrigatório" });
+        return res.status(401).json({ error: "Refresh token não encontrado" });
 
       const result = await sessionService.refreshToken(refreshToken);
-      res.json(result);
+
+      // Retorna o novo Access Token
+      res.json({ accessToken: result.accessToken });
     } catch (err) {
-      res.status(403).json({ error: "Token inválido" });
+      res.status(403).json({ error: "Token inválido ou expirado" });
     }
   }
 
@@ -51,6 +69,7 @@ export class SessionController {
     try {
       const body = req.body as RegisterStoreOwnerDTO;
 
+      // Validações...
       if (!isValidEmail(body.email))
         return res.status(400).json({ error: "Email inválido" });
       if (!isValidString(body.senha, 6))
@@ -59,13 +78,18 @@ export class SessionController {
         return res.status(400).json({ error: "Nome da loja requerido" });
       if (!isValidString(body.nome_usuario))
         return res.status(400).json({ error: "Nome do usuário requerido" });
-
-      if (!isValidPhoneArray(body.telefones)) {
+      if (!isValidPhoneArray(body.telefones))
         return res.status(400).json({ error: "Telefones inválidos" });
-      }
 
       const result = await sessionService.registerStoreOwner(body);
-      res.status(201).json(result);
+
+      // Já loga o usuário injetando o cookie
+      res.cookie("refreshToken", result.refreshToken, COOKIE_OPTIONS);
+
+      res.status(201).json({
+        accessToken: result.accessToken,
+        user: result.user,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro no registro";
       res.status(400).json({ error: msg });
@@ -75,23 +99,19 @@ export class SessionController {
   // POST /auth/logout
   async logout(req: Request, res: Response) {
     try {
-      const { refreshToken } = req.body as RefreshTokenDTO;
+      // Pega o token do cookie para remover do banco
+      const refreshToken = req.cookies.refreshToken;
 
-      // Se não enviou token, tecnicamente o logout "já aconteceu" ou é irrelevante,
-      // mas validamos para manter o padrão.
-      if (!isValidString(refreshToken)) {
-        return res
-          .status(400)
-          .json({ error: "Refresh token é obrigatório para logout" });
+      if (refreshToken) {
+        await sessionService.logout(refreshToken);
       }
 
-      await sessionService.logout(refreshToken);
+      // Limpa o cookie do navegador
+      res.clearCookie("refreshToken", COOKIE_OPTIONS);
 
-      // 204: Deu certo e não tenho nada para te mostrar
+      // 204 No Content
       res.status(204).send();
     } catch (err) {
-      // Mesmo se der erro interno, para o usuário final o logout "falhou",
-      // mas por segurança retornamos sucesso ou erro genérico.
       const msg = err instanceof Error ? err.message : "Erro no logout";
       res.status(500).json({ error: msg });
     }

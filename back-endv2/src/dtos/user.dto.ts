@@ -5,16 +5,19 @@ import { user as UserModel } from "../generated/prisma/client";
 export interface CreateUserDTO {
   email: string;
   senha: string;
-  role?: string; // Default será 'USER' se não enviado
+  telefones?: string[]; // Array de strings (ex: ["1199999999", "1188888888"])
 }
 
 // O que o Front pode enviar para atualizar
 export interface UpdateUserDTO {
   email?: string;
   senha?: string;
-  role?: string;
   ativo?: boolean;
+  telefones?: string[]; // Se enviar, substitui os antigos
 }
 
-// O que o Back devolve (User do banco SEM a senha)
-export type UserResponseDTO = Omit<UserModel, "senha_hash">;
+// O que o Back devolve.
+// Estendemos o Omit para adicionar o campo 'telefones' que não existe nativamente na tabela 'user'
+export type UserResponseDTO = Omit<UserModel, "senha_hash"> & {
+  telefones: string[];
+};

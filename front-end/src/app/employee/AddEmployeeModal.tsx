@@ -1,199 +1,289 @@
-// app/employees/AddEmployeeModal.tsx
 "use client";
-import { AxiosError } from "axios";
 import { useState } from "react";
-import api from "../../utils/api";
+import { IMaskInput } from "react-imask";
+import { AxiosError } from "axios"; // 1. Importar AxiosError
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+  faUser,
+  faIdCard,
+  faBriefcase,
+  faEnvelope,
+  faLock,
+  faPhone,
+  faShieldHalved,
+} from "@fortawesome/free-solid-svg-icons";
+import api from "../../utils/api";
+import { extractDigitsOnly } from "../../utils/validationUtils";
 
-// --- Interfaces ---
 interface AddEmployeeProps {
   onClose: () => void;
-  onSaveSuccess: () => void;
+  onSuccess: () => void;
 }
 
-const initialFormState = {
-  cpf: "",
-  nome: "",
-  email: "",
-  senha: "",
-  cargo: "",
-  dataNascimento: "",
-  telefone: "",
-};
+// Interface para definir o formato esperado do erro da API
+interface ApiErrorResponse {
+  error: string;
+}
 
-const AddEmployeeModal: React.FC<AddEmployeeProps> = ({
-  onClose,
-  onSaveSuccess,
-}) => {
-  const [formData, setFormData] = useState(initialFormState);
+const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [cargo, setCargo] = useState("");
+  const [senha, setSenha] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [tipoPerfil, setTipoPerfil] = useState("FUNCIONARIO");
+
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const showMessage = (setter: (msg: string) => void, message: string) => {
-    setter(message); // mostra a mensagem
-    setTimeout(() => setter(""), 4000); // limpa depois de 4s
-  };
-
-  const handleSave = async () => {
-    if (
-      !formData.cpf ||
-      !formData.nome ||
-      !formData.email ||
-      !formData.senha ||
-      !formData.dataNascimento
-    ) {
-      showMessage(
-        setError,
-        "CPF, Nome, Email, Senha e Data de Nascimento são obrigatórios."
-      );
-      return;
-    }
-
-    setIsSubmitting(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     setError("");
-    setSuccess("");
 
     try {
-      await api.post("/funcionarios", formData);
-      showMessage(setSuccess, "Funcionário cadastrado com sucesso!");
-      onSaveSuccess();
-      setTimeout(onClose, 1500);
-    } catch (err) {
-      const error = err as AxiosError<{ message?: string }>;
-      const errorMessage =
-        error.response?.data?.message || "Ocorreu um erro ao salvar.";
-      showMessage(setError, errorMessage);
+      const userProfileData = localStorage.getItem("user");
+      if (!userProfileData) throw new Error("Sessão inválida.");
+      const currentUser = JSON.parse(userProfileData);
+
+      // 1. USER
+      const userPayload = {
+        email: email.toLowerCase(),
+        senha: senha,
+        telefones: telefone ? [extractDigitsOnly(telefone)] : [],
+      };
+
+      const userRes = await api.post("/users", userPayload);
+      const userId = userRes.data.user_id;
+
+      // 2. PROFILE
+      const profilePayload = {
+        user_id: userId,
+        id_loja: currentUser.lojaId,
+        nome: nome,
+        cpf_cnpj: extractDigitsOnly(cpf),
+        cargo: cargo,
+        tipo_perfil: tipoPerfil,
+      };
+
+      await api.post("/profiles", profilePayload);
+
+      onSuccess();
+    } catch (error) {
+      console.error("Erro ao criar funcionário:", error);
+
+      // --- CORREÇÃO: Remoção do any e uso de Type Guard ---
+      if (error instanceof AxiosError) {
+        // O TS agora sabe que 'error' tem a propriedade 'response'
+        // Fazemos o cast de data para a interface esperada
+        const errorData = error.response?.data as ApiErrorResponse;
+
+        if (errorData?.error) {
+          setError(errorData.error);
+        } else {
+          setError("Erro ao criar funcionário.");
+        }
+      } else {
+        // Erros que não são do Axios (ex: localStorage falhando)
+        setError("Erro inesperado ao criar funcionário.");
+      }
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const isSaveDisabled =
-    !formData.cpf ||
-    !formData.nome ||
-    !formData.email ||
-    !formData.senha ||
-    isSubmitting;
-
   return (
-    <div className="modal-content rounded-4">
-      <header className="w-100 terciary p-3 d-flex justify-content-between align-items-center">
-        <h4 className="m-0 w-100 text-center primary-color">
-          Adicionar Novo Funcionário
-        </h4>
-        <button
-          className="btn"
-          onClick={onClose}
-          aria-label="Fechar"
-          disabled={isSubmitting}
-        >
-          <FontAwesomeIcon icon={faTimes} />
-        </button>
-      </header>
-
-      <div className="modal-scroll terciary p-4">
-        {error && <div className="alert alert-danger">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
-
-        <form onSubmit={(e) => e.preventDefault()}>
-          <div className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label ps-2">CPF</label>
-              <input
-                name="cpf"
-                className="w-100 p-2 border-input"
-                placeholder="000.000.000-00"
-                value={formData.cpf}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Nome Completo</label>
-              <input
-                name="nome"
-                className="w-100 p-2 border-input"
-                placeholder="Ex: João da Silva"
-                value={formData.nome}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Email</label>
-              <input
-                name="email"
-                type="email"
-                className="w-100 p-2 border-input"
-                placeholder="joao.silva@email.com"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Senha</label>
-              <input
-                name="senha"
-                type="password"
-                className="w-100 p-2 border-input"
-                placeholder="Mínimo 8 caracteres"
-                value={formData.senha}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Data de Nascimento</label>
-              <input
-                name="dataNascimento"
-                type="date"
-                className="w-100 p-2 border-input"
-                value={formData.dataNascimento}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Cargo</label>
-              <input
-                name="cargo"
-                className="w-100 p-2 border-input"
-                placeholder="Ex: Vendedor"
-                value={formData.cargo}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Telefone</label>
-              <input
-                name="telefone"
-                className="w-100 p-2 border-input"
-                placeholder="(81) 99999-9999"
-                value={formData.telefone}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <footer className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+    <div
+      className="modal-backdrop d-flex justify-content-center align-items-center"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.48)" }}
+    >
+      <div
+        className="modal-dialog bg-white w-100"
+        style={{ maxWidth: "600px" }}
+      >
+        <div className="modal-content border-0 shadow">
+          {/* HEADER */}
+          <div className="modal-header bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+            <h5 className="modal-title fw-bold text-secondary">
+              Novo Funcionário
+            </h5>
             <button
               type="button"
-              className="primaria border-input ps-4 pe-4"
-              onClick={handleSave}
-              disabled={isSaveDisabled}
-            >
-              {isSubmitting ? "Salvando..." : "Salvar"}
-            </button>
-          </footer>
-        </form>
+              className="btn-close"
+              onClick={onClose}
+            ></button>
+          </div>
+
+          <div className="modal-body p-4 pt-2">
+            {error && <div className="alert alert-danger">{error}</div>}
+
+            <form onSubmit={handleSubmit} className="row g-3">
+              {/* NOME */}
+              <div className="col-12">
+                <label className="form-label small text-muted fw-bold">
+                  Nome Completo
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faUser}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="Ex: João Silva"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* EMAIL */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  E-mail
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faEnvelope}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    type="email"
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="email@exemplo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* SENHA */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Senha
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faLock}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    type="password"
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="******"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* CPF */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  CPF
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faIdCard}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <IMaskInput
+                    mask="000.000.000-00"
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="000.000.000-00"
+                    value={cpf}
+                    onAccept={(val: string) => setCpf(val)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* CELULAR */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Celular
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faPhone}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <IMaskInput
+                    mask="(00) 00000-0000"
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="(99) 99999-9999"
+                    value={telefone}
+                    onAccept={(val: string) => setTelefone(val)}
+                  />
+                </div>
+              </div>
+
+              {/* CARGO */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Cargo
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faBriefcase}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="Ex: Vendedor"
+                    value={cargo}
+                    onChange={(e) => setCargo(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* TIPO DE PERFIL */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Tipo de Perfil
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faShieldHalved}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <select
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    value={tipoPerfil}
+                    onChange={(e) => setTipoPerfil(e.target.value)}
+                    required
+                  >
+                    <option value="FUNCIONARIO">Funcionário</option>
+                    <option value="GERENTE">Gerente</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* RODAPÉ */}
+              <div className="col-12 mt-4 d-flex justify-content-end align-items-center border-top pt-3">
+                <button
+                  type="button"
+                  className="btn btn-link text-secondary text-decoration-none me-3"
+                  onClick={onClose}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="button-dark-grey px-5 py-2 rounded-pill"
+                  disabled={loading}
+                >
+                  {loading ? "Salvando..." : "Salvar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );

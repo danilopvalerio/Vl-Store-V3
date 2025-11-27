@@ -1,3 +1,4 @@
+//src/services/loja.service.ts
 import { LojaRepository } from "../repositories/loja.repository";
 import { loja as Loja } from "../generated/prisma/client";
 import { CreateLojaDTO, UpdateLojaDTO } from "../dtos/loja.dto";
@@ -11,7 +12,7 @@ export class LojaService {
     if (data.cnpj_cpf) {
       const existing = await this.repo.findByDoc(data.cnpj_cpf);
       if (existing) {
-        throw new Error("CNPJ/CPF already registered");
+        throw new Error("O CPF/CNPJ já está cadastrado");
       }
     }
 
@@ -27,12 +28,12 @@ export class LojaService {
   async updateLoja(id_loja: string, data: UpdateLojaDTO): Promise<Loja> {
     // 1. Verifica se a loja existe
     const existing = await this.repo.findById(id_loja);
-    if (!existing) throw new Error("Store not found");
+    if (!existing) throw new Error("Loja não encontrada");
 
     // 2. Se estiver tentando mudar o CNPJ, verifica se o novo já não existe
     if (data.cnpj_cpf && data.cnpj_cpf !== existing.cnpj_cpf) {
       const docExists = await this.repo.findByDoc(data.cnpj_cpf);
-      if (docExists) throw new Error("CNPJ/CPF already registered");
+      if (docExists) throw new Error("O CPF/CNPJ já está cadastrado");
     }
 
     // 3. Monta o objeto parcial para o banco
@@ -48,7 +49,7 @@ export class LojaService {
   // --- DELETE ---
   async deleteLoja(id_loja: string): Promise<Loja> {
     const existing = await this.repo.findById(id_loja);
-    if (!existing) throw new Error("Store not found");
+    if (!existing) throw new Error("Loja não encontrada");
 
     return this.repo.deleteById(id_loja);
   }

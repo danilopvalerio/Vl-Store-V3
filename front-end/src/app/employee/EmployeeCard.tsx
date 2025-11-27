@@ -1,36 +1,66 @@
-// app/employees/EmployeeCard.tsx
 "use client";
 
-interface EmployeeSummary {
-  cpf: string;
+// Definimos a interface EXATAMENTE como os dados chegam da page.tsx
+export interface EmployeeSummary {
+  id_user_profile: string;
+  cpf: string; // ou cpf_cnpj
   nome: string;
-  email: string;
   cargo: string;
+  email?: string; // <--- ADICIONE O '?' PARA SER OPCIONAL
 }
 
-interface EmployeeCardProps {
+interface Props {
   employee: EmployeeSummary;
-  onClick: (cpf: string) => void;
+  onClick: () => void;
 }
 
-const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onClick }) => {
+const EmployeeCard = ({ employee, onClick }: Props) => {
   return (
     <div
-      className="rounded-5 card-item css-button-fully-rounded--white h-100 d-flex flex-column justify-content-between p-3"
-      onClick={() => onClick(employee.cpf)}
-      style={{ cursor: "pointer" }}
+      className="card-item-bottom-line-rounded h-100  hover-shadow cursor-pointer"
+      onClick={onClick}
+      style={{
+        transition: "transform 0.2s, box-shadow 0.2s",
+        cursor: "pointer",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-2px)";
+        e.currentTarget.classList.add("shadow");
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.classList.remove("shadow");
+      }}
     >
-      <div>
-        <h5 className="card-title mb-3 text-truncate">{employee.nome}</h5>
-        <p className="mb-1">
-          <strong>CPF:</strong> {employee.cpf}
-        </p>
-        <p className="mb-1 text-truncate">
-          <strong>Email:</strong> {employee.email}
-        </p>
-        <p className="mb-1">
-          <strong>Cargo:</strong> {employee.cargo || "Não informado"}
-        </p>
+      <div className="card-body p-4 d-flex flex-column">
+        <div className="d-flex align-items-center mb-3">
+          <div
+            className="card-item-letter rounded-circle bg-light d-flex align-items-center justify-content-center fw-bold fs-5 me-3"
+            style={{ width: "48px", height: "48px" }}
+          >
+            {employee.nome.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h6
+              className="card-title fw-bold mb-0 text-truncate"
+              style={{ maxWidth: "180px" }}
+            >
+              {employee.nome}
+            </h6>
+            <small className="">{employee.cargo}</small>
+          </div>
+        </div>
+        <div className="mt-auto pt-2 border-top">
+          <p className="mb-0 small">
+            <strong>CPF:</strong> {employee.cpf}
+          </p>
+          {/* Renderiza email apenas se existir */}
+          {employee.email && (
+            <p className="mb-0 small text-muted text-truncate">
+              {employee.email}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

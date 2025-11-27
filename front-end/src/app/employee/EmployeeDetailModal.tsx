@@ -1,241 +1,351 @@
-// app/employees/EmployeeDetailModal.tsx
 "use client";
-import { AxiosError } from "axios";
-import { useState, useEffect, SetStateAction, Dispatch } from "react";
-import api from "../../utils/api";
+import { useState, useEffect } from "react";
+import { IMaskInput } from "react-imask";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
-
-// --- Interfaces ---
-interface EmployeeDetail {
-  cpf: string;
-  nome: string;
-  email: string;
-  cargo: string;
-  dataNascimento: string;
-  telefone: string;
-}
+import {
+  faUser,
+  faIdCard,
+  faBriefcase,
+  faEnvelope,
+  faLock,
+  faPhone,
+  faTrash,
+} from "@fortawesome/free-solid-svg-icons";
+import api from "../../utils/api";
+import { extractDigitsOnly } from "../../utils/validationUtils";
+import { UpdateUserPayload } from "./types";
 
 interface EmployeeDetailModalProps {
-  employee: EmployeeDetail;
+  profileId: string;
   onClose: () => void;
-  onUpdate: () => void;
+  onSuccess: () => void;
 }
 
-const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
-  employee,
+const EmployeeDetailModal = ({
+  profileId,
   onClose,
-  onUpdate,
-}) => {
-  const [formData, setFormData] = useState<Partial<EmployeeDetail>>(employee);
-  const [originalData, setOriginalData] = useState(employee);
+  onSuccess,
+}: EmployeeDetailModalProps) => {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const [nome, setNome] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [cargo, setCargo] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+
+  const [blockExclusion, setBlockExclusion] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // CARREGAR DADOS DO USUÁRIO LOGADO
   useEffect(() => {
-    // Format date for input type="date"
-    const formattedDate = employee.dataNascimento
-      ? new Date(employee.dataNascimento).toISOString().split("T")[0]
-      : "";
-    const initialData = { ...employee, dataNascimento: formattedDate };
-    setFormData(initialData);
-    setOriginalData(initialData);
-  }, [employee]);
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const currentUser = JSON.parse(storedUser);
+      setIsAdmin(currentUser.role === "ADMIN");
+    }
+  }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  // CARREGAR DADOS DO PERFIL
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const profRes = await api.get(`/profiles/${profileId}`);
+        const profile = profRes.data;
 
-  const hasChanges = JSON.stringify(formData) !== JSON.stringify(originalData);
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const currentUser = JSON.parse(storedUser);
 
-  const showMessage = (
-    setter: Dispatch<SetStateAction<string>>,
-    message: string
-  ) => {
-    setter(message);
-    setTimeout(() => setter(""), 4000);
-  };
+          // Impedir que o admin exclua a si mesmo
+          if (currentUser.id === profile.user_id) {
+            setBlockExclusion(true);
+          }
+        }
 
-  const handleUpdate = async () => {
-    if (!hasChanges) return;
-    setIsSubmitting(true);
+        setNome(profile.nome);
+        setCpf(profile.cpf_cnpj || profile.cpf || "");
+        setCargo(profile.cargo);
+        setUserId(profile.user_id);
+
+        // Buscar dados do usuário (email, telefone)
+        if (profile.user_id) {
+          const userRes = await api.get(`/users/${profile.user_id}`);
+          const userData = userRes.data;
+
+          setEmail(userData.email);
+
+          if (
+            Array.isArray(userData.telefones) &&
+            userData.telefones.length > 0
+          ) {
+            setTelefone(userData.telefones[0]);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Erro ao carregar dados do funcionário.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (profileId) loadData();
+  }, [profileId]);
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) return; // funcionários não editam
+
+    setSaving(true);
     setError("");
-    setSuccess("");
+    setSuccessMsg("");
 
     try {
-      await api.patch(`/funcionarios/${employee.cpf}`, formData);
-      showMessage(setSuccess, "Dados atualizados com sucesso!");
-      onUpdate();
-      setTimeout(onClose, 1500);
+      // Atualiza Perfil
+      await api.patch(`/profiles/${profileId}`, {
+        nome,
+        cpf_cnpj: extractDigitsOnly(cpf),
+        cargo,
+      });
+
+      // Atualiza User
+      if (userId) {
+        const payload: UpdateUserPayload = {
+          email: email.toLowerCase(),
+          telefones: telefone ? [extractDigitsOnly(telefone)] : [],
+        };
+
+        if (novaSenha) payload.senha = novaSenha;
+
+        await api.patch(`/users/${userId}`, payload);
+      }
+
+      setSuccessMsg("Atualizado com sucesso!");
+      setTimeout(() => onSuccess(), 1500);
     } catch (err) {
-      const axiosError = err as AxiosError<{ message?: string }>;
-      const errorMessage =
-        axiosError.response?.data?.message || "Ocorreu um erro ao atualizar.";
-      showMessage(setError, errorMessage);
+      console.error(err);
+      setError("Erro ao salvar.");
     } finally {
-      setIsSubmitting(false);
+      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    setIsSubmitting(true);
-    setError("");
+    if (!isAdmin || blockExclusion) return;
+
+    if (!confirm("Tem certeza? Essa ação excluirá login e perfil.")) return;
+    setSaving(true);
 
     try {
-      await api.delete(`/funcionarios/${employee.cpf}`);
-      alert("Funcionário excluído com sucesso!");
-      onUpdate();
-      onClose();
+      if (userId) {
+        await api.delete(`/users/${userId}`);
+        onSuccess();
+        console.log("Usuário e perfil excluídos com sucesso.");
+      }
     } catch (err) {
-      const axiosError = err as AxiosError<{ message?: string }>;
-      const errorMessage =
-        axiosError.response?.data?.message ||
-        "Não foi possível excluir o funcionário.";
-      showMessage(setError, errorMessage);
-    } finally {
-      setIsSubmitting(false);
-      setShowDeleteConfirm(false);
+      console.error(err);
+      console.log("Erro ao excluir usuário e perfil.");
+      setError("Erro ao excluir.");
+      setSaving(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div
+        className="modal-backdrop show d-flex justify-content-center align-items-center"
+        style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      >
+        <div className="spinner-border text-white"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="modal-content rounded-4">
-      <header className="w-100 terciary p-3 d-flex justify-content-between align-items-center">
-        <h4 className="m-0 w-100 text-center primary-color">
-          Detalhes do Funcionário
-        </h4>
-        <button
-          className="btn"
-          onClick={onClose}
-          aria-label="Fechar"
-          disabled={isSubmitting}
-        >
-          <FontAwesomeIcon icon={faTimes} />
-        </button>
-      </header>
-
-      <div className="modal-scroll terciary p-4">
-        {error && <div className="alert alert-danger">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
-
-        <form onSubmit={(e) => e.preventDefault()}>
-          <div className="row g-3">
-            <div className="col-12">
-              <label className="form-label ps-2">CPF</label>
-              <input
-                className="w-100 p-2 border-input fw-bold"
-                value={formData.cpf}
-                disabled
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Nome Completo</label>
-              <input
-                name="nome"
-                className="w-100 p-2 border-input"
-                value={formData.nome}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Email</label>
-              <input
-                name="email"
-                type="email"
-                className="w-100 p-2 border-input"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Data de Nascimento</label>
-              <input
-                name="dataNascimento"
-                type="date"
-                className="w-100 p-2 border-input"
-                value={formData.dataNascimento}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Cargo</label>
-              <input
-                name="cargo"
-                className="w-100 p-2 border-input"
-                value={formData.cargo}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2">Telefone</label>
-              <input
-                name="telefone"
-                className="w-100 p-2 border-input"
-                value={formData.telefone}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label ps-2 text-muted">
-                Nova Senha (Opcional)
-              </label>
-              <input
-                name="senha"
-                type="password"
-                className="w-100 p-2 border-input"
-                placeholder="Deixe em branco para não alterar"
-                onChange={handleChange}
-              />
-            </div>
+    <div
+      className="modal-backdrop d-flex justify-content-center align-items-center"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.48)" }}
+    >
+      <div
+        className="modal-dialog bg-white w-100"
+        style={{ maxWidth: "600px" }}
+      >
+        <div className="modal-content  border-0 shadow">
+          <div className="modal-header bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+            <h5 className="modal-title fw-bold text-secondary">
+              Editar Funcionário
+            </h5>
+            <button
+              type="button"
+              className="btn-close"
+              onClick={onClose}
+            ></button>
           </div>
 
-          <footer className="d-flex justify-content-between gap-2 mt-4 pt-3 border-top">
-            <div>
-              {!showDeleteConfirm ? (
-                <button
-                  type="button"
-                  className="primaria border-input ps-4 pe-4"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isSubmitting}
-                >
-                  Excluir
-                </button>
-              ) : (
-                <div className="d-flex gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    onClick={handleDelete}
-                    disabled={isSubmitting}
-                  >
-                    Confirmar Exclusão
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowDeleteConfirm(false)}
-                    disabled={isSubmitting}
-                  >
-                    Cancelar
-                  </button>
+          <div className="modal-body p-4 pt-2">
+            {error && <div className="alert alert-danger">{error}</div>}
+            {successMsg && (
+              <div className="alert alert-success">{successMsg}</div>
+            )}
+
+            <form onSubmit={handleUpdate} className="row g-3">
+              {/* NOME - SEMPRE EXIBE */}
+              <div className="col-12">
+                <label className="form-label small text-muted fw-bold">
+                  Nome
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faUser}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    required
+                    disabled={!isAdmin}
+                  />
                 </div>
+              </div>
+
+              {/* EMAIL - SEMPRE EXIBE */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Email
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faEnvelope}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={!isAdmin}
+                  />
+                </div>
+              </div>
+
+              {/* CARGO - SEMPRE EXIBE */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Cargo
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faBriefcase}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    value={cargo}
+                    onChange={(e) => setCargo(e.target.value)}
+                    required
+                    disabled={!isAdmin}
+                  />
+                </div>
+              </div>
+
+              {/* CAMPOS QUE APENAS ADMIN VÊ */}
+              {isAdmin && (
+                <>
+                  {/* CPF */}
+                  <div className="col-md-6">
+                    <label className="form-label small text-muted fw-bold">
+                      CPF
+                    </label>
+                    <div className="position-relative">
+                      <FontAwesomeIcon
+                        icon={faIdCard}
+                        className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                      />
+                      <IMaskInput
+                        mask="000.000.000-00"
+                        className="p-2 ps-5 w-100 form-control-underline"
+                        value={cpf}
+                        onAccept={(val: string) => setCpf(val)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* TELEFONE */}
+                  <div className="col-md-6">
+                    <label className="form-label small text-muted fw-bold">
+                      Telefone
+                    </label>
+                    <div className="position-relative">
+                      <FontAwesomeIcon
+                        icon={faPhone}
+                        className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                      />
+                      <IMaskInput
+                        mask="(00) 00000-0000"
+                        className="p-2 ps-5 w-100 form-control-underline"
+                        value={telefone}
+                        onAccept={(val: string) => setTelefone(val)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* SENHA */}
+                  <div className="col-12">
+                    <label className="form-label small text-muted fw-bold">
+                      Nova Senha
+                    </label>
+                    <div className="position-relative">
+                      <FontAwesomeIcon
+                        icon={faLock}
+                        className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                      />
+                      <input
+                        type="text"
+                        className="p-2 ps-5 w-100 form-control-underline"
+                        placeholder="Preencha para alterar"
+                        value={novaSenha}
+                        onChange={(e) => setNovaSenha(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
-            </div>
-            <div className="d-flex gap-2">
-              <button
-                type="button"
-                className="primaria border-input ps-4 pe-4"
-                onClick={handleUpdate}
-                disabled={!hasChanges || isSubmitting}
-              >
-                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-              </button>
-            </div>
-          </footer>
-        </form>
+
+              {/* BOTÕES */}
+              <div className="col-12 mt-4 d-flex justify-content-between align-items-center border-top pt-3">
+                {/* EXCLUIR — APENAS ADMIN E NÃO PODE SE AUTO-EXCLUIR */}
+                {isAdmin && !blockExclusion && (
+                  <button
+                    type="button"
+                    className="btn btn-link text-danger text-decoration-none p-0"
+                    onClick={handleDelete}
+                    disabled={saving}
+                  >
+                    <FontAwesomeIcon icon={faTrash} className="me-2" /> Excluir
+                  </button>
+                )}
+
+                {/* Salvar */}
+                <button
+                  type="submit"
+                  className="button-dark-grey px-5 py-2 rounded-pill"
+                  disabled={saving || !isAdmin}
+                >
+                  {saving ? "Salvando..." : "Salvar Alterações"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );

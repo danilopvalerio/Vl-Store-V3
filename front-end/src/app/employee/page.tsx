@@ -3,80 +3,103 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import api from "../../utils/api";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
-import { isLoggedIn } from "../../utils/auth";
-import EmployeeCard from "./EmployeeCard";
-import EmployeeDetailModal from "./EmployeeDetailModal";
-import AddEmployeeModal from "./AddEmployeeModal";
 import Image from "next/image";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faArrowLeft,
+  faPlus,
+  faSearch,
+  faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 
-// --- Interfaces ---
-interface EmployeeSummary {
+import api from "../../utils/api";
+import EmployeeCard from "./EmployeeCard";
+import AddEmployeeModal from "./AddEmployeeModal";
+import EmployeeDetailModal from "./EmployeeDetailModal";
+import { PaginatedResponse, UserProfileResponse } from "./types"; // Importando os tipos definidos
+
+// Interface local para o resumo exibido nos cards
+export interface EmployeeSummary {
+  id_user_profile: string;
   cpf: string;
   nome: string;
-  email: string;
   cargo: string;
 }
 
-// Extends summary for detail view
-interface EmployeeDetail extends EmployeeSummary {
-  dataNascimento: string; // Comes as string from API
-  telefone: string;
-}
+const LIMIT = 6; // Itens por página
 
 const EmployeePage = () => {
+  const router = useRouter();
+
+  // Estados de Dados
   const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Estados de Paginação e Busca
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [checkingAuth, setCheckingAuth] = useState(true);
 
-  const router = useRouter();
-
-  // --- Modal States ---
-  const [selectedEmployee, setSelectedEmployee] =
-    useState<EmployeeDetail | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  // Estados de Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
+    null
+  );
 
-  const LIMIT = 6;
+  // --- 1. Verificação de Autenticação (Client Side) ---
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
 
-  // --- Navigation ---
-  const pushBackToMenu = () => router.push("/menu");
-
-  // --- API Calls & Data Handling ---
-  const fetchEmployees = async (page: number) => {
-    setLoading(true);
-    try {
-      const response = await api.get(
-        `/funcionarios/paginated?page=${page}&limit=${LIMIT}`
-      );
-      setEmployees(response.data.data);
-      setCurrentPage(response.data.page);
-      setTotalPages(response.data.totalPages);
-    } catch (error) {
-      console.error("Erro ao carregar funcionários:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = async (page = 1) => {
-    if (searchTerm.trim() === "") {
-      fetchEmployees(page);
+    if (!storedUser) {
+      router.push("/login");
       return;
     }
+
+    try {
+      const user = JSON.parse(storedUser);
+      if (user.role !== "ADMIN") {
+        alert(
+          "Acesso negado. Apenas administradores podem gerenciar funcionários."
+        );
+        router.push("/menu");
+        return;
+      }
+      setCheckingAuth(false);
+      fetchEmployees(1); // Carrega dados iniciais
+    } catch (error) {
+      console.log(error);
+      localStorage.clear();
+      router.push("/login");
+    }
+  }, [router]);
+
+  // --- 2. Busca de Dados (API) ---
+  const fetchEmployees = async (page = 1, term = "") => {
     setLoading(true);
     try {
-      const response = await api.get(
-        `/funcionarios/search?term=${encodeURIComponent(
-          searchTerm
-        )}&page=${page}&limit=${LIMIT}`
+      // Define qual endpoint chamar (Busca ou Paginação simples)
+      let url = `/profiles/paginated?page=${page}&perPage=${LIMIT}`;
+      if (term) {
+        url = `/profiles/search?term=${encodeURIComponent(
+          term
+        )}&page=${page}&perPage=${LIMIT}`;
+      }
+
+      // Chama API tipada
+      const response = await api.get<PaginatedResponse<UserProfileResponse>>(
+        url
       );
-      setEmployees(response.data.data);
+
+      // Mapeia a resposta para o formato simplificado do Card
+      const data = response.data.data.map((p) => ({
+        id_user_profile: p.id_user_profile,
+        cpf: p.cpf_cnpj, // O backend retorna cpf_cnpj
+        nome: p.nome,
+        cargo: p.cargo,
+      }));
+
+      setEmployees(data);
       setCurrentPage(response.data.page);
       setTotalPages(response.data.totalPages);
     } catch (error) {
@@ -86,241 +109,211 @@ const EmployeePage = () => {
     }
   };
 
-  useEffect(() => {
-    const verifyAuthAndFetchData = async () => {
-      const logged = await isLoggedIn();
-      if (!logged) {
-        router.push("/login");
-        return;
-      }
+  // --- Handlers de Eventos ---
 
-      try {
-        const response = await api.get(`/sessions/profile`);
-        if (response.data.role !== "admin") {
-          // 🔒 SECURITY: Redirect if not an admin
-          alert("Acesso restrito a administradores.");
-          router.push("/menu");
-          return;
-        }
-        // Fetch data only after confirming admin role
-        await fetchEmployees(1);
-      } catch (error) {
-        console.error("Erro ao verificar perfil ou carregar dados:", error);
-        router.push("/login"); // Redirect on error
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
+  const handleSearch = () => {
+    // Sempre volta para página 1 ao pesquisar
+    fetchEmployees(1, searchTerm);
+  };
 
-    verifyAuthAndFetchData();
-  }, [router]);
-
-  // --- Event Handlers ---
   const handleClearSearch = () => {
     setSearchTerm("");
-    fetchEmployees(1);
+    fetchEmployees(1, "");
   };
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      const nextPage = currentPage + 1;
-      if (searchTerm.trim() !== "") {
-        handleSearch(nextPage);
-      } else {
-        fetchEmployees(nextPage);
-      }
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      fetchEmployees(newPage, searchTerm);
     }
   };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      const prevPage = currentPage - 1;
-      if (searchTerm.trim() !== "") {
-        handleSearch(prevPage);
-      } else {
-        fetchEmployees(prevPage);
-      }
-    }
-  };
-
-  const handleOpenDetailModal = async (cpf: string) => {
-    try {
-      const response = await api.get(`/funcionarios/${cpf}`);
-      setSelectedEmployee(response.data);
-      setIsDetailModalOpen(true);
-    } catch (error) {
-      console.error("Erro ao buscar detalhes do funcionário:", error);
-      alert("Não foi possível carregar os detalhes do funcionário.");
-    }
-  };
-
-  const handleCloseDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setSelectedEmployee(null);
-  };
-
-  const handleOpenAddModal = () => setIsAddModalOpen(true);
-  const handleCloseAddModal = () => setIsAddModalOpen(false);
-
-  const handleEmployeeUpdate = () => {
+  // Callback chamado quando um funcionário é criado/editado/excluído
+  const handleRefresh = () => {
+    fetchEmployees(currentPage, searchTerm);
     setIsAddModalOpen(false);
-    setIsDetailModalOpen(false);
-    setSelectedEmployee(null);
-    // Refetch current page to show changes
-    if (searchTerm.trim() !== "") {
-      handleSearch(currentPage);
-    } else {
-      fetchEmployees(currentPage);
-    }
+    setSelectedProfileId(null);
   };
+
+  // --- Renderização ---
 
   if (checkingAuth) {
     return (
-      <div className="d-flex vh-100 justify-content-center align-items-center">
-        <h5 className="mx-auto bg-light rounded-5 p-3 d-flex align-items-center">
-          <span className="spinner me-2"></span>
-          Verificando permissões...
-        </h5>
+      <div className="d-flex vh-100 justify-content-center align-items-center bg-light">
+        <div className="spinner-border text-secondary" role="status" />
       </div>
     );
   }
 
   return (
-    <div className="d-flex justify-content-between align-items-center flex-column min-vh-100">
-      <header className="w-100 header-panel">
+    <div className="d-flex flex-column min-vh-100 bg-light">
+      {/* Header / Navbar Simples */}
+      <header className="w-100 bg-white shadow-sm py-3 text-center position-relative">
+        <button
+          className="btn btn-link text-secondary position-absolute start-0 top-50 translate-middle-y ms-4"
+          onClick={() => router.push("/menu")}
+          title="Voltar ao Menu"
+        >
+          <FontAwesomeIcon icon={faArrowLeft} className="fs-4" />
+        </button>
         <Image
-          src="/images/vl-store-logo.svg"
-          alt="VL Store Logo"
-          width={45}
-          height={45}
+          src="/images/vl-store-logo.png"
+          alt="Logo VL Store"
+          width={120}
+          height={40}
+          className="h-auto"
           priority
         />
       </header>
 
-      {/* Main content is hidden when modals are open */}
-      {!isDetailModalOpen && !isAddModalOpen && (
-        <div className="row w-75 dark-shadow overflow-hidden rounded-5 mt-4 mb-4">
-          <header className="col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 terciary">
-            <h3 className="m-3">Funcionários</h3>
-          </header>
+      <div className="container my-5 flex-grow-1">
+        <div className="bg-white rounded-4 shadow-sm overflow-hidden">
+          {/* Título com Gradiente */}
+          <div className="bg-gradient-vl p-4 text-center text-white">
+            <h3 className="fw-bold m-0">Gerenciar Funcionários</h3>
+            <p className="m-0 opacity-75 small">
+              Visualize, adicione e edite sua equipe.
+            </p>
+          </div>
 
-          <div className="col-12 secondary p-4 d-flex flex-column align-items-center">
-            {/* Search and Action Buttons */}
-            <div className="w-100 mb-3">
-              <input
-                className="w-100 p-2"
-                type="text"
-                placeholder="Buscar por nome, CPF ou e-mail..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              />
-            </div>
-            <div className="d-flex gap-2 w-100 flex-wrap justify-content-between">
-              <button
-                className="css-button-fully-rounded--white col-12 col-md-3"
-                onClick={() => handleSearch()}
-              >
-                Pesquisar
-              </button>
-              <button
-                className="css-button-fully-rounded--white col-12 col-md-3"
-                onClick={handleClearSearch}
-              >
-                Limpar
-              </button>
-              <button
-                className="css-button-fully-rounded--white col-12 col-md-3"
-                onClick={handleOpenAddModal}
-              >
-                Adicionar Funcionário
-              </button>
-            </div>
+          <div className="p-4">
+            {/* Barra de Ferramentas: Busca e Botão Adicionar */}
+            <div className="row g-3 mb-4 justify-content-evenly align-items-top">
+              {/* Campo de Busca */}
+              <div className="col-12 col-md-6 col-lg-5">
+                <div className="position-relative mb-3">
+                  {/* Ícone de Lupa à Esquerda */}
+                  <FontAwesomeIcon
+                    icon={faSearch}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
 
-            {/* Employee List */}
-            <div className="w-100 mt-4">
-              {loading ? (
-                <div className="text-center">
-                  <h5 className="mx-auto bg-light rounded-5 p-3 d-flex justify-content-center align-items-center">
-                    <span className="spinner me-2"></span>
-                    Carregando funcionários...
-                  </h5>
-                </div>
-              ) : (
-                <div className="row g-4">
-                  {employees.length > 0 ? (
-                    employees.map((employee) => (
-                      <div
-                        key={employee.cpf}
-                        className="col-12 col-md-6 col-lg-4 d-flex align-items-stretch"
-                      >
-                        <EmployeeCard
-                          employee={employee}
-                          onClick={() => handleOpenDetailModal(employee.cpf)}
-                        />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-12 text-center">
-                      <p>Nenhum funcionário encontrado.</p>
-                    </div>
+                  {/* Input */}
+                  <input
+                    type="text"
+                    className="p-2 ps-5 col-12 form-control-underline2"
+                    placeholder="Buscar por nome, cargo ou CPF..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  />
+
+                  {/* Botão Limpar (X) */}
+                  {searchTerm && (
+                    <span
+                      className="position-absolute top-50 end-0 translate-middle-y me-5"
+                      style={{ cursor: "pointer", zIndex: 100 }}
+                      onClick={handleClearSearch}
+                    >
+                      <FontAwesomeIcon
+                        className="text-secondary"
+                        icon={faTimes}
+                      />
+                    </span>
                   )}
                 </div>
-              )}
+              </div>
+
+              {/* Botão Buscar */}
+              <button
+                className="col-12 col-md-2 col-lg-2 button-bottom-line-rounded px-4"
+                onClick={handleSearch}
+              >
+                Buscar
+              </button>
+
+              {/* Botão Adicionar */}
+
+              <button
+                className="col-12 col-md-3 col-lg-2 button-bottom-line-rounded px-2"
+                onClick={() => setIsAddModalOpen(true)}
+              >
+                <FontAwesomeIcon icon={faPlus} className="me-2" />
+                Novo Funcionário
+              </button>
             </div>
 
-            {/* Pagination */}
-            <div className="d-flex justify-content-center align-items-center gap-3 mt-4">
-              <button
-                className="css-button-fully-rounded--white"
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </button>
-              <span>{`${currentPage} de ${totalPages}`}</span>
-              <button
-                className="css-button-fully-rounded--white"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages || totalPages === 0}
-              >
-                Próxima
-              </button>
-            </div>
+            {/* Área de Conteúdo (Lista ou Loading) */}
+            {loading ? (
+              <div className="text-center py-5">
+                <div className="spinner-border text-secondary" role="status" />
+                <p className="mt-2 text-muted">Carregando equipe...</p>
+              </div>
+            ) : employees.length > 0 ? (
+              <>
+                {/* Grid de Cards */}
+                <div className="row g-3">
+                  {employees.map((emp) => (
+                    <div
+                      key={emp.id_user_profile}
+                      className="col-12 col-md-6 col-lg-4"
+                    >
+                      <EmployeeCard
+                        employee={emp}
+                        onClick={() =>
+                          setSelectedProfileId(emp.id_user_profile)
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Controles de Paginação */}
+                <div className="d-flex justify-content-center align-items-center gap-3 mt-5">
+                  <button
+                    className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-muted small fw-bold">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Estado Vazio */
+              <div className="text-center py-5 text-muted">
+                <p className="fs-5 mb-1">Nenhum funcionário encontrado.</p>
+                <small>
+                  Tente buscar por outro termo ou adicione um novo registro.
+                </small>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Return Button */}
-      {!isDetailModalOpen && !isAddModalOpen && (
-        <button
-          className="return-btn-fixed css-button-fully-rounded--white"
-          onClick={pushBackToMenu}
-          aria-label="Voltar"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} />
-        </button>
-      )}
+      {/* Footer */}
+      <footer className="">
+        © 2025 Danilo Valério. Todos os direitos reservados.
+      </footer>
 
-      {/* Modals */}
-      {isDetailModalOpen && selectedEmployee && (
-        <EmployeeDetailModal
-          employee={selectedEmployee}
-          onClose={handleCloseDetailModal}
-          onUpdate={handleEmployeeUpdate}
-        />
-      )}
+      {/* --- MODAIS --- */}
 
+      {/* Modal de Adicionar */}
       {isAddModalOpen && (
         <AddEmployeeModal
-          onClose={handleCloseAddModal}
-          onSaveSuccess={handleEmployeeUpdate}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={handleRefresh}
         />
       )}
 
-      <footer className="w-100 footer-panel text-center p-3">
-        <small>VL Store © {new Date().getFullYear()}</small>
-      </footer>
+      {/* Modal de Detalhes/Edição */}
+      {selectedProfileId && (
+        <EmployeeDetailModal
+          profileId={selectedProfileId}
+          onClose={() => setSelectedProfileId(null)}
+          onSuccess={handleRefresh}
+        />
+      )}
     </div>
   );
 };
