@@ -18,7 +18,7 @@ export const isLoggedIn = async (): Promise<boolean> => {
       try {
         const refreshResponse = await api.get(`/sessions/refresh`);
         const newAccessToken = refreshResponse.data.accessToken;
-        sessionStorage.setItem("accessToken", newAccessToken);
+        localStorage.setItem("accessToken", newAccessToken);
 
         // Tenta novamente
         await api.get(`/sessions/profile`);

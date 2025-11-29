@@ -2,70 +2,67 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import api from "../../utils/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
-import ProductCard from "./ProductCardComponent";
-import ProductDetailModal from "./ProductDetailModal";
+import {
+  faArrowLeft,
+  faPlus,
+  faSearch,
+  faTimes,
+} from "@fortawesome/free-solid-svg-icons";
+
+import api from "../../utils/api";
+import ProductCard from "./ProductCard";
 import AddProductModal from "./AddProductModal";
+import ProductDetailModal from "./ProductDetailModal";
+import { PaginatedResponse, Product } from "./types";
 
-// --- Interfaces ---
-interface ProductSummary {
-  referencia: string;
-  nome: string;
-  categoria: string;
-  material: string;
-  genero: string;
-  idLoja: string;
-}
-interface ProductVariation {
-  id_variacao?: string;
-  descricao: string;
-  quantidade: number;
-  valor: number;
-}
-interface ProductDetail extends ProductSummary {
-  variacoes: ProductVariation[];
-}
+const LIMIT = 8; // Produtos por página
 
-const ProductPage = () => {
-  const [produtos, setProdutos] = useState<ProductSummary[]>([]);
+const ProductsPage = () => {
+  const router = useRouter();
+
+  // Estados
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Paginação e Busca
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [role, setRole] = useState<"admin" | "employee" | null>(null);
 
-  const router = useRouter();
-
-  // --- Estados para controlar os modais ---
-  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(
+  // Modais
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
     null
   );
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isModalOpening, setIsModalOpening] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const LIMIT = 6;
+  // --- 1. Auth Check ---
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      router.push("/login");
+      return;
+    }
+    setCheckingAuth(false);
+    fetchProducts(1);
+  }, [router]);
 
-  // --- Navegação ---
-  const pushBackToMenu = () => router.push("/menu");
-  const handleOpenAddModal = () => setIsAddModalOpen(true);
-  const handleCloseAddModal = () => setIsAddModalOpen(false);
-
-  // --- Busca e Paginação ---
-  const handleSearch = async (page = 1) => {
+  // --- 2. Fetch Data ---
+  const fetchProducts = async (page = 1, term = "") => {
     setLoading(true);
     try {
-      const response = await api.get(
-        `/produtos/search?term=${encodeURIComponent(
-          searchTerm
-        )}&page=${page}&limit=${LIMIT}`
-      );
-      setProdutos(response.data.data);
-      setTotalPages(response.data.totalPages);
+      let url = `/products/paginated?page=${page}&perPage=${LIMIT}`;
+      if (term) {
+        url = `/products/search?term=${encodeURIComponent(
+          term
+        )}&page=${page}&perPage=${LIMIT}`;
+      }
+
+      const response = await api.get<PaginatedResponse<Product>>(url);
+      setProducts(response.data.data);
       setCurrentPage(response.data.page);
+      setTotalPages(response.data.totalPages);
     } catch (error) {
       console.error("Erro ao buscar produtos:", error);
     } finally {
@@ -73,236 +70,164 @@ const ProductPage = () => {
     }
   };
 
-  const fetchProducts = async (page: number) => {
-    setLoading(true);
-    try {
-      const response = await api.get(
-        `/produtos/paginated?page=${page}&limit=${LIMIT}`
-      );
-      setProdutos(response.data.data);
-      setCurrentPage(response.data.page);
-      setTotalPages(response.data.totalPages);
-    } catch (error) {
-      console.error("Erro ao carregar produtos:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Buscar perfil do usuário diretamente (sem isLoggedIn)
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get(`/sessions/profile`);
-        if (response.status === 200) {
-          setRole("admin"); // ou "employee" se quiser diferenciar
-        }
-      } catch (error) {
-        console.error("Erro ao buscar perfil:", error);
-        router.push("/login");
-      }
-    };
-
-    fetchProfile();
-    fetchProducts(1);
-  }, [router]);
-
+  const handleSearch = () => fetchProducts(1, searchTerm);
   const handleClearSearch = () => {
     setSearchTerm("");
-    fetchProducts(1);
+    fetchProducts(1, "");
   };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      const nextPage = currentPage + 1;
-      if (searchTerm.trim() !== "") {
-        handleSearch(nextPage);
-      } else {
-        fetchProducts(nextPage);
-      }
-    }
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages)
+      fetchProducts(newPage, searchTerm);
   };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      const prevPage = currentPage - 1;
-      if (searchTerm.trim() !== "") {
-        handleSearch(prevPage);
-      } else {
-        fetchProducts(prevPage);
-      }
-    }
-  };
-
-  const handleOpenModal = async (referencia: string) => {
-    if (isModalOpening) return;
-    setIsModalOpening(true);
-    try {
-      const response = await api.get(`/produtos/${referencia}`);
-      setSelectedProduct(response.data);
-      setIsModalOpen(true);
-    } catch (error) {
-      console.error("Erro ao buscar detalhes do produto:", error);
-      alert("Não foi possível carregar os detalhes do produto.");
-    } finally {
-      setIsModalOpening(false);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedProduct(null);
-  };
-
-  const handleProductUpdate = () => {
-    fetchProducts(currentPage);
-    setIsModalOpen(false);
-    setSelectedProduct(null);
+  const handleRefresh = () => {
+    fetchProducts(currentPage, searchTerm);
     setIsAddModalOpen(false);
-    if (searchTerm.trim() !== "") {
-      handleSearch(currentPage);
-    }
+    setSelectedProductId(null);
   };
+
+  if (checkingAuth)
+    return (
+      <div className="d-flex vh-100 justify-content-center align-items-center">
+        <div className="spinner-border text-secondary" />
+      </div>
+    );
 
   return (
-    <div className="d-flex justify-content-between align-items-center flex-column min-vh-100">
-      <header className="w-100">
-        <div className="header-panel">
-          <Image
-            src="/images/vl-store-logo.svg"
-            alt="VL Store Logo"
-            width={45}
-            height={45}
-          />
-        </div>
+    <div
+      className="d-flex flex-column min-vh-100"
+      style={{ backgroundColor: "#e9e9e9ff" }}
+    >
+      <header className="header-panel bg-gradient-vl d-flex align-items-center bg-dark px-2">
+        <button
+          className="btn btn-link text-white ms-0"
+          onClick={() => router.push("/menu")}
+        >
+          <FontAwesomeIcon icon={faArrowLeft} className="fs-4" />
+        </button>
       </header>
 
-      {!isModalOpen && !isAddModalOpen && (
-        <div className="row w-75 dark-shadow overflow-hidden rounded-5 mt-4 mb-4">
-          <header className="col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 terciary">
-            <h3 className="m-3">Produtos</h3>
-          </header>
+      <div className="container my-5 flex-grow-1">
+        <div className="bg-white border rounded-4 shadow-sm overflow-hidden">
+          <div className="bg-gradient-vl p-4 text-center text-white">
+            <h3 className="fw-bold m-0">Gerenciar Produtos</h3>
+            <p className="m-0 opacity-75 small">
+              Controle de estoque e variações.
+            </p>
+          </div>
 
-          <div className="col-12 secondary p-4 d-flex flex-column align-items-center">
-            <div className="w-100 mb-3">
-              <input
-                className="w-100 p-2"
-                type="text"
-                placeholder="Digite o produto..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              />
-            </div>
-
-            <div className="d-flex gap-2 w-100 flex-wrap justify-content-between">
-              <button
-                className="css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center"
-                onClick={() => handleSearch()}
-              >
-                Pesquisar
-              </button>
-              <button
-                className="css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center"
-                onClick={handleClearSearch}
-              >
-                Limpar
-              </button>
-
-              {role === "admin" && (
-                <button
-                  className="css-button-fully-rounded--white col-12 col-md-3 d-flex align-items-center justify-content-center"
-                  onClick={handleOpenAddModal}
-                >
-                  Adicionar Produto
-                </button>
-              )}
-            </div>
-
-            <div className="w-100 mt-4">
-              {loading ? (
-                <div className="text-center">
-                  <h5 className="mx-auto text-center bg-light rounded-5 p-3 d-flex justify-content-center align-items-center">
-                    <span className="spinner me-2"></span>
-                    Carregando produtos...
-                  </h5>
-                </div>
-              ) : (
-                <div className="row g-4">
-                  {produtos.length > 0 ? (
-                    produtos.map((produto) => (
-                      <div
-                        key={produto.referencia}
-                        className="col-12 col-md-6 col-lg-4 d-flex align-items-stretch"
-                        style={{ cursor: isModalOpening ? "wait" : "pointer" }}
-                      >
-                        <ProductCard
-                          product={produto}
-                          onClick={() => handleOpenModal(produto.referencia)}
-                        />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-12 text-center">
-                      <p>Nenhum produto encontrado</p>
-                    </div>
+          <div className="p-4">
+            {/* Barra de Ferramentas */}
+            <div className="row g-3 mb-4 justify-content-evenly align-items-top">
+              <div className="col-12 col-md-6 col-lg-5">
+                <div className="position-relative mb-3">
+                  <FontAwesomeIcon
+                    icon={faSearch}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    type="text"
+                    className="p-2 ps-5 col-12 form-control-underline2"
+                    placeholder="Buscar produto por nome, ref..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  />
+                  {searchTerm && (
+                    <span
+                      className="position-absolute top-50 end-0 translate-middle-y me-5 cursor-pointer"
+                      onClick={handleClearSearch}
+                    >
+                      <FontAwesomeIcon
+                        className="text-secondary"
+                        icon={faTimes}
+                      />
+                    </span>
                   )}
                 </div>
-              )}
+              </div>
+              <button
+                className="col-12 col-md-2 col-lg-2 button-bottom-line-rounded px-4"
+                onClick={handleSearch}
+              >
+                Buscar
+              </button>
+              <button
+                className="col-12 col-md-3 col-lg-2 button-bottom-line-rounded px-2"
+                onClick={() => setIsAddModalOpen(true)}
+              >
+                <FontAwesomeIcon icon={faPlus} className="me-2" /> Novo Produto
+              </button>
             </div>
 
-            <div className="d-flex justify-content-center align-items-center gap-3 mt-4">
-              <button
-                className="css-button-fully-rounded--white d-flex align-items-center justify-content-center"
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </button>
-              <span>{`${currentPage} de ${totalPages}`}</span>
-              <button
-                className="css-button-fully-rounded--white d-flex align-items-center justify-content-center"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages || totalPages === 0}
-              >
-                Próxima
-              </button>
-            </div>
+            {/* Lista de Produtos */}
+            {loading ? (
+              <div className="text-center py-5">
+                <div className="spinner-border text-secondary" />
+                <p className="mt-2 text-muted">Carregando catálogo...</p>
+              </div>
+            ) : products.length > 0 ? (
+              <>
+                <div className="row g-3">
+                  {products.map((prod) => (
+                    <div
+                      key={prod.id_produto}
+                      className="col-12 col-md-6 col-lg-3"
+                    >
+                      <ProductCard
+                        product={prod}
+                        onClick={() => setSelectedProductId(prod.id_produto)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {/* Paginação */}
+                <div className="d-flex justify-content-center align-items-center gap-3 mt-5">
+                  <button
+                    className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-muted small fw-bold">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-5 text-muted">
+                <p className="fs-5 mb-1">Nenhum produto encontrado.</p>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
-      {!isModalOpen && !isAddModalOpen && (
-        <button
-          className="return-btn-fixed css-button-fully-rounded--white"
-          onClick={pushBackToMenu}
-          aria-label="Voltar"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} />
-        </button>
-      )}
+      <footer className="">© 2025 Sistema VL. Gestão de Produtos.</footer>
 
-      {isModalOpen && role && (
-        <ProductDetailModal
-          product={selectedProduct}
-          onClose={handleCloseModal}
-          onProductUpdate={handleProductUpdate}
-          userRole={role}
-        />
-      )}
-
-      {isAddModalOpen && role === "admin" && (
+      {/* Modais */}
+      {isAddModalOpen && (
         <AddProductModal
-          onClose={handleCloseAddModal}
-          onSaveSuccess={handleProductUpdate}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={handleRefresh}
         />
       )}
-
-      <footer className="w-100 footer-panel text-center p-3">
-        <small>VL Store © {new Date().getFullYear()}</small>
-      </footer>
+      {selectedProductId && (
+        <ProductDetailModal
+          productId={selectedProductId}
+          onClose={() => setSelectedProductId(null)}
+          onSuccess={handleRefresh}
+        />
+      )}
     </div>
   );
 };
 
-export default ProductPage;
+export default ProductsPage;

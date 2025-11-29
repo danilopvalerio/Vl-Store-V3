@@ -6,7 +6,7 @@ export default function LoginPage() {
   return (
     <div className="d-flex flex-column min-vh-100">
       <div className="row flex-fill m-0">
-        <div className="col-12 col-md-6 bg-gradient-vl d-flex flex-column justify-content-center align-items-center p-0 m-0 text-white">
+        <div className="col-12 col-md-6 p-3 bg-gradient-vl d-flex flex-column justify-content-center align-items-center p-0 m-0 text-white">
           <h1 className="mb-3 login-big-title">
             Acesso <br />
             ao VL Store.

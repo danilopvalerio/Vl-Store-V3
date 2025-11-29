@@ -1,3 +1,4 @@
+//src/app/employee/EmployeeCard.tsx
 "use client";
 
 // Definimos a interface EXATAMENTE como os dados chegam da page.tsx

@@ -1,3 +1,4 @@
+//src/app/employee/EmployeeDetailModal.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { IMaskInput } from "react-imask";
@@ -10,6 +11,7 @@ import {
   faLock,
   faPhone,
   faTrash,
+  faShieldHalved,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../../utils/api";
 import { extractDigitsOnly } from "../../utils/validationUtils";
@@ -33,12 +35,15 @@ const EmployeeDetailModal = ({
 
   const [userId, setUserId] = useState<string | null>(null);
 
+  // Estados do Formulário
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [cargo, setCargo] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
+  const [tipoPerfil, setTipoPerfil] = useState("");
+  const [ativo, setAtivo] = useState(true); // <--- NOVO ESTADO: Status do Perfil
 
   const [blockExclusion, setBlockExclusion] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -48,7 +53,7 @@ const EmployeeDetailModal = ({
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const currentUser = JSON.parse(storedUser);
-      setIsAdmin(currentUser.role === "ADMIN");
+      setIsAdmin(["ADMIN", "SUPER_ADMIN"].includes(currentUser.role));
     }
   }, []);
 
@@ -62,8 +67,7 @@ const EmployeeDetailModal = ({
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
           const currentUser = JSON.parse(storedUser);
-
-          // Impedir que o admin exclua a si mesmo
+          // Impedir que o admin exclua ou desative a si mesmo
           if (currentUser.id === profile.user_id) {
             setBlockExclusion(true);
           }
@@ -72,15 +76,15 @@ const EmployeeDetailModal = ({
         setNome(profile.nome);
         setCpf(profile.cpf_cnpj || profile.cpf || "");
         setCargo(profile.cargo);
+        setTipoPerfil(profile.tipo_perfil || "FUNCIONARIO");
+        setAtivo(profile.ativo !== false); // <--- Carrega status (padrão true se vier null)
         setUserId(profile.user_id);
 
-        // Buscar dados do usuário (email, telefone)
         if (profile.user_id) {
           const userRes = await api.get(`/users/${profile.user_id}`);
           const userData = userRes.data;
 
           setEmail(userData.email);
-
           if (
             Array.isArray(userData.telefones) &&
             userData.telefones.length > 0
@@ -88,9 +92,20 @@ const EmployeeDetailModal = ({
             setTelefone(userData.telefones[0]);
           }
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(err);
-        setError("Erro ao carregar dados do funcionário.");
+
+        if (err instanceof Error) {
+          setError(
+            "Erro ao carregar os dados dos funcionários: " + err.message
+          );
+        } else if (typeof err === "string") {
+          setError("Erro ao carregar os dados dos funcionários: " + err);
+        } else {
+          setError(
+            "Erro ao carregar os dados dos funcionários: erro desconhecido."
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -101,21 +116,23 @@ const EmployeeDetailModal = ({
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) return; // funcionários não editam
+    if (!isAdmin) return;
 
     setSaving(true);
     setError("");
     setSuccessMsg("");
 
     try {
-      // Atualiza Perfil
+      // 1. Atualiza Perfil
       await api.patch(`/profiles/${profileId}`, {
         nome,
         cpf_cnpj: extractDigitsOnly(cpf),
         cargo,
+        tipo_perfil: tipoPerfil,
+        ativo: ativo, // <--- Envia status para o perfil
       });
 
-      // Atualiza User
+      // 2. Atualiza User (Login)
       if (userId) {
         const payload: UpdateUserPayload = {
           email: email.toLowerCase(),
@@ -129,9 +146,16 @@ const EmployeeDetailModal = ({
 
       setSuccessMsg("Atualizado com sucesso!");
       setTimeout(() => onSuccess(), 1500);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setError("Erro ao salvar.");
+
+      if (err instanceof Error) {
+        setError("Erro ao atualizar: " + err.message);
+      } else if (typeof err === "string") {
+        setError("Erro ao atualizar: " + err);
+      } else {
+        setError("Erro ao atualizar: erro desconhecido.");
+      }
     } finally {
       setSaving(false);
     }
@@ -139,7 +163,6 @@ const EmployeeDetailModal = ({
 
   const handleDelete = async () => {
     if (!isAdmin || blockExclusion) return;
-
     if (!confirm("Tem certeza? Essa ação excluirá login e perfil.")) return;
     setSaving(true);
 
@@ -147,13 +170,17 @@ const EmployeeDetailModal = ({
       if (userId) {
         await api.delete(`/users/${userId}`);
         onSuccess();
-        console.log("Usuário e perfil excluídos com sucesso.");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      console.log("Erro ao excluir usuário e perfil.");
-      setError("Erro ao excluir.");
-      setSaving(false);
+
+      if (err instanceof Error) {
+        setError("Erro ao excluir: " + err.message);
+      } else if (typeof err === "string") {
+        setError("Erro ao excluir: " + err);
+      } else {
+        setError("Erro ao excluir: erro desconhecido.");
+      }
     }
   };
 
@@ -173,12 +200,10 @@ const EmployeeDetailModal = ({
       className="modal-backdrop d-flex justify-content-center align-items-center"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.48)" }}
     >
-      <div
-        className="modal-dialog bg-white w-100"
-        style={{ maxWidth: "600px" }}
-      >
-        <div className="modal-content  border-0 shadow">
-          <div className="modal-header bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+      <div className="modal-dialog detail-box">
+        <div className="modal-content border-0 shadow">
+          {/* Header */}
+          <div className="modal-header border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
             <h5 className="modal-title fw-bold text-secondary">
               Editar Funcionário
             </h5>
@@ -196,7 +221,40 @@ const EmployeeDetailModal = ({
             )}
 
             <form onSubmit={handleUpdate} className="row g-3">
-              {/* NOME - SEMPRE EXIBE */}
+              {/* --- SWITCH DE STATUS (ATIVO/INATIVO) --- */}
+              {isAdmin && (
+                <div className="col-12 d-flex justify-content-end align-items-center mb-2">
+                  <div className="form-check form-switch">
+                    <label
+                      className="form-check-label fw-bold me-3"
+                      htmlFor="statusSwitch"
+                    >
+                      Status da Conta:
+                      {ativo ? (
+                        <span className="text-success ms-2">ATIVO</span>
+                      ) : (
+                        <span className="text-danger ms-2">INATIVO</span>
+                      )}
+                    </label>
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      role="switch"
+                      id="statusSwitch"
+                      style={{
+                        width: "3em",
+                        height: "1.5em",
+                        cursor: "pointer",
+                      }}
+                      checked={ativo}
+                      onChange={(e) => setAtivo(e.target.checked)}
+                      disabled={blockExclusion} // Não deixa desativar a si mesmo
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* NOME */}
               <div className="col-12">
                 <label className="form-label small text-muted fw-bold">
                   Nome
@@ -216,8 +274,8 @@ const EmployeeDetailModal = ({
                 </div>
               </div>
 
-              {/* EMAIL - SEMPRE EXIBE */}
-              <div className="col-md-6">
+              {/* EMAIL */}
+              <div className="col-md-12">
                 <label className="form-label small text-muted fw-bold">
                   Email
                 </label>
@@ -236,7 +294,7 @@ const EmployeeDetailModal = ({
                 </div>
               </div>
 
-              {/* CARGO - SEMPRE EXIBE */}
+              {/* CARGO */}
               <div className="col-md-6">
                 <label className="form-label small text-muted fw-bold">
                   Cargo
@@ -256,9 +314,40 @@ const EmployeeDetailModal = ({
                 </div>
               </div>
 
-              {/* CAMPOS QUE APENAS ADMIN VÊ */}
+              {/* CAMPOS RESTRITOS AO ADMIN */}
               {isAdmin && (
                 <>
+                  {/* TIPO DE PERFIL */}
+                  <div className="col-md-6">
+                    <label className="form-label small text-muted fw-bold">
+                      Tipo de Perfil
+                    </label>
+                    <div className="position-relative">
+                      <FontAwesomeIcon
+                        icon={faShieldHalved}
+                        className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                      />
+                      <select
+                        className="p-2 ps-5 w-100 form-control-underline"
+                        value={tipoPerfil}
+                        onChange={(e) => setTipoPerfil(e.target.value)}
+                        required
+                        disabled={
+                          blockExclusion || tipoPerfil === "SUPER_ADMIN"
+                        }
+                      >
+                        {tipoPerfil === "SUPER_ADMIN" && (
+                          <option value="SUPER_ADMIN">
+                            Super Administrador
+                          </option>
+                        )}
+                        <option value="ADMIN">Admin</option>
+                        <option value="GERENTE">Gerente</option>
+                        <option value="FUNCIONARIO">Funcionário</option>
+                      </select>
+                    </div>
+                  </div>
+
                   {/* CPF */}
                   <div className="col-md-6">
                     <label className="form-label small text-muted fw-bold">
@@ -311,7 +400,7 @@ const EmployeeDetailModal = ({
                       <input
                         type="text"
                         className="p-2 ps-5 w-100 form-control-underline"
-                        placeholder="Preencha para alterar"
+                        placeholder="Preencha apenas para alterar"
                         value={novaSenha}
                         onChange={(e) => setNovaSenha(e.target.value)}
                       />
@@ -320,9 +409,9 @@ const EmployeeDetailModal = ({
                 </>
               )}
 
-              {/* BOTÕES */}
+              {/* RODAPÉ COM BOTÕES */}
               <div className="col-12 mt-4 d-flex justify-content-between align-items-center border-top pt-3">
-                {/* EXCLUIR — APENAS ADMIN E NÃO PODE SE AUTO-EXCLUIR */}
+                {/* BOTÃO EXCLUIR */}
                 {isAdmin && !blockExclusion && (
                   <button
                     type="button"
@@ -334,7 +423,10 @@ const EmployeeDetailModal = ({
                   </button>
                 )}
 
-                {/* Salvar */}
+                {/* ESPAÇADOR SE NÃO TIVER BOTÃO EXCLUIR */}
+                {(!isAdmin || blockExclusion) && <div></div>}
+
+                {/* BOTÃO SALVAR */}
                 <button
                   type="submit"
                   className="button-dark-grey px-5 py-2 rounded-pill"

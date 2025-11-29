@@ -1,4 +1,3 @@
-// src/routes/user.routes.ts
 import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
 import { authMiddleware, requireRole } from "../middlewares/auth.middleware";
@@ -9,41 +8,45 @@ const controller = new UserController();
 // --- TODAS AS ROTAS ABAIXO EXIGEM TOKEN ---
 router.use(authMiddleware);
 
-// Criar usuário avulso (Geralmente usado pelo ADMIN para criar Funcionário)
+// Criar usuário avulso
 router.post(
   "/",
-  requireRole(["ADMIN", "GERENTE"]),
+  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
   controller.create.bind(controller)
 );
 
-// Listagem (Apenas ADMIN ou SUPER_ADMIN deve ver todos)
+// Listagem Geral
+// Apenas SUPER_ADMIN deve ver todos os usuários do banco (de todas as lojas)
 router.get(
   "/",
   requireRole(["SUPER_ADMIN"]),
   controller.getAll.bind(controller)
 );
 
-router.get("/", controller.getAll.bind(controller));
+// ⚠️ ATENÇÃO: Removi a linha duplicada 'router.get("/", ...)' que estava aqui sem proteção.
+// Se você deixasse ela, qualquer pessoa logada veria todos os usuários.
 
 // Paginação e Busca
 router.get(
   "/paginated",
-  requireRole(["ADMIN", "GERENTE"]),
+  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
   controller.getPaginated.bind(controller)
 );
 router.get(
   "/search",
-  requireRole(["ADMIN", "GERENTE"]),
+  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
   controller.searchPaginated.bind(controller)
 );
 
 // Operações por ID
-router.get("/:id", controller.getById.bind(controller)); // O próprio usuário pode ver seu ID (lógica de "me" pode ser add depois)
-router.patch("/:id", controller.update.bind(controller)); // Update (Senha/Email)
+// Todos logados podem ver usuários (pelo ID), mas deletar é restrito
+router.get("/:id", controller.getById.bind(controller));
+router.patch("/:id", controller.update.bind(controller));
+
 router.delete(
   "/:id",
-  requireRole(["ADMIN"]),
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
   controller.remove.bind(controller)
-); // Apenas ADMIN deleta
+);
 
 export default router;

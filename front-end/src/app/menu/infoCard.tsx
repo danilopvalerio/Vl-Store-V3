@@ -33,12 +33,10 @@ const InfoCard = ({ title, value, icon, borderColor }: InfoCardProps) => {
   return (
     // Aplica a classe principal do CSS Module e o estilo da borda
     <div className={styles.card} style={cardStyle}>
-      <div className={styles.iconWrapper}>{icon}</div>
+      <div className={styles.textWrapper}>
+        {icon} {title}
+      </div>
 
-      {/* O título do card */}
-      <h3 className={styles.title}>{title}</h3>
-
-      {/* O valor principal (o número grande) */}
       <span className={styles.value}>{value}</span>
     </div>
   );

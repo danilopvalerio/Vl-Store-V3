@@ -96,7 +96,7 @@ model loja {
   id_loja            String               @id(map: "pk_loja") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   admin_user_id      String?              @db.Uuid
   nome               String               @db.VarChar(255)
-  cnpj_cpf           String?              @unique(map: "uk_loja_documento") @db.VarChar(20)
+  cnpj_cpf           String?              @db.VarChar(20)
   data_criacao       DateTime?            @default(now()) @db.Timestamp(6)
   ultima_atualizacao DateTime?            @default(now()) @db.Timestamp(6)
   caixa              caixa[]
@@ -139,7 +139,7 @@ model pagamento_venda {
 model produto {
   id_produto         String             @id(map: "pk_produto") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   id_loja            String             @db.Uuid
-  referencia         String?            @db.VarChar(100)
+  referencia         String?            @unique(map: "uq_produto_referencia") @db.VarChar(100)
   nome               String             @db.VarChar(255)
   categoria          String?            @db.VarChar(100)
   material           String?            @db.VarChar(100)
@@ -211,7 +211,7 @@ model user_profile {
   user_id            String    @db.Uuid
   id_loja            String    @db.Uuid
   nome               String    @db.VarChar(255)
-  cpf_cnpj           String?   @unique(map: "uk_profile_cpf_cnpj") @db.VarChar(20)
+  cpf_cnpj           String?   @db.VarChar(20)
   cargo              String?   @db.VarChar(100)
   tipo_perfil        String?   @db.VarChar(50)
   ativo              Boolean?  @default(true)
@@ -219,6 +219,8 @@ model user_profile {
   ultima_atualizacao DateTime? @default(now()) @db.Timestamp(6)
   loja               loja      @relation(fields: [id_loja], references: [id_loja], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_loja")
   user               user      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_user")
+
+  @@unique([id_loja, cpf_cnpj], map: "uk_profile_loja_cpf")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

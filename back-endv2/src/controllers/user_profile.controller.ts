@@ -1,4 +1,3 @@
-//src/controllers/user_profile.controller.ts
 import { Request, Response } from "express";
 import { UserProfileService } from "../services/user_profile.service";
 import {
@@ -11,12 +10,22 @@ import { isValidUUID, isValidString, toInt } from "../utils/validation";
 const profileService = new UserProfileService();
 
 export class UserProfileController {
+  // ============================================================================
   // POST /profiles
+  // Cria vínculo de perfil. Registra quem fez a contratação.
+  // ============================================================================
   async create(req: Request, res: Response) {
     try {
       const body = req.body as CreateUserProfileDTO;
 
-      // Validações obrigatórias
+      // Captura o ID do Admin/Gerente logado
+      const actorUserId = req.user?.userId;
+
+      if (!actorUserId) {
+        return res.status(401).json({ error: "Usuário não autenticado." });
+      }
+
+      // Validações
       if (!isValidUUID(body.user_id))
         return res.status(400).json({ error: "Invalid User ID" });
       if (!isValidUUID(body.id_loja))
@@ -24,9 +33,9 @@ export class UserProfileController {
       if (!isValidString(body.nome))
         return res.status(400).json({ error: "Invalid name" });
 
-      const profile = await profileService.createProfile(body);
+      // Passa o ator para o service
+      const profile = await profileService.createProfile(body, actorUserId);
 
-      // 201 Created
       res.status(201).json(profile as UserProfileResponseDTO);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
@@ -34,19 +43,28 @@ export class UserProfileController {
     }
   }
 
+  // ============================================================================
   // PATCH /profiles/:id
+  // Atualiza cargo ou tipo. Registra a alteração.
+  // ============================================================================
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const body = req.body as UpdateUserProfileDTO;
+      const actorUserId = req.user?.userId;
+
+      if (!actorUserId) {
+        return res.status(401).json({ error: "Usuário não autenticado." });
+      }
 
       if (!isValidUUID(id))
         return res.status(400).json({ error: "ID inválido" });
 
-      // Se enviou nome, valida se não está vazio
       if (body.nome && !isValidString(body.nome))
         return res.status(400).json({ error: "Nome inválido" });
-      const profile = await profileService.updateProfile(id, body);
+
+      const profile = await profileService.updateProfile(id, body, actorUserId);
+
       res.json(profile as UserProfileResponseDTO);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
@@ -54,16 +72,24 @@ export class UserProfileController {
     }
   }
 
+  // ============================================================================
   // DELETE /profiles/:id
+  // Remove perfil.
+  // ============================================================================
   async remove(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const actorUserId = req.user?.userId;
+
+      if (!actorUserId) {
+        return res.status(401).json({ error: "Usuário não autenticado." });
+      }
+
       if (!isValidUUID(id))
         return res.status(400).json({ error: "ID inválido" });
 
-      await profileService.deleteProfile(id);
+      await profileService.deleteProfile(id, actorUserId);
 
-      // 204 No Content
       res.status(204).send();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido";
@@ -71,7 +97,8 @@ export class UserProfileController {
     }
   }
 
-  // GET /profiles/:id
+  // --- MÉTODOS DE LEITURA E FILTRAGEM ---
+
   async getById(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -89,7 +116,6 @@ export class UserProfileController {
     }
   }
 
-  // GET /profiles
   async getAll(req: Request, res: Response) {
     try {
       const profiles = await profileService.getAllProfiles();
@@ -101,25 +127,19 @@ export class UserProfileController {
   }
 
   private getLojaFilter(req: Request): string | undefined {
-    const user = req.user; // Injetado pelo authMiddleware
-    if (!user) return undefined; // Segurança
+    const user = req.user;
+    if (!user) return undefined;
 
-    // Se for SUPER_ADMIN, retorna undefined (sem filtro, vê tudo)
     if (user.role === "SUPER_ADMIN") {
       return undefined;
     }
-
-    // Se for ADMIN ou GERENTE, retorna o ID da loja dele
     return user.lojaId;
   }
 
-  // GET /profiles/paginated
   async getPaginated(req: Request, res: Response) {
     try {
       const page = toInt(req.query.page, 1);
       const perPage = toInt(req.query.perPage, 10);
-
-      // Obtém o ID da loja para filtrar (ou undefined se for Super Admin)
       const filterLojaId = this.getLojaFilter(req);
 
       if (page <= 0 || perPage <= 0)
@@ -140,14 +160,35 @@ export class UserProfileController {
     }
   }
 
-  // GET /profiles/search
+  // GET /profiles/user/:userId
+  async getByUserId(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+
+      if (!isValidUUID(userId))
+        return res.status(400).json({ error: "ID de usuário inválido." });
+
+      const profile = await profileService.getProfileByUserId(userId);
+
+      if (!profile) {
+        // Retorna 404 se o usuário não tiver perfil (ainda não contratado)
+        return res
+          .status(404)
+          .json({ error: "Perfil não encontrado para este usuário." });
+      }
+
+      res.json(profile);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      res.status(400).json({ error: msg });
+    }
+  }
+
   async searchPaginated(req: Request, res: Response) {
     try {
       const term = (req.query.term as string | undefined) ?? "";
       const page = toInt(req.query.page, 1);
       const perPage = toInt(req.query.perPage, 10);
-
-      // Obtém o ID da loja para filtrar
       const filterLojaId = this.getLojaFilter(req);
 
       if (!isValidString(term))

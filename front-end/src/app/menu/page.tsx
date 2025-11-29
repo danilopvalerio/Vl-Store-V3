@@ -2,290 +2,241 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Navbar, Nav, Container } from "react-bootstrap";
+import { Nav, Button, Offcanvas } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import Image from "next/image";
 import {
   faBox,
   faUsers,
   faShoppingCart,
-  faCashRegister,
-  faChartBar,
-  faUser,
   faRightFromBracket,
-  faShoppingBag,
-  faBars, // <--- Import do ícone do menu
+  faBars,
+  faHome,
 } from "@fortawesome/free-solid-svg-icons";
 
 import api from "../../utils/api";
 import InfoCard from "./infoCard";
 
-// Interface compatível com o objeto 'user' que salvamos no localStorage no Login
 interface UserData {
   id: string;
   email: string;
   nome: string;
-  role: string; // Ex: "ADMIN", "FUNCIONARIO", "GERENTE"
-  lojaId: string;
-  telefones: string[];
+  role: string;
 }
 
 const MenuPage = () => {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [checkingLogin, setCheckingLogin] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showMobile, setShowMobile] = useState(false);
 
-  // ---------------------------------------------------------
-  // 1. Verifica Login (Lê do LocalStorage para ser rápido)
-  // ---------------------------------------------------------
   useEffect(() => {
-    const storedToken = localStorage.getItem("accessToken");
     const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("accessToken");
 
     if (!storedToken || !storedUser) {
-      // Se não tem dados, manda pro login
       router.push("/login");
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      setUserData(parsedUser);
-    } catch (error) {
-      console.error("Erro ao processar dados do usuário:", error);
-      localStorage.clear();
-      router.push("/login");
-    } finally {
-      // Para de mostrar o "loading"
-      setCheckingLogin(false);
+    } else {
+      try {
+        setUserData(JSON.parse(storedUser));
+      } catch {
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
     }
   }, [router]);
 
-  // ---------------------------------------------------------
-  // 2. Logout (Chama API para limpar Cookie e limpa LocalStorage)
-  // ---------------------------------------------------------
   const handleLogout = async () => {
     try {
-      // Chama o backend para invalidar o Refresh Token no banco (via Cookie)
-      await api.post("/auth/logout", {}, { withCredentials: true });
-    } catch (error) {
-      console.error("Erro ao fazer logout no servidor (ignorando):", error);
-    } finally {
-      // Limpa o navegador e redireciona
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
-      router.push("/login");
-    }
+      await api.post("/auth/logout");
+    } catch {}
+    localStorage.clear();
+    router.push("/login");
   };
 
-  // Helper para navegar e fechar o menu mobile
-  const navigateTo = (path: string) => {
-    router.push(path);
-    setMenuOpen(false);
-  };
+  const getUserInitial = () =>
+    userData?.nome ? userData.nome.charAt(0).toUpperCase() : "U";
 
-  // ---------------------------------------------------------
-  // 3. Tela de Carregamento (Spinner)
-  // ---------------------------------------------------------
-  if (checkingLogin) {
+  // --- Sidebar Content ---
+  const SidebarContent = () => (
+    <div className="h-100 border-top border-secondary bg-gradient-vl d-flex flex-column">
+      <div className="d-flex flex-column align-items-center py-4 border-bottom border-secondary">
+        <div className="avatar-circle">{getUserInitial()}</div>
+        <div className="fw-bold text-truncate w-75 text-center">
+          {userData?.nome}
+        </div>
+        <small className="text-white small text-truncate w-75 text-center">
+          {userData?.email}
+        </small>
+      </div>
+
+      <Nav className="flex-column p-2 gap-1 mt-2 flex-grow-1">
+        <small
+          className="text-uppercase fw-bold text-white ms-2 mb-1"
+          style={{ fontSize: "0.75rem" }}
+        >
+          Menu
+        </small>
+
+        <div
+          className="nav-item-custom text-white"
+          onClick={() => router.push("/menu")}
+        >
+          <FontAwesomeIcon icon={faHome} className="me-3" width={16} /> Início
+        </div>
+
+        <div
+          className="nav-item-custom text-white"
+          onClick={() => router.push("/products")}
+        >
+          <FontAwesomeIcon icon={faBox} className="me-3" width={16} /> Produtos
+        </div>
+
+        {userData?.role === "ADMIN" ||
+          (userData?.role === "SUPER_ADMIN" && (
+            <div
+              className="nav-item-custom text-white"
+              onClick={() => router.push("/employee")}
+            >
+              <FontAwesomeIcon icon={faUsers} className="me-3" width={16} />{" "}
+              Funcionários
+            </div>
+          ))}
+
+        <div className="nav-item-custom disabled">
+          <FontAwesomeIcon icon={faShoppingCart} className="me-3" width={16} />{" "}
+          Vendas
+        </div>
+
+        {userData?.role === "ADMIN" ||
+          (userData?.role === "SUPER_ADMIN" && (
+            <div
+              className="nav-item-custom text-white"
+              onClick={() => router.push("/accessLogs")}
+            >
+              <FontAwesomeIcon icon={faUsers} className="me-3" width={16} />{" "}
+              Logs de Acesso
+            </div>
+          ))}
+
+        {userData?.role === "ADMIN" ||
+          (userData?.role === "SUPER_ADMIN" && (
+            <div
+              className="nav-item-custom text-white"
+              onClick={() => router.push("/auditLogs")}
+            >
+              <FontAwesomeIcon icon={faUsers} className="me-3" width={16} />{" "}
+              Logs de Auditoria
+            </div>
+          ))}
+      </Nav>
+
+      <div className="p-2 border-top border-secondary">
+        <div className="nav-item-custom text-white" onClick={handleLogout}>
+          <FontAwesomeIcon
+            icon={faRightFromBracket}
+            className="me-3"
+            width={16}
+          />{" "}
+          Sair
+        </div>
+      </div>
+    </div>
+  );
+
+  if (loading)
     return (
-      <div className="d-flex vh-100 justify-content-center align-items-center">
-        <h5 className="mx-auto bg-light rounded-5 p-3 d-flex align-items-center shadow-sm">
-          <div
-            className="spinner-border spinner-border-sm me-2"
-            role="status"
-          />
-          Carregando menu...
-        </h5>
+      <div className="vh-100 d-flex justify-content-center align-items-center">
+        <div className="spinner-border text-primary" />
       </div>
     );
-  }
 
-  // ---------------------------------------------------------
-  // 4. Renderização Principal
-  // ---------------------------------------------------------
   return (
-    <div className="d-flex flex-column min-vh-100 bg-light">
-      {/* === Navbar === */}
-      <Navbar
-        expand="lg"
-        className="border-bottom bg-gradient-vl-2 shadow-sm"
-        expanded={menuOpen}
-        onToggle={setMenuOpen}
-        // Removemos o data-bs-theme="dark" aqui para controlarmos o ícone manualmente
-      >
-        <Container fluid>
-          {/* Toggle (Hamburguer) Customizado e Mais Grosso */}
-          <Navbar.Toggle
-            aria-controls="basic-navbar-nav"
-            className="border-0 p-0" // Remove borda padrão do botão
-          >
-            <FontAwesomeIcon
-              icon={faBars}
-              className="text-white fs-2" // fs-2 aumenta o tamanho, deixando mais grosso
-            />
-          </Navbar.Toggle>
+    <div className="d-flex flex-column vh-100">
+      <div className="d-flex flex-grow-1 bg-light overflow-hidden">
+        {/* Sidebar Desktop */}
+        <aside className="d-none d-lg-block sidebar-wrapper shadow">
+          <SidebarContent />
+        </aside>
 
-          {/* Exibe Nome e Cargo */}
-          <Navbar.Text className=" text-white ms-3 me-3 fw-bold fs-6">
-            {userData?.nome || "Usuário"}
-            <FontAwesomeIcon icon={faShoppingBag} className="me-3 ms-3 fs-6" />
-            <span className="fw-bold fs-6">
-              {userData?.role === "ADMIN" && "Administrador"}
-              {userData?.role === "FUNCIONARIO" && "Funcionário"}
-              {userData?.role === "GERENTE" && "Gerente"}
-            </span>
-          </Navbar.Text>
+        {/* Sidebar Mobile */}
+        <Offcanvas
+          show={showMobile}
+          onHide={() => setShowMobile(false)}
+          className="bg-gradient-vl text-white w-75"
+        >
+          <Offcanvas.Header closeButton closeVariant="white">
+            <Offcanvas.Title>Menu</Offcanvas.Title>
+          </Offcanvas.Header>
+          <Offcanvas.Body className="p-0 sidebar-wrapper w-100 h-100">
+            <SidebarContent />
+          </Offcanvas.Body>
+        </Offcanvas>
 
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="ms-auto align-items-center gap-2">
-              {/* Link Produtos (Todos veem) */}
-              <Nav.Link
-                className="text-white fw-bold"
-                onClick={() => navigateTo("/products")}
+        {/* Coluna Direita */}
+        <div className="d-flex flex-column flex-grow-1 w-100">
+          {/* Header */}
+          <div className="flex-shrink-0">
+            {/* Header Mobile */}
+            <div className="d-lg-none bg-white p-3 shadow-sm d-flex align-items-center gap-3">
+              <Button
+                variant="link"
+                className="text-dark p-0"
+                onClick={() => setShowMobile(true)}
               >
-                <FontAwesomeIcon icon={faBox} className="me-2" />
-                Produtos
-              </Nav.Link>
+                <FontAwesomeIcon icon={faBars} size="lg" />
+              </Button>
+              <span className="fw-bold">Dashboard</span>
+            </div>
 
-              {/* Link Funcionários (Só Admin vê) */}
-              {userData?.role === "ADMIN" && (
-                <Nav.Link
-                  className="text-white fw-bold"
-                  onClick={() => navigateTo("/employee")}
-                >
-                  <FontAwesomeIcon icon={faUsers} className="me-2" />
-                  Funcionários
-                </Nav.Link>
-              )}
+            {/* Header Desktop */}
+            <header className="d-none d-lg-flex p-4 justify-content-between align-items-center bg-white shadow-sm">
+              <div>
+                <h4 className="fw-bold m-0 text-dark">Dashboard</h4>
+                <small className="text-muted">Visão Geral</small>
+              </div>
+              <span className="fw-bold">
+                {new Date().toLocaleDateString("pt-BR")}
+              </span>
+            </header>
+          </div>
 
-              {/* Links Futuros/Desativados */}
-              <Nav.Link className="text-white disabled opacity-50 fw-bold">
-                <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
-                Vendas
-              </Nav.Link>
-              <Nav.Link className="text-white disabled opacity-50 fw-bold">
-                <FontAwesomeIcon icon={faCashRegister} className="me-2" />
-                Caixas
-              </Nav.Link>
+          {/* Conteúdo */}
+          <main className="flex-grow-1 overflow-auto p-4">
+            <h5 className="fw-bold mb-4">RESUMO GERAL</h5>
 
-              {/* Links Administrativos Extras */}
-              {userData?.role === "ADMIN" && (
-                <>
-                  <Nav.Link className="text-white disabled opacity-50 fw-bold">
-                    <FontAwesomeIcon icon={faChartBar} className="me-2" />
-                    Relatórios
-                  </Nav.Link>
-                  <Nav.Link className="text-white disabled opacity-50 fw-bold">
-                    <FontAwesomeIcon icon={faUser} className="me-2" />
-                    Conta
-                  </Nav.Link>
-                </>
-              )}
-
-              {/* Botão Sair */}
-              <Nav.Link
-                className="text-white fw-bold btn btn-link text-decoration-none"
-                onClick={handleLogout}
-              >
-                <FontAwesomeIcon icon={faRightFromBracket} className="me-2" />
-                Sair
-              </Nav.Link>
-            </Nav>
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
-
-      {/* === Título === */}
-      <div className="w-100 mt-4 mb-2">
-        <h5 className="text-center text-secondary fw-bold">RESUMO GERAL</h5>
-        <div
-          className="mx-auto bg-secondary opacity-25"
-          style={{ height: "2px", width: "200px" }}
-        ></div>
+            <div className="row g-3">
+              <div className="col-12 col-md-6 col-xl-4">
+                <InfoCard
+                  title="Faturamento (Hoje)"
+                  value={1000}
+                  icon="💵"
+                  borderColor="#00C9A8"
+                />
+              </div>
+              <div className="col-12 col-md-6 col-xl-4">
+                <InfoCard
+                  title="Novas Vendas (Hoje)"
+                  value={15}
+                  icon="🛒"
+                  borderColor="#C900DB"
+                />
+              </div>
+              <div className="col-12 col-md-6 col-xl-4">
+                <InfoCard
+                  title="Vendedor destaque do dia"
+                  value={"Camila S."}
+                  icon="🏆"
+                  borderColor="#FF8800"
+                />
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
 
-      {/* === Cards / Dashboard === */}
-      <section className="w-100 row flex-fill m-0 mt-4 justify-content-center align-items-center px-4">
-        {/* 1. Faturamento */}
-        <article className="col-lg-4 col-md-6 col-12 d-flex justify-content-center align-items-center mb-4">
-          <InfoCard
-            title="FATURAMENTO (HOJE)"
-            value={1000}
-            icon="💵"
-            borderColor="#00C9A8"
-          />
-        </article>
-
-        {/* 2. Novas Vendas */}
-        <article className="col-lg-4 col-md-6 col-12 d-flex justify-content-center align-items-center mb-4">
-          <InfoCard
-            title="NOVAS VENDAS (HOJE)"
-            value={15}
-            icon="🛒"
-            borderColor="#C900DB"
-          />
-        </article>
-
-        {/* 3. Vendedor Destaque */}
-        <article className="col-lg-4 col-md-6 col-12 d-flex justify-content-center align-items-center mb-4">
-          <InfoCard
-            title="VENDEDOR DESTAQUE (HOJE)"
-            value={15}
-            icon="🏆"
-            borderColor="#FF8800"
-          />
-        </article>
-
-        {/* 4. Saldo Total */}
-        <article className="col-lg-4 col-md-6 col-12 d-flex justify-content-center align-items-center mb-4">
-          <InfoCard
-            title="SALDO TOTAL (HOJE)"
-            value={15}
-            icon="💰"
-            borderColor="#008CFF"
-          />
-        </article>
-
-        {/* 5. Saídas Totais */}
-        <article className="col-lg-4 col-md-6 col-12 d-flex justify-content-center align-items-center mb-4">
-          <InfoCard
-            title="SAÍDAS TOTAIS (HOJE)"
-            value={15}
-            icon="📉"
-            borderColor="#ff0000"
-          />
-        </article>
-
-        {/* 6. Entradas Totais */}
-        <article className="col-lg-4 col-md-6 col-12 d-flex justify-content-center align-items-center mb-4">
-          <InfoCard
-            title="ENTRADAS TOTAIS (HOJE)"
-            value={15}
-            icon="📈"
-            borderColor="#00DB28"
-          />
-        </article>
-      </section>
-
-      {/* === Logo e Footer === */}
-      <div className="text-center mt-auto pt-5">
-        <Image
-          className="mx-auto mb-3"
-          src="/images/vl-logo.svg"
-          alt="VL Store Logo"
-          width={200}
-          height={0}
-          style={{ height: "auto", opacity: 0.8 }}
-          priority
-        />
-      </div>
-
-      <footer>
-        <p className="m-0">
-          © 2025 Danilo Valério. Todos os direitos reservados.
-        </p>
+      <footer className="">
+        © 2025 Danilo Valério. Todos os direitos reservados.
       </footer>
     </div>
   );

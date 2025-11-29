@@ -1,3 +1,4 @@
+//src/app/employee/AddEmployeeModal.tsx
 "use client";
 import { useState } from "react";
 import { IMaskInput } from "react-imask";
@@ -98,10 +99,7 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
       className="modal-backdrop d-flex justify-content-center align-items-center"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.48)" }}
     >
-      <div
-        className="modal-dialog bg-white w-100"
-        style={{ maxWidth: "600px" }}
-      >
+      <div className="modal-dialog detail-box" style={{ maxWidth: "600px" }}>
         <div className="modal-content border-0 shadow">
           {/* HEADER */}
           <div className="modal-header bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">

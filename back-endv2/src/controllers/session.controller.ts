@@ -1,4 +1,3 @@
-// src/controllers/session.controller.ts
 import { Request, Response } from "express";
 import { SessionService } from "../services/session.service";
 import { LoginDTO, RegisterStoreOwnerDTO } from "../dtos/session.dto";
@@ -10,14 +9,12 @@ import {
 
 const sessionService = new SessionService();
 
-// Configuração dos Cookies
-// Em produção (HTTPS), secure deve ser true. Em localhost, false.
 const COOKIE_OPTIONS = {
-  httpOnly: true, // O JavaScript do navegador NÃO consegue ler
+  httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const, // Proteção contra CSRF
+  sameSite: "strict" as const,
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
-  path: "/", // Disponível em todas as rotas
+  path: "/",
 };
 
 export class SessionController {
@@ -25,23 +22,38 @@ export class SessionController {
   async login(req: Request, res: Response) {
     try {
       const body = req.body as LoginDTO;
+
+      // Validações básicas de entrada
       if (!isValidEmail(body.email))
         return res.status(400).json({ error: "Email inválido" });
       if (!isValidString(body.senha))
         return res.status(400).json({ error: "Senha requerida" });
 
-      const result = await sessionService.authenticate(body);
+      // --- LOGICA PARA PEGAR IP E USER AGENT ---
+      // 1. Tenta pegar IP do proxy (x-forwarded-for), se não tiver, pega do socket
+      const rawIp =
+        req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+      // 2. Se vier uma lista de IPs, pega o primeiro. Se for string, usa ela.
+      let ip = Array.isArray(rawIp) ? rawIp[0] : rawIp;
+      if (ip.includes(",")) {
+        ip = ip.split(",")[0].trim();
+      }
 
-      // 1. Envia o Refresh Token no Cookie (Invisível pro JS)
+      const userAgent = req.headers["user-agent"] || "Desconhecido";
+      // -----------------------------------------
+
+      // Passamos o IP e o UserAgent para o service processar o log
+      const result = await sessionService.authenticate(body, ip, userAgent);
+
       res.cookie("refreshToken", result.refreshToken, COOKIE_OPTIONS);
 
-      // 2. Retorna no JSON apenas o Access Token e User
       res.json({
         accessToken: result.accessToken,
         user: result.user,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro na autenticação";
+      // 401 Unauthorized é o código padrão para falha de login
       res.status(401).json({ error: msg });
     }
   }
@@ -49,7 +61,6 @@ export class SessionController {
   // POST /auth/refresh
   async refresh(req: Request, res: Response) {
     try {
-      // Tenta pegar do Cookie (req.cookies vem do cookie-parser)
       const refreshToken = req.cookies.refreshToken;
 
       if (!refreshToken)
@@ -57,7 +68,6 @@ export class SessionController {
 
       const result = await sessionService.refreshToken(refreshToken);
 
-      // Retorna o novo Access Token
       res.json({ accessToken: result.accessToken });
     } catch (err) {
       res.status(403).json({ error: "Token inválido ou expirado" });
@@ -69,7 +79,6 @@ export class SessionController {
     try {
       const body = req.body as RegisterStoreOwnerDTO;
 
-      // Validações...
       if (!isValidEmail(body.email))
         return res.status(400).json({ error: "Email inválido" });
       if (!isValidString(body.senha, 6))
@@ -83,7 +92,6 @@ export class SessionController {
 
       const result = await sessionService.registerStoreOwner(body);
 
-      // Já loga o usuário injetando o cookie
       res.cookie("refreshToken", result.refreshToken, COOKIE_OPTIONS);
 
       res.status(201).json({
@@ -99,17 +107,13 @@ export class SessionController {
   // POST /auth/logout
   async logout(req: Request, res: Response) {
     try {
-      // Pega o token do cookie para remover do banco
       const refreshToken = req.cookies.refreshToken;
 
       if (refreshToken) {
         await sessionService.logout(refreshToken);
       }
 
-      // Limpa o cookie do navegador
       res.clearCookie("refreshToken", COOKIE_OPTIONS);
-
-      // 204 No Content
       res.status(204).send();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro no logout";

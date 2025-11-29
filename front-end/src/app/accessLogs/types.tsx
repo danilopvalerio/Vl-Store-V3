@@ -73,7 +73,6 @@ export interface UpdateProfilePayload {
   nome?: string;
   cpf?: string;
   cargo?: string;
-  ativo?: boolean;
 }
 
 // Dados do Usuário Logado (localStorage)

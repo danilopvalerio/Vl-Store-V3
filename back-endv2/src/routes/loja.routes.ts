@@ -1,4 +1,3 @@
-// src/routes/loja.routes.ts
 import { Router } from "express";
 import { LojaController } from "../controllers/loja.controller";
 import { authMiddleware, requireRole } from "../middlewares/auth.middleware";
@@ -9,31 +8,37 @@ const controller = new LojaController();
 // --- TODAS AS ROTAS ABAIXO EXIGEM TOKEN ---
 router.use(authMiddleware);
 
-// Apenas SUPER_ADMIN deveria ver todas as lojas do sistema
+// Ver todas as lojas (Só o dono do sistema)
 router.get(
   "/",
   requireRole(["SUPER_ADMIN"]),
   controller.getAll.bind(controller)
 );
 
-// ADMIN (Dono) pode ver sua própria loja via ID (ou o middleware filtra depois)
-router.get("/:id", controller.getById.bind(controller));
+// Ver uma loja específica
+// Adicionei requireRole para garantir que funcionário comum não fique "bisbilhotando" lojas alheias pelo ID,
+// embora seu controller deva tratar isso também.
+router.get(
+  "/:id",
+  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE", "FUNCIONARIO"]),
+  controller.getById.bind(controller)
+);
 
-// Criar loja avulsa (Sem usuário atrelado automaticamente) - Restrito a SUPER_ADMIN
+// Criar loja avulsa
 router.post(
   "/",
   requireRole(["SUPER_ADMIN"]),
   controller.create.bind(controller)
 );
 
-// Atualizar dados da loja (Nome, CNPJ) - Apenas o Dono (ADMIN)
+// Atualizar dados da loja
 router.patch(
   "/:id",
-  requireRole(["ADMIN", "SUPER_ADMIN"]),
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
   controller.update.bind(controller)
 );
 
-// Deletar loja - Perigoso, restrito a SUPER_ADMIN ou ADMIN (Dono)
+// Deletar loja
 router.delete(
   "/:id",
   requireRole(["SUPER_ADMIN", "ADMIN"]),

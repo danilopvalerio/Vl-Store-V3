@@ -166,6 +166,8 @@ footer {
   background-color: #ffffff;
   color: var(--color-quartenary);
   border: 1px solid #d3d3d3;
+  width: 80px;
+  height: 80px;
 }
 
 .button-bottom-line-rounded {
@@ -184,4 +186,70 @@ footer {
   border: none;
   border-radius: 10px 10px 0px 0px;
   border-bottom: 2px solid #444;
+}
+
+.header-panel {
+  width: 100%;
+  height: 50px;
+}
+
+/* Sidebar Principal */
+.sidebar-wrapper {
+  width: 270px; /* Largura fixa de 200px */
+  min-width: 200px; /* Garante que não encolha */
+  height: auto;
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Círculo do Avatar */
+.avatar-circle {
+  width: 70px;
+  height: 70px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+/* Item de Menu */
+.nav-item-custom {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.nav-item-custom:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.nav-item-custom.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mobile Offcanvas Override (opcional, para combinar as cores) */
+.offcanvas-custom {
+  background: #16213e !important;
+  color: white;
+}
+
+.detail-box {
+  min-width: 300px;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background-color: var(--color-white);
 }

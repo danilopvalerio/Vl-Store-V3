@@ -1,14 +1,16 @@
-//src/services/loja.service.ts
 import { LojaRepository } from "../repositories/loja.repository";
 import { loja as Loja } from "../generated/prisma/client";
 import { CreateLojaDTO, UpdateLojaDTO } from "../dtos/loja.dto";
+import { LogService } from "./log.service";
 
 export class LojaService {
   private repo = new LojaRepository();
+  private logService = new LogService();
 
-  // --- CREATE ---
-  async createLoja(data: CreateLojaDTO): Promise<Loja> {
-    // 1. Regra: CNPJ/CPF deve ser único no sistema
+  // ============================================================================
+  // CREATE LOJA
+  // ============================================================================
+  async createLoja(data: CreateLojaDTO, actorUserId?: string): Promise<Loja> {
     if (data.cnpj_cpf) {
       const existing = await this.repo.findByDoc(data.cnpj_cpf);
       if (existing) {
@@ -16,45 +18,100 @@ export class LojaService {
       }
     }
 
-    // 2. Cria a loja
-    return this.repo.create({
+    const newLoja = await this.repo.create({
       nome: data.nome,
       cnpj_cpf: data.cnpj_cpf,
       admin_user_id: data.admin_user_id,
     });
+
+    // Log de Sistema
+    await this.logService.logSystem({
+      id_user: actorUserId || data.admin_user_id,
+      acao: "Criar Loja",
+      detalhes: `Nova loja '${newLoja.nome}' (ID: ${newLoja.id_loja}) registrada no sistema.`,
+    });
+
+    return newLoja;
   }
 
-  // --- UPDATE ---
-  async updateLoja(id_loja: string, data: UpdateLojaDTO): Promise<Loja> {
-    // 1. Verifica se a loja existe
+  // ============================================================================
+  // UPDATE LOJA (Com Detalhamento)
+  // ============================================================================
+  async updateLoja(
+    id_loja: string,
+    data: UpdateLojaDTO,
+    actorUserId: string
+  ): Promise<Loja> {
     const existing = await this.repo.findById(id_loja);
     if (!existing) throw new Error("Loja não encontrada");
 
-    // 2. Se estiver tentando mudar o CNPJ, verifica se o novo já não existe
     if (data.cnpj_cpf && data.cnpj_cpf !== existing.cnpj_cpf) {
       const docExists = await this.repo.findByDoc(data.cnpj_cpf);
       if (docExists) throw new Error("O CPF/CNPJ já está cadastrado");
     }
 
-    // 3. Monta o objeto parcial para o banco
     const updateData: Partial<Loja> = {};
+    const mudancas: string[] = []; // Array de alterações
 
-    if (data.nome) updateData.nome = data.nome;
-    if (data.cnpj_cpf) updateData.cnpj_cpf = data.cnpj_cpf;
-    if (data.admin_user_id) updateData.admin_user_id = data.admin_user_id;
+    // 1. Verifica Nome
+    if (data.nome && data.nome !== existing.nome) {
+      updateData.nome = data.nome;
+      mudancas.push(`Nome alterado de '${existing.nome}' para '${data.nome}'`);
+    }
 
-    return this.repo.updateById(id_loja, updateData);
+    // 2. Verifica CNPJ
+    if (data.cnpj_cpf && data.cnpj_cpf !== existing.cnpj_cpf) {
+      updateData.cnpj_cpf = data.cnpj_cpf;
+      mudancas.push(`Documento (CNPJ) alterado`);
+    }
+
+    // 3. Verifica Dono (Admin)
+    if (data.admin_user_id && data.admin_user_id !== existing.admin_user_id) {
+      updateData.admin_user_id = data.admin_user_id;
+      mudancas.push(
+        `Administrador (Dono) alterado para ID: ${data.admin_user_id}`
+      );
+    }
+
+    // Executa update
+    const updatedLoja = await this.repo.updateById(id_loja, updateData);
+
+    // Log de Sistema
+    if (mudancas.length > 0) {
+      await this.logService.logSystem({
+        id_user: actorUserId,
+        acao: "Atualizar Loja",
+        detalhes: `Loja ${
+          existing.nome
+        } (ID: ${id_loja}) atualizada. Mudanças: ${mudancas.join(". ")}.`,
+      });
+    }
+
+    return updatedLoja;
   }
 
-  // --- DELETE ---
-  async deleteLoja(id_loja: string): Promise<Loja> {
+  // ============================================================================
+  // DELETE LOJA
+  // ============================================================================
+  async deleteLoja(id_loja: string, actorUserId: string): Promise<Loja> {
     const existing = await this.repo.findById(id_loja);
     if (!existing) throw new Error("Loja não encontrada");
 
-    return this.repo.deleteById(id_loja);
+    const deletedLoja = await this.repo.deleteById(id_loja);
+
+    // Log de Sistema
+    await this.logService.logSystem({
+      id_user: actorUserId,
+      acao: "Remover Loja",
+      detalhes: `A loja '${existing.nome}' (ID: ${id_loja}) foi excluída permanentemente.`,
+    });
+
+    return deletedLoja;
   }
 
-  // --- GETTERS ---
+  // ============================================================================
+  // LEITURAS (GETTERS)
+  // ============================================================================
   async getLojaById(id_loja: string): Promise<Loja | null> {
     return this.repo.findById(id_loja);
   }

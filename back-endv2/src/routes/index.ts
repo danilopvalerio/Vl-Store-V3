@@ -4,6 +4,8 @@ import sessionRoutes from "./session.routes";
 import userRoutes from "./user.routes";
 import lojaRoutes from "./loja.routes";
 import userProfileRoutes from "./user_profile.routes";
+import logRoutes from "./log.routes";
+import produtoRoutes from "./product.routes";
 
 const router = Router();
 
@@ -19,5 +21,9 @@ router.use("/auth", sessionRoutes);
 router.use("/users", userRoutes);
 router.use("/lojas", lojaRoutes);
 router.use("/profiles", userProfileRoutes);
+router.use("/products", produtoRoutes);
+
+// Rotas de Logs
+router.use("/logs", logRoutes);
 
 export default router;

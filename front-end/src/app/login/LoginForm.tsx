@@ -85,8 +85,7 @@ export default function LoginForm() {
             src="/images/vl-logo.svg"
             alt="VL Store Logo"
             width={60}
-            height={0}
-            style={{ height: "auto" }}
+            height={60}
             priority
           />
         </div>
@@ -162,9 +161,12 @@ export default function LoginForm() {
             </button>
           </div>
 
-          <p className="w-100 text-center mt-3 quartenary fw-semibold">
+          <p className="w-100 text-center mt-3 quartenary fw-light">
             Não possui uma conta?{" "}
-            <Link className="grey-link-text fw-bold" href="/register">
+            <Link
+              className="grey-link-text fw-normal fst-italic"
+              href="/register"
+            >
               Crie uma nova conta.
               <br />
             </Link>

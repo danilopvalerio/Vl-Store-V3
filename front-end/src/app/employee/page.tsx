@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
@@ -58,9 +57,9 @@ const EmployeePage = () => {
 
     try {
       const user = JSON.parse(storedUser);
-      if (user.role !== "ADMIN") {
+      if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
         alert(
-          "Acesso negado. Apenas administradores podem gerenciar funcionários."
+          `Acesso negado. Apenas administradores podem gerenciar funcionários.TIPO: ${user.role}`
         );
         router.push("/menu");
         return;
@@ -145,28 +144,23 @@ const EmployeePage = () => {
   }
 
   return (
-    <div className="d-flex flex-column min-vh-100 bg-light">
+    <div
+      className="d-flex flex-column min-vh-100"
+      style={{ backgroundColor: "#e9e9e9ff" }}
+    >
       {/* Header / Navbar Simples */}
-      <header className="w-100 bg-white shadow-sm py-3 text-center position-relative">
+      <header className="header-panel bg-gradient-vl d-flex align-items-center bg-danger  px-2">
         <button
-          className="btn btn-link text-secondary position-absolute start-0 top-50 translate-middle-y ms-4"
+          className="btn btn-link text-white ms-0"
           onClick={() => router.push("/menu")}
           title="Voltar ao Menu"
         >
           <FontAwesomeIcon icon={faArrowLeft} className="fs-4" />
         </button>
-        <Image
-          src="/images/vl-store-logo.png"
-          alt="Logo VL Store"
-          width={120}
-          height={40}
-          className="h-auto"
-          priority
-        />
       </header>
 
       <div className="container my-5 flex-grow-1">
-        <div className="bg-white rounded-4 shadow-sm overflow-hidden">
+        <div className="bg-white border rounded-4 shadow-sm overflow-hidden">
           {/* Título com Gradiente */}
           <div className="bg-gradient-vl p-4 text-center text-white">
             <h3 className="fw-bold m-0">Gerenciar Funcionários</h3>

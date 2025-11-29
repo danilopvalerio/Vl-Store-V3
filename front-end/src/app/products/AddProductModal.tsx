@@ -1,300 +1,205 @@
-// products/AddProductModal.tsx
 "use client";
-import { AxiosError } from "axios";
 import { useState } from "react";
-import api from "../../utils/api"; // Make sure this path is correct
+import { AxiosError } from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBox,
+  faTag,
+  faBarcode,
+  faLayerGroup,
+  faVenusMars,
+} from "@fortawesome/free-solid-svg-icons";
+import api from "../../utils/api";
+import { ApiErrorResponse } from "./types";
 
-// --- Interfaces ---
-interface Variation {
-  descricao: string;
-  quantidade: number;
-  valor: number | string;
-}
-
-interface Product {
-  referencia: string;
-  nome: string;
-  categoria: string;
-  material: string;
-  genero: string;
-  idLoja: string;
-}
-
-// ✨ Props para o novo componente de Adicionar Produto
 interface AddProductProps {
   onClose: () => void;
-  onSaveSuccess: () => void; // Renomeado de onProductUpdate para maior clareza
+  onSuccess: () => void;
 }
 
-// Initial state for the form
-const initialProductState: Product = {
-  referencia: "",
-  nome: "",
-  categoria: "",
-  material: "",
-  genero: "",
-  idLoja: "1", // ⚠️ ATTENTION: Set a default or get this dynamically
-};
+const AddProductModal = ({ onClose, onSuccess }: AddProductProps) => {
+  const [nome, setNome] = useState("");
+  const [referencia, setReferencia] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [material, setMaterial] = useState("");
+  const [genero, setGenero] = useState("UNISSEX");
 
-const AddProductModal: React.FC<AddProductProps> = ({
-  onClose,
-  onSaveSuccess,
-}) => {
-  const [productData, setProductData] = useState<Product>(initialProductState);
-  const [variations, setVariations] = useState<Variation[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleProductChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setProductData((prevData) => ({ ...prevData, [name]: value }));
-  };
-
-  const handleVariationChange = (
-    index: number,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    const updatedVariations = [...variations];
-    updatedVariations[index] = { ...updatedVariations[index], [name]: value };
-    setVariations(updatedVariations);
-  };
-
-  const addVariation = () => {
-    setVariations([...variations, { descricao: "", quantidade: 0, valor: "" }]);
-  };
-
-  const removeVariation = (indexToRemove: number) => {
-    setVariations(variations.filter((_, index) => index !== indexToRemove));
-  };
-
-  const showMessage = (setter: (msg: string) => void, message: string) => {
-    setter(message); // mostra a mensagem
-    setTimeout(() => setter(""), 4000); // limpa depois de 4s
-  };
-
-  const handleSave = async () => {
-    if (!productData.referencia || !productData.nome) {
-      showMessage(setError, "Preencha pelo menos Referência e Nome.");
-      return;
-    }
-
-    setIsSubmitting(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     setError("");
-    setSuccess("");
 
     try {
-      // Step 1: Create the main product
-      await api.post("/produtos", productData);
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) throw new Error("Sessão inválida.");
+      const currentUser = JSON.parse(storedUser);
 
-      // Step 2: Create variations if they exist
-      if (variations.length > 0) {
-        const variationPromises = variations.map((variation) =>
-          api.post("/variacoes", {
-            ...variation,
-            valor: parseFloat(String(variation.valor).replace(",", ".")) || 0,
-            referenciaProduto: productData.referencia,
-          })
-        );
-        await Promise.all(variationPromises);
+      const payload = {
+        id_loja: currentUser.lojaId, // Pega do usuário logado
+        nome,
+        referencia,
+        categoria,
+        material,
+        genero,
+      };
+
+      await api.post("/products", payload);
+      onSuccess();
+    } catch (error) {
+      console.error(error);
+      if (error instanceof AxiosError) {
+        const errorData = error.response?.data as ApiErrorResponse;
+        setError(errorData?.error || "Erro ao criar produto.");
+      } else {
+        setError("Erro inesperado.");
       }
-
-      showMessage(setSuccess, "Produto cadastrado com sucesso!");
-
-      // ✨ Notifica o pai e fecha o componente/modal
-      onSaveSuccess();
-      setTimeout(onClose, 1200); // Dá tempo para o usuário ver a msg de sucesso
-    } catch (err) {
-      const axiosError = err as AxiosError<{ message?: string }>;
-      const errorMessage =
-        axiosError.response?.data?.message || "Ocorreu um erro ao atualizar.";
-      showMessage(setError, errorMessage);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const isSaveDisabled =
-    !productData.referencia || !productData.nome || isSubmitting;
-
   return (
-    <div className="modal-content rounded-4">
-      <header className="w-100 terciary p-3 d-flex justify-content-between align-items-center">
-        <h4 className="m-0 w-100 text-center primary-color">
-          Adicionar Novo Produto
-        </h4>
-        {/* O botão de fechar no header agora usa a prop onClose */}
-        <button
-          className="btn"
-          onClick={onClose}
-          aria-label="Fechar"
-          disabled={isSubmitting}
-        >
-          <FontAwesomeIcon icon={faTimes} />
-        </button>
-      </header>
-
-      <div className="modal-scroll terciary p-4">
-        {error && <div className="alert alert-danger">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
-
-        <form onSubmit={(e) => e.preventDefault()}>
-          {/* Campos do produto (referencia, nome, etc.) - Sem alterações */}
-          <div className="row g-3 mb-4">
-            <div className="col-md-6">
-              <label htmlFor="referencia" className="form-label ps-2">
-                Referência (SKU)
-              </label>
-              <input
-                id="referencia"
-                name="referencia"
-                className="w-100 p-2 border-input"
-                placeholder="Ex: SKU-MODA-007"
-                value={productData.referencia}
-                onChange={handleProductChange}
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label htmlFor="nome" className="form-label ps-2">
-                Nome do Produto
-              </label>
-              <input
-                id="nome"
-                name="nome"
-                className="w-100 p-2 border-input"
-                placeholder="Ex: Camiseta Polo Levi's"
-                value={productData.nome}
-                onChange={handleProductChange}
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label htmlFor="categoria" className="form-label ps-2">
-                Categoria
-              </label>
-              <input
-                id="categoria"
-                name="categoria"
-                className="w-100 p-2 border-input"
-                placeholder="Ex: Roupas"
-                value={productData.categoria}
-                onChange={handleProductChange}
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label htmlFor="material" className="form-label ps-2">
-                Material
-              </label>
-              <input
-                id="material"
-                name="material"
-                className="w-100 p-2 border-input"
-                placeholder="Ex: Algodão"
-                value={productData.material}
-                onChange={handleProductChange}
-                required
-              />
-            </div>
-            <div className="col-md-6">
-              <label htmlFor="genero" className="form-label ps-2">
-                Gênero
-              </label>
-              <select
-                id="genero"
-                name="genero"
-                className="w-100 ps-2 rounded-5 border-input"
-                style={{ height: "40px" }}
-                value={productData.genero}
-                onChange={handleProductChange}
-                required
-              >
-                <option value="">Selecione</option>
-                <option value="Masculino">Masculino</option>
-                <option value="Feminino">Feminino</option>
-                <option value="Unissex">Unissex</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Seção de Variações - Sem alterações */}
-          <h5 className="mb-3">Variações (Opcional)</h5>
-          <div className="variations-container">
-            {variations.map((v, i) => (
-              <div
-                key={`new-${i}`}
-                className="row g-2 align-items-center mb-2 p-2 rounded"
-              >
-                <div className="col-sm-5">
-                  <input
-                    type="text"
-                    name="descricao"
-                    className="w-100 p-2 border-input"
-                    placeholder="Descrição (Ex: GG, Azul)"
-                    value={v.descricao}
-                    onChange={(e) => handleVariationChange(i, e)}
-                  />
-                </div>
-                <div className="col-sm-3">
-                  <input
-                    type="number"
-                    name="quantidade"
-                    className="w-100 p-2 border-input"
-                    placeholder="Qtd."
-                    value={v.quantidade}
-                    onChange={(e) => handleVariationChange(i, e)}
-                  />
-                </div>
-                <div className="col-sm-3">
-                  <input
-                    type="number"
-                    name="valor"
-                    className="w-100 p-2 border-input"
-                    placeholder="Valor (R$)"
-                    value={v.valor}
-                    onChange={(e) => handleVariationChange(i, e)}
-                  />
-                </div>
-                <div className="col-sm-1 text-end">
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-danger rounded-5"
-                    onClick={() => removeVariation(i)}
-                    aria-label="Remover variação"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            className="w-100 border-input primaria mb-3"
-            onClick={addVariation}
-          >
-            <FontAwesomeIcon icon={faPlus} /> Adicionar Variação
-          </button>
-
-          {/* ✨ Footer com botões que usam as props */}
-          <footer className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+    <div
+      className="modal-backdrop d-flex justify-content-center align-items-center"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.48)" }}
+    >
+      <div className="modal-dialog detail-box" style={{ maxWidth: "600px" }}>
+        <div className="modal-content border-0 shadow">
+          <div className="modal-header bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+            <h5 className="modal-title fw-bold text-secondary">Novo Produto</h5>
             <button
               type="button"
-              className="primaria border-input ps-4 pe-4"
-              onClick={handleSave}
-              disabled={isSaveDisabled}
-            >
-              {isSubmitting ? "Salvando..." : "Salvar Produto"}
-            </button>
-          </footer>
-        </form>
+              className="btn-close"
+              onClick={onClose}
+            ></button>
+          </div>
+
+          <div className="modal-body p-4 pt-2">
+            {error && <div className="alert alert-danger">{error}</div>}
+
+            <form onSubmit={handleSubmit} className="row g-3">
+              {/* NOME */}
+              <div className="col-12">
+                <label className="form-label small text-muted fw-bold">
+                  Nome do Produto
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faBox}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="Ex: Camiseta Básica"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* REFERÊNCIA */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Referência (Cód.)
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faBarcode}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="Ex: REF-001"
+                    value={referencia}
+                    onChange={(e) => setReferencia(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* CATEGORIA */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Categoria
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faTag}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="Ex: Camisetas"
+                    value={categoria}
+                    onChange={(e) => setCategoria(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* MATERIAL */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Material
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faLayerGroup}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <input
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="Ex: Algodão"
+                    value={material}
+                    onChange={(e) => setMaterial(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* GÊNERO */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Gênero
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faVenusMars}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <select
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    value={genero}
+                    onChange={(e) => setGenero(e.target.value)}
+                  >
+                    <option value="UNISSEX">Unissex</option>
+                    <option value="MASCULINO">Masculino</option>
+                    <option value="FEMININO">Feminino</option>
+                    <option value="INFANTIL">Infantil</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="col-12 mt-4 d-flex justify-content-end align-items-center border-top pt-3">
+                <button
+                  type="button"
+                  className="btn btn-link text-secondary text-decoration-none me-3"
+                  onClick={onClose}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="button-dark-grey px-5 py-2 rounded-pill"
+                  disabled={loading}
+                >
+                  {loading ? "Criando..." : "Criar Produto"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );
