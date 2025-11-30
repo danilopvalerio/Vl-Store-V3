@@ -66,7 +66,13 @@ const MenuPage = () => {
 
   // --- Sidebar Content ---
   const SidebarContent = () => (
-    <div className="h-100 border-top border-secondary bg-gradient-vl d-flex flex-column">
+    <div
+      className="h-100 beauty-scroll border-top border-secondary bg-gradient-vl d-flex flex-column"
+      style={{
+        maxHeight: "100vh",
+        overflowY: "auto",
+      }}
+    >
       {/* Perfil do Usuário */}
       <div className="d-flex flex-column align-items-center py-4 border-bottom border-secondary">
         <div className="avatar-circle">{getUserInitial()}</div>
@@ -234,7 +240,10 @@ const MenuPage = () => {
         {/* Sidebar Desktop */}
         <aside
           className="d-none d-lg-block sidebar-wrapper shadow-sm z-1"
-          style={{ width: "280px", minWidth: "280px" }}
+          style={{
+            width: "280px",
+            minWidth: "280px",
+          }}
         >
           <SidebarContent />
         </aside>
@@ -313,12 +322,11 @@ const MenuPage = () => {
               </div>
             </div>
           </main>
-
-          <footer className="text-center py-2 text-muted small border-top bg-white">
-            © 2025 Danilo Valério - Sistema de Gestão v1.0
-          </footer>
         </div>
       </div>
+      <footer className="">
+        © 2025 Danilo Valério - Sistema de Gestão v1.0
+      </footer>
     </div>
   );
 };
