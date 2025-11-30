@@ -19,6 +19,13 @@ export interface Variation {
   valor: string | number; // Pode vir como string decimal do banco
 }
 
+// DTO para os parâmetros de busca (Query Params)
+export interface GetVariationsQueryParams {
+  page: number;
+  perPage: number;
+  term?: string; // Opcional, pois só existe na rota de busca
+}
+
 // Produto (Pai) - ATUALIZADO
 export interface Product {
   id_produto: string;

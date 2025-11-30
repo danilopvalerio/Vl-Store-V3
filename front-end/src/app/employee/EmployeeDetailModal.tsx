@@ -114,6 +114,18 @@ const EmployeeDetailModal = ({
     if (profileId) loadData();
   }, [profileId]);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) return;
@@ -199,8 +211,12 @@ const EmployeeDetailModal = ({
     <div
       className="modal-backdrop d-flex justify-content-center align-items-center"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.48)" }}
+      onClick={onClose}
     >
-      <div className="modal-dialog detail-box">
+      <div
+        className="modal-dialog detail-box"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-content border-0 shadow">
           {/* Header */}
           <div className="modal-header border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
@@ -221,39 +237,6 @@ const EmployeeDetailModal = ({
             )}
 
             <form onSubmit={handleUpdate} className="row g-3">
-              {/* --- SWITCH DE STATUS (ATIVO/INATIVO) --- */}
-              {isAdmin && (
-                <div className="col-12 d-flex justify-content-end align-items-center mb-2">
-                  <div className="form-check form-switch">
-                    <label
-                      className="form-check-label fw-bold me-3"
-                      htmlFor="statusSwitch"
-                    >
-                      Status da Conta:
-                      {ativo ? (
-                        <span className="text-success ms-2">ATIVO</span>
-                      ) : (
-                        <span className="text-danger ms-2">INATIVO</span>
-                      )}
-                    </label>
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      role="switch"
-                      id="statusSwitch"
-                      style={{
-                        width: "3em",
-                        height: "1.5em",
-                        cursor: "pointer",
-                      }}
-                      checked={ativo}
-                      onChange={(e) => setAtivo(e.target.checked)}
-                      disabled={blockExclusion} // Não deixa desativar a si mesmo
-                    />
-                  </div>
-                </div>
-              )}
-
               {/* NOME */}
               <div className="col-12">
                 <label className="form-label small text-muted fw-bold">
@@ -410,17 +393,36 @@ const EmployeeDetailModal = ({
               )}
 
               {/* RODAPÉ COM BOTÕES */}
-              <div className="col-12 mt-4 d-flex justify-content-between align-items-center border-top pt-3">
-                {/* BOTÃO EXCLUIR */}
+              <div className="col-12 mt-4 row border-top pt-3 ">
+                {/* --- SWITCH DE STATUS (ATIVO/INATIVO) --- */}
                 {isAdmin && !blockExclusion && (
-                  <button
-                    type="button"
-                    className="btn btn-link text-danger text-decoration-none p-0"
-                    onClick={handleDelete}
-                    disabled={saving}
-                  >
-                    <FontAwesomeIcon icon={faTrash} className="me-2" /> Excluir
-                  </button>
+                  <div className="col-12 d-flex justify-content-between align-items-center mb-2">
+                    {/* BOTÃO EXCLUIR */}
+                    {isAdmin && !blockExclusion && (
+                      <button
+                        type="button"
+                        className="d-flex justify-content-center align-items-center button-white-grey-border px-4 py-2 rounded-pill"
+                        onClick={handleDelete}
+                        disabled={saving}
+                      >
+                        <FontAwesomeIcon icon={faTrash} className="me-2" />{" "}
+                        Excluir
+                      </button>
+                    )}
+
+                    <div className="form-check form-switch d-flex justify-content-center align-items-center button-white-grey-border px-4 py-2 rounded-pill">
+                      <input
+                        className="form-check-input me-2 ms-0 mt-0"
+                        type="checkbox"
+                        checked={ativo}
+                        onChange={(e) => setAtivo(e.target.checked)}
+                        disabled={blockExclusion}
+                      />
+                      <label className="form-check-label fw-bold small">
+                        {ativo ? "ATIVO" : "INATIVO"}
+                      </label>
+                    </div>
+                  </div>
                 )}
 
                 {/* ESPAÇADOR SE NÃO TIVER BOTÃO EXCLUIR */}

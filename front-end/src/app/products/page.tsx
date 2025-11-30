@@ -222,7 +222,10 @@ const ProductsPage = () => {
       {selectedProductId && (
         <ProductDetailModal
           productId={selectedProductId}
-          onClose={() => setSelectedProductId(null)}
+          onClose={() => {
+            setSelectedProductId(null);
+            handleRefresh();
+          }}
           onSuccess={handleRefresh}
         />
       )}

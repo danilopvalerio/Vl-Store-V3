@@ -94,6 +94,43 @@ html {
   height: 2.2rem;
 }
 
+.button-white-grey-border:hover {
+  background-color: var(--color-gray-light);
+}
+
+/* Trilho quando LIGADO */
+.form-check-input:checked {
+  background-color: var(--color-quartenary) !important;
+  border-color: var(--color-quartenary) !important;
+  cursor: pointer;
+}
+
+/* Bolinha quando LIGADO */
+.form-check-input:checked::before {
+  background-color: #fff !important; /* bolinha branca fica mais visível */
+}
+
+/* Trilho quando DESLIGADO */
+.form-check-input {
+  border-color: var(--color-quartenary) !important;
+}
+
+/* Bolinha quando DESLIGADO */
+.form-check-input::before {
+  background-color: var(--color-quartenary) !important;
+}
+
+/* Remover halo azul e substituir por dark-grey */
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.15) !important;
+  border-color: var(--color-quartenary) !important;
+}
+
+/* Focus quando LIGADO */
+.form-check-input:checked:focus {
+  box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.25) !important;
+}
+
 .grey-link-text {
   color: var(--color-quartenary);
   text-decoration: none;
@@ -247,9 +284,9 @@ footer {
 }
 
 .detail-box {
-  min-width: 300px;
-  max-width: 400px;
-  max-height: 80vh;
-  overflow-y: auto;
   background-color: var(--color-white);
+  min-width: 320px;
+  max-width: 800px;
+  max-height: 500px;
+  overflow-y: auto;
 }

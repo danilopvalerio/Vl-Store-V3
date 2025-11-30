@@ -1,4 +1,3 @@
-// src/repositories/log.repository.ts
 import { prisma } from "../database/prisma";
 import { Prisma } from "../generated/prisma/client";
 
@@ -16,16 +15,26 @@ export class LogRepository {
     return prisma.log_acesso.create({ data });
   }
 
-  async findAccessLogsPaginated(page: number, perPage: number) {
+  async findAccessLogsPaginated(idLoja: string, page: number, perPage: number) {
     const offset = (page - 1) * perPage;
 
-    const total = await prisma.log_acesso.count();
+    // Filtro base: Usuário tem perfil nesta loja
+    const where: Prisma.log_acessoWhereInput = {
+      user: {
+        user_profile: {
+          some: { id_loja: idLoja },
+        },
+      },
+    };
+
+    const total = await prisma.log_acesso.count({ where });
 
     const data = await prisma.log_acesso.findMany({
+      where,
       take: perPage,
       skip: offset,
       orderBy: { data: "desc" },
-      include: { user: true }, // Traz dados do usuário
+      include: { user: true },
     });
 
     return {
@@ -37,14 +46,30 @@ export class LogRepository {
     };
   }
 
-  async searchAccessLogs(term: string, page: number, perPage: number) {
+  async searchAccessLogs(
+    idLoja: string,
+    term: string,
+    page: number,
+    perPage: number
+  ) {
     const offset = (page - 1) * perPage;
 
-    // Filtra por IP ou Email do Usuário
+    // Filtra por Loja E (IP ou Email)
     const where: Prisma.log_acessoWhereInput = {
-      OR: [
-        { ip: { contains: term, mode: "insensitive" } },
-        { user: { email: { contains: term, mode: "insensitive" } } },
+      AND: [
+        {
+          user: {
+            user_profile: {
+              some: { id_loja: idLoja },
+            },
+          },
+        },
+        {
+          OR: [
+            { ip: { contains: term, mode: "insensitive" } },
+            { user: { email: { contains: term, mode: "insensitive" } } },
+          ],
+        },
       ],
     };
 
@@ -79,14 +104,24 @@ export class LogRepository {
     return prisma.log_sistema.create({ data });
   }
 
-  async findSystemLogsPaginated(page: number, perPage: number) {
+  async findSystemLogsPaginated(idLoja: string, page: number, perPage: number) {
     const offset = (page - 1) * perPage;
 
-    const total = await prisma.log_sistema.count();
+    // Filtro por loja via user_profile
+    const where: Prisma.log_sistemaWhereInput = {
+      user: {
+        user_profile: {
+          some: { id_loja: idLoja },
+        },
+      },
+    };
+
+    const total = await prisma.log_sistema.count({ where });
 
     const data = await prisma.log_sistema.findMany({
       take: perPage,
       skip: offset,
+      where,
       orderBy: { data: "desc" },
       include: { user: true },
     });
@@ -100,15 +135,31 @@ export class LogRepository {
     };
   }
 
-  async searchSystemLogs(term: string, page: number, perPage: number) {
+  async searchSystemLogs(
+    idLoja: string,
+    term: string,
+    page: number,
+    perPage: number
+  ) {
     const offset = (page - 1) * perPage;
 
-    // Filtra por Ação, Detalhes ou Email do Usuário
+    // Filtra por Loja E (Ação ou Detalhes ou Email)
     const where: Prisma.log_sistemaWhereInput = {
-      OR: [
-        { acao: { contains: term, mode: "insensitive" } },
-        { detalhes: { contains: term, mode: "insensitive" } },
-        { user: { email: { contains: term, mode: "insensitive" } } },
+      AND: [
+        {
+          user: {
+            user_profile: {
+              some: { id_loja: idLoja },
+            },
+          },
+        },
+        {
+          OR: [
+            { acao: { contains: term, mode: "insensitive" } },
+            { detalhes: { contains: term, mode: "insensitive" } },
+            { user: { email: { contains: term, mode: "insensitive" } } },
+          ],
+        },
       ],
     };
 

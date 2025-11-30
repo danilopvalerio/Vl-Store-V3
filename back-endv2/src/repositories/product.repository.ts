@@ -255,4 +255,75 @@ export class ProductRepository {
       totalPages: Math.ceil(total / perPage),
     };
   }
+
+  async findVariationsPaginatedByProduct(
+    productId: string,
+    page: number,
+    perPage: number
+  ) {
+    const offset = (page - 1) * perPage;
+
+    const where: Prisma.produto_variacaoWhereInput = {
+      id_produto: productId,
+    };
+
+    const total = await prisma.produto_variacao.count({ where });
+
+    const data = await prisma.produto_variacao.findMany({
+      where,
+      take: perPage,
+      skip: offset,
+      orderBy: { nome: "asc" },
+    });
+
+    return {
+      data,
+      total,
+      page,
+      perPage,
+      totalPages: Math.ceil(total / perPage),
+    };
+  }
+
+  async searchVariationsByProduct(
+    productId: string,
+    term: string,
+    page: number,
+    perPage: number
+  ) {
+    const offset = (page - 1) * perPage;
+
+    const where: Prisma.produto_variacaoWhereInput = {
+      AND: [
+        { id_produto: productId },
+        {
+          OR: [
+            { nome: { contains: term, mode: "insensitive" } },
+            { produto: { nome: { contains: term, mode: "insensitive" } } },
+            {
+              produto: { referencia: { contains: term, mode: "insensitive" } },
+            },
+          ],
+        },
+      ],
+    };
+
+    const total = await prisma.produto_variacao.count({ where });
+
+    const data = await prisma.produto_variacao.findMany({
+      where,
+      take: perPage,
+      skip: offset,
+      orderBy: { nome: "asc" },
+      include: { produto: true },
+    });
+
+    return {
+      data,
+      total,
+      page,
+      perPage,
+      totalPages: Math.ceil(total / perPage),
+    };
+  }
 }

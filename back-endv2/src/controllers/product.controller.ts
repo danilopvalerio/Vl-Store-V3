@@ -9,9 +9,8 @@ import {
 } from "../dtos/product.dto";
 import { isValidUUID, isValidString, toInt } from "../utils/validation";
 
-const service = new ProductService();
-
 export class ProductController {
+  private service = new ProductService();
   // ============================================================================
   // PRODUTOS
   // ============================================================================
@@ -28,7 +27,7 @@ export class ProductController {
       if (!isValidString(body.nome))
         return res.status(400).json({ error: "Nome obrigatório." });
 
-      const result = await service.createProduct(body, actorUserId);
+      const result = await this.service.createProduct(body, actorUserId);
       res.status(201).json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message || "Erro desconhecido" });
@@ -46,7 +45,7 @@ export class ProductController {
       if (!isValidUUID(id))
         return res.status(400).json({ error: "ID inválido." });
 
-      const result = await service.updateProduct(id, body, actorUserId);
+      const result = await this.service.updateProduct(id, body, actorUserId);
       res.json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -63,7 +62,7 @@ export class ProductController {
       if (!isValidUUID(id))
         return res.status(400).json({ error: "ID inválido." });
 
-      await service.deleteProduct(id, actorUserId);
+      await this.service.deleteProduct(id, actorUserId);
       res.status(204).send();
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -76,7 +75,7 @@ export class ProductController {
       if (!isValidUUID(id))
         return res.status(400).json({ error: "ID inválido." });
 
-      const result = await service.getProductById(id);
+      const result = await this.service.getProductById(id);
       if (!result)
         return res.status(404).json({ error: "Produto não encontrado" });
 
@@ -106,7 +105,7 @@ export class ProductController {
       if (body.valor < 0)
         return res.status(400).json({ error: "Valor inválido." });
 
-      const result = await service.createVariation(body, actorUserId);
+      const result = await this.service.createVariation(body, actorUserId);
       res.status(201).json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -124,7 +123,7 @@ export class ProductController {
       if (!isValidUUID(id))
         return res.status(400).json({ error: "ID inválido." });
 
-      const result = await service.updateVariation(id, body, actorUserId);
+      const result = await this.service.updateVariation(id, body, actorUserId);
       res.json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -141,7 +140,7 @@ export class ProductController {
       if (!isValidUUID(id))
         return res.status(400).json({ error: "ID inválido." });
 
-      await service.deleteVariation(id, actorUserId);
+      await this.service.deleteVariation(id, actorUserId);
       res.status(204).send();
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -154,13 +153,62 @@ export class ProductController {
       if (!isValidUUID(id))
         return res.status(400).json({ error: "ID inválido." });
 
-      const result = await service.getVariationById(id);
+      const result = await this.service.getVariationById(id);
       if (!result)
         return res.status(404).json({ error: "Variação não encontrada" });
 
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  }
+
+  // GET /products/:id/variations
+  async getPaginatedProductVariations(req: Request, res: Response) {
+    try {
+      // MUDANÇA: Pegamos o ID da URL (:id), não da query (?productId=)
+      const { id } = req.params;
+
+      const page = Number(req.query.page) || 1;
+      const perPage = Number(req.query.perPage) || 10;
+
+      // Chama seu service passando o ID que veio da URL
+      const result = await this.service.getPaginatedVariationsByProduct(
+        id,
+        page,
+        perPage
+      );
+
+      return res.json(result);
+    } catch (err) {
+      console.error("Error fetching product variations paginated:", err);
+      return res.status(500).json({ error: "Erro ao buscar variações." });
+    }
+  }
+
+  // GET /products/:id/variations/search
+  async searchProductVariations(req: Request, res: Response) {
+    try {
+      // MUDANÇA: Pegamos o ID da URL
+      const { id } = req.params;
+
+      const term = (req.query.term as string) || "";
+      const page = Number(req.query.page) || 1;
+      const perPage = Number(req.query.perPage) || 10;
+
+      const result = await this.service.searchPaginatedVariationsByProduct(
+        id,
+        term,
+        page,
+        perPage
+      );
+
+      return res.json(result);
+    } catch (err) {
+      console.error("Error searching product variations:", err);
+      return res
+        .status(500)
+        .json({ error: "Erro ao buscar variações filtradas." });
     }
   }
 
@@ -183,7 +231,7 @@ export class ProductController {
       const lojaId = this.getLojaFilter(req);
 
       if (type === "variation") {
-        const result = await service.getVariationsPaginated(
+        const result = await this.service.getVariationsPaginated(
           page,
           perPage,
           lojaId
@@ -192,7 +240,11 @@ export class ProductController {
       }
 
       // Default: Product
-      const result = await service.getProductsPaginated(page, perPage, lojaId);
+      const result = await this.service.getProductsPaginated(
+        page,
+        perPage,
+        lojaId
+      );
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -209,7 +261,7 @@ export class ProductController {
       const lojaId = this.getLojaFilter(req);
 
       if (type === "variation") {
-        const result = await service.searchVariations(
+        const result = await this.service.searchVariations(
           term,
           page,
           perPage,
@@ -219,7 +271,12 @@ export class ProductController {
       }
 
       // Default: Product
-      const result = await service.searchProducts(term, page, perPage, lojaId);
+      const result = await this.service.searchProducts(
+        term,
+        page,
+        perPage,
+        lojaId
+      );
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err.message });

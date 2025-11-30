@@ -16,7 +16,13 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import axios, { AxiosError } from "axios";
 import api from "../../utils/api";
-import { Product, Variation, UpdateProductPayload } from "./types";
+import {
+  Product,
+  Variation,
+  UpdateProductPayload,
+  GetVariationsQueryParams,
+  PaginatedResponse,
+} from "./types";
 import { ApiErrorDTO } from "@/app/types/ApiTypes";
 
 interface Props {
@@ -32,7 +38,6 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
   const [successMsg, setSuccessMsg] = useState("");
 
   // Dados do Produto (Pai)
-  const [product, setProduct] = useState<Product | null>(null);
   const [nome, setNome] = useState("");
   const [referencia, setReferencia] = useState("");
   const [categoria, setCategoria] = useState("");
@@ -40,32 +45,37 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
   const [genero, setGenero] = useState("");
   const [ativo, setAtivo] = useState(true);
 
-  // Dados das Variações (Filhos)
+  // --- VARIAÇÕES (PAGINADAS) ---
   const [variations, setVariations] = useState<Variation[]>([]);
   const [searchVarTerm, setSearchVarTerm] = useState("");
 
-  // Estado para Edição/Criação de Variação (Inline)
+  const [page, setPage] = useState(1);
+  const limit = 5; // Equivalente ao perPage do backend
+  const [totalPages, setTotalPages] = useState(1);
+
+  // --- EDIÇÃO / CRIAÇÃO ---
   const [editingVarId, setEditingVarId] = useState<string | null>(null);
   const [editVarNome, setEditVarNome] = useState("");
   const [editVarQtd, setEditVarQtd] = useState(0);
   const [editVarValor, setEditVarValor] = useState(0);
+
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // --- CARREGAMENTO ---
-  const loadData = async () => {
+  // =========================================================
+  // 🔹 CARREGAR O PRODUTO (SEM VARIAÇÕES)
+  // =========================================================
+  const loadProduct = async () => {
     try {
       setLoading(true);
       const res = await api.get<Product>(`/products/${productId}`);
       const p = res.data;
 
-      setProduct(p);
       setNome(p.nome);
       setReferencia(p.referencia || "");
       setCategoria(p.categoria || "");
       setMaterial(p.material || "");
       setGenero(p.genero || "UNISSEX");
       setAtivo(p.ativo);
-      setVariations(p.produto_variacao || []);
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorDTO>;
       setError(axiosError.response?.data?.error || "Erro ao carregar produto.");
@@ -74,6 +84,60 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
     }
   };
 
+  // =========================================================
+  // 🔹 CARREGAR VARIAÇÕES (CORRIGIDO PARA NOVAS ROTAS)
+  // =========================================================
+  const loadVariations = async () => {
+    try {
+      const isSearch = searchVarTerm.length > 0;
+
+      const endpoint = isSearch
+        ? `/products/${productId}/variations/search`
+        : `/products/${productId}/variations`;
+
+      // 1. Substituindo 'any' pelo DTO correto
+      const params: GetVariationsQueryParams = {
+        page,
+        perPage: limit,
+      };
+
+      // Adiciona o termo apenas se for busca
+      if (isSearch) {
+        params.term = searchVarTerm;
+      }
+
+      // 2. Tipando o retorno do Axios com o Generico <PaginatedResponse<Variation>>
+      // Isso garante que res.data tenha .data (array), .totalPages, etc.
+      const res = await api.get<PaginatedResponse<Variation>>(endpoint, {
+        params,
+      });
+
+      setVariations(res.data.data);
+      setTotalPages(res.data.totalPages || 1);
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorDTO>;
+      setError(
+        axiosError.response?.data?.error ||
+          "Erro ao carregar variações paginadas."
+      );
+    }
+  };
+
+  // -------- EXECUTA SEMPRE QUE PAGE OU SEARCH MUDAR ----
+  useEffect(() => {
+    if (productId) {
+      loadProduct();
+      loadVariations();
+    }
+  }, [productId]);
+
+  useEffect(() => {
+    loadVariations();
+  }, [page, searchVarTerm]);
+
+  // =========================================================
+  // ADMIN
+  // =========================================================
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -83,14 +147,24 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
       );
     }
   }, []);
-
+  // =========================================================
+  // 🔹 Para fechar quando teclar esc
+  // =========================================================
   useEffect(() => {
-    if (productId) loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productId]);
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
 
-  // --- PRODUTO PAI: UPDATE & DELETE ---
+    window.addEventListener("keydown", handleEsc);
 
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
+  // =========================================================
+  // 🔹 UPDATE DO PRODUTO
+  // =========================================================
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -106,12 +180,13 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
         genero,
         ativo,
       };
+
       await api.patch(`/products/${productId}`, payload);
+
       setSuccessMsg("Produto atualizado!");
       setTimeout(() => setSuccessMsg(""), 3000);
       onSuccess();
     } catch (err) {
-      // Sem console.error aqui. Apenas tratativa visual.
       if (axios.isAxiosError(err)) {
         const axiosError = err as AxiosError<ApiErrorDTO>;
         setError(
@@ -125,24 +200,29 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
     }
   };
 
+  // ============================================
+  // 🔹 DELETE DO PRODUTO
+  // ============================================
   const handleDeleteProduct = async () => {
     if (!confirm("Tem certeza? Isso excluirá o produto e TODAS as variações."))
       return;
+
     try {
       setSaving(true);
       await api.delete(`/products/${productId}`);
       onSuccess();
       onClose();
     } catch (err) {
-      // Sem console.error
       const axiosError = err as AxiosError<ApiErrorDTO>;
       setError(axiosError.response?.data?.error || "Erro ao excluir produto.");
+    } finally {
       setSaving(false);
     }
   };
 
-  // --- VARIAÇÕES: CREATE / UPDATE / DELETE ---
-
+  // ===============================================================
+  // 🔹 EDIÇÃO / CRIAÇÃO DE VARIAÇÃO
+  // ===============================================================
   const startEditVariation = (v: Variation) => {
     setEditingVarId(v.id_variacao);
     setEditVarNome(v.nome);
@@ -165,6 +245,9 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
     if (!editVarNome) return alert("Nome da variação é obrigatório");
 
     try {
+      // ⚠️ IMPORTANTE: As rotas de criação/edição continuam as mesmas
+      // pois não dependem de aninhamento para funcionar, apenas o ID do produto no body
+
       if (editingVarId === "new") {
         await api.post("/products/variations", {
           id_produto: productId,
@@ -179,37 +262,30 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
           valor: editVarValor,
         });
       }
-      await loadData();
+
       setEditingVarId(null);
-      setSuccessMsg(
-        editingVarId === "new" ? "Variação criada!" : "Variação atualizada!"
-      );
-      setTimeout(() => setSuccessMsg(""), 3000);
+      loadVariations(); // Recarrega a lista
     } catch (err) {
-      // Sem console.error
-      if (axios.isAxiosError(err)) {
-        const axiosError = err as AxiosError<ApiErrorDTO>;
-        setError(
-          axiosError.response?.data?.error || "Erro ao salvar variação."
-        );
-      } else {
-        alert("Erro ao salvar variação.");
-      }
+      const axiosError = err as AxiosError<ApiErrorDTO>;
+      setError(axiosError.response?.data?.error || "Erro ao salvar variação.");
     }
   };
 
   const deleteVariation = async (id: string) => {
     if (!confirm("Excluir esta variação?")) return;
+
     try {
       await api.delete(`/products/variations/${id}`);
-      await loadData();
+      loadVariations();
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorDTO>;
       setError(axiosError.response?.data?.error || "Erro ao excluir variação.");
     }
   };
 
-  // --- RENDERIZAÇÃO ---
+  // ===========================================================
+  // 🔹 RENDER
+  // ===========================================================
 
   if (loading)
     return (
@@ -218,25 +294,19 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
       </div>
     );
 
-  const filteredVars = variations.filter((v) =>
-    v.nome.toLowerCase().includes(searchVarTerm.toLowerCase())
-  );
-
   return (
     <div
       className="modal-backdrop d-flex justify-content-center align-items-center"
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      onClick={onClose}
     >
       <div
-        className="modal-dialog detail-box w-100"
-        style={{ maxWidth: "800px" }}
+        className="modal-dialog detail-box"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="modal-content border-0 shadow"
-          style={{ maxHeight: "90vh", overflowY: "auto" }}
-        >
-          {/* Header */}
-          <div className="modal-header border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center bg-white sticky-top">
+        <div className="modal-content w-100 border-0 shadow">
+          {/* HEADER */}
+          <div className="modal-header w-100 bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center sticky-top">
             <h5 className="modal-title fw-bold text-secondary">
               Detalhes do Produto
             </h5>
@@ -247,33 +317,14 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
             ></button>
           </div>
 
-          <div className="modal-body p-4 pt-2">
+          <div className="modal-body w-100 p-4 pt-2">
             {error && <div className="alert alert-danger">{error}</div>}
             {successMsg && (
               <div className="alert alert-success">{successMsg}</div>
             )}
 
-            {/* --- FORMULÁRIO PRODUTO PAI --- */}
-            <form onSubmit={handleUpdateProduct} className="row g-3 mb-5">
-              <div className="col-12 d-flex justify-content-between align-items-center">
-                <span className="badge bg-light text-dark border">
-                  {product?.id_produto}
-                </span>
-                <div className="form-check form-switch">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    role="switch"
-                    checked={ativo}
-                    onChange={(e) => setAtivo(e.target.checked)}
-                  />
-                  <label className="form-check-label fw-bold small">
-                    {ativo ? "ATIVO" : "INATIVO"}
-                  </label>
-                </div>
-              </div>
-
-              {/* Campos do Produto */}
+            {/* FORM PRODUTO */}
+            <form onSubmit={handleUpdateProduct} className="row g-3 pb-5">
               <div className="col-12 col-md-8">
                 <label className="form-label small text-muted fw-bold">
                   Nome
@@ -356,48 +407,63 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
                     <option value="UNISSEX">Unissex</option>
                     <option value="MASCULINO">Masculino</option>
                     <option value="FEMININO">Feminino</option>
-                    <option value="INFANTIL">Infantil</option>
+                    <option value="INFANTIL_FEMININO">Infantil Feminino</option>
+                    <option value="INFANTIL_MASCULINO">
+                      Infantil Masculino
+                    </option>
                   </select>
                 </div>
               </div>
 
-              <div className="col-12 d-flex justify-content-between mt-3">
+              <div className="col-12 d-flex gap-2">
                 <button
                   type="button"
-                  className="btn btn-link text-danger p-0"
+                  className="button-white-grey-border col-6 px-3 py-2 rounded-pill"
                   onClick={handleDeleteProduct}
                   disabled={!isAdmin || saving}
                 >
                   <FontAwesomeIcon icon={faTrash} className="me-2" /> Excluir
-                  Produto
                 </button>
+
+                <div className="form-check form-switch d-flex justify-content-center align-items-center button-white-grey-border px-4 py-2 rounded-pill col-6">
+                  <input
+                    className="form-check-input me-2 ms-0 mt-0"
+                    type="checkbox"
+                    checked={ativo}
+                    onChange={(e) => setAtivo(e.target.checked)}
+                  />
+                  <label className="form-check-label fw-bold small">
+                    {ativo ? "ATIVO" : "INATIVO"}
+                  </label>
+                </div>
+              </div>
+
+              <div className="col-12 mt-3">
                 <button
                   type="submit"
-                  className="button-dark-grey px-4 py-2 rounded-pill"
+                  className="button-dark-grey w-100 px-3 py-2 rounded-pill"
                   disabled={saving}
                 >
-                  {saving ? "Salvando..." : "Salvar Dados Gerais"}
+                  {saving ? "Salvando..." : "Salvar Dados"}
                 </button>
               </div>
             </form>
 
             <hr className="my-4 text-muted" />
 
-            {/* --- SEÇÃO DE VARIAÇÕES --- */}
+            {/* SEÇÃO VARIAÇÕES */}
             <div className="d-flex justify-content-between align-items-center mb-3">
-              <h6 className="fw-bold text-secondary m-0">
-                Variações de Estoque
-              </h6>
+              <h6 className="fw-bold text-secondary m-0">Variações</h6>
               <button
                 className="btn btn-sm btn-outline-dark rounded-pill"
                 onClick={startAddVariation}
                 disabled={!!editingVarId}
               >
-                <FontAwesomeIcon icon={faPlus} className="me-1" /> Nova Variação
+                <FontAwesomeIcon icon={faPlus} className="me-1" /> Nova
               </button>
             </div>
 
-            {/* Busca de Variação (útil se tiver muitas) */}
+            {/* BUSCA */}
             <div className="input-group mb-3">
               <span className="input-group-text bg-white border-end-0">
                 <FontAwesomeIcon icon={faSearch} className="text-muted" />
@@ -405,43 +471,41 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
               <input
                 type="text"
                 className="form-control border-start-0"
-                placeholder="Buscar variação (ex: Azul, G...)"
+                placeholder="Buscar variação..."
                 value={searchVarTerm}
-                onChange={(e) => setSearchVarTerm(e.target.value)}
+                onChange={(e) => {
+                  setPage(1);
+                  setSearchVarTerm(e.target.value);
+                }}
               />
             </div>
 
+            {/* TABELA */}
             <div className="table-responsive border rounded">
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light">
                   <tr>
-                    <th scope="col" className="small fw-bold ps-3">
-                      Variação / Nome
-                    </th>
-                    <th scope="col" className="small fw-bold text-center">
-                      Estoque
-                    </th>
-                    <th scope="col" className="small fw-bold text-end">
-                      Preço (R$)
-                    </th>
+                    <th className="small fw-bold ps-3">Variação</th>
+                    <th className="small fw-bold text-center">Estoque</th>
+                    <th className="small fw-bold text-end">Preço</th>
                     <th
-                      scope="col"
                       className="small fw-bold text-center"
-                      style={{ width: "100px" }}
+                      style={{ width: 100 }}
                     >
                       Ações
                     </th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {/* LINHA DE CRIAÇÃO (SÓ APARECE SE TIVER ADICIONANDO) */}
+                  {/* NOVA VARIAÇÃO */}
                   {editingVarId === "new" && (
-                    <tr className="bg-light table-active border-2 border-primary">
+                    <tr className="bg-light table-active">
                       <td className="ps-3">
                         <input
                           className="form-control form-control-sm"
-                          placeholder="Ex: G, Vermelho"
                           autoFocus
+                          placeholder="Ex: G, Vermelho"
                           value={editVarNome}
                           onChange={(e) => setEditVarNome(e.target.value)}
                         />
@@ -450,7 +514,7 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
                         <input
                           type="number"
                           className="form-control form-control-sm text-center"
-                          style={{ maxWidth: "80px", margin: "0 auto" }}
+                          style={{ maxWidth: 80, margin: "0 auto" }}
                           value={editVarQtd}
                           onChange={(e) =>
                             setEditVarQtd(Number(e.target.value))
@@ -462,7 +526,7 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
                           type="number"
                           step="0.01"
                           className="form-control form-control-sm text-end"
-                          style={{ maxWidth: "100px", marginLeft: "auto" }}
+                          style={{ maxWidth: 100, marginLeft: "auto" }}
                           value={editVarValor}
                           onChange={(e) =>
                             setEditVarValor(Number(e.target.value))
@@ -486,96 +550,95 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
                     </tr>
                   )}
 
-                  {/* LISTA DE VARIAÇÕES */}
-                  {filteredVars.map((v) => (
-                    <tr key={v.id_variacao}>
-                      {editingVarId === v.id_variacao ? (
-                        // MODO EDIÇÃO
-                        <>
-                          <td className="ps-3">
-                            <input
-                              className="form-control form-control-sm"
-                              value={editVarNome}
-                              onChange={(e) => setEditVarNome(e.target.value)}
-                            />
-                          </td>
-                          <td className="text-center">
-                            <input
-                              type="number"
-                              className="form-control form-control-sm text-center"
-                              style={{ maxWidth: "80px", margin: "0 auto" }}
-                              value={editVarQtd}
-                              onChange={(e) =>
-                                setEditVarQtd(Number(e.target.value))
-                              }
-                            />
-                          </td>
-                          <td className="text-end">
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="form-control form-control-sm text-end"
-                              style={{ maxWidth: "100px", marginLeft: "auto" }}
-                              value={editVarValor}
-                              onChange={(e) =>
-                                setEditVarValor(Number(e.target.value))
-                              }
-                            />
-                          </td>
-                          <td className="text-center">
-                            <button
-                              className="btn btn-sm btn-success me-1"
-                              onClick={saveVariation}
-                            >
-                              <FontAwesomeIcon icon={faSave} />
-                            </button>
-                            <button
-                              className="btn btn-sm btn-secondary"
-                              onClick={cancelEditVariation}
-                            >
-                              <FontAwesomeIcon icon={faTimes} />
-                            </button>
-                          </td>
-                        </>
-                      ) : (
-                        // MODO VISUALIZAÇÃO
-                        <>
-                          <td className="ps-3 fw-medium text-dark">{v.nome}</td>
-                          <td className="text-center">
-                            <span
-                              className={`badge ${
-                                v.quantidade > 0
-                                  ? "bg-success-subtle text-success"
-                                  : "bg-danger-subtle text-danger"
-                              }`}
-                            >
-                              {v.quantidade} un
-                            </span>
-                          </td>
-                          <td className="text-end font-monospace">
-                            R$ {Number(v.valor).toFixed(2)}
-                          </td>
-                          <td className="text-center">
-                            <button
-                              className="btn btn-link text-secondary p-1 me-2"
-                              onClick={() => startEditVariation(v)}
-                              disabled={!!editingVarId}
-                            >
-                              <FontAwesomeIcon icon={faPen} />
-                            </button>
-                            <button
-                              className="btn btn-link text-danger p-1"
-                              onClick={() => deleteVariation(v.id_variacao)}
-                              disabled={!!editingVarId}
-                            >
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  ))}
-                  {filteredVars.length === 0 && editingVarId !== "new" && (
+                  {/* LISTA */}
+                  {variations.map((v) =>
+                    editingVarId === v.id_variacao ? (
+                      // EDITAR
+                      <tr key={v.id_variacao} className="bg-light table-active">
+                        <td className="ps-3">
+                          <input
+                            className="form-control form-control-sm"
+                            value={editVarNome}
+                            onChange={(e) => setEditVarNome(e.target.value)}
+                          />
+                        </td>
+                        <td className="text-center">
+                          <input
+                            type="number"
+                            className="form-control form-control-sm text-center"
+                            style={{ maxWidth: 80 }}
+                            value={editVarQtd}
+                            onChange={(e) =>
+                              setEditVarQtd(Number(e.target.value))
+                            }
+                          />
+                        </td>
+                        <td className="text-end">
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="form-control form-control-sm text-end"
+                            style={{ maxWidth: 100 }}
+                            value={editVarValor}
+                            onChange={(e) =>
+                              setEditVarValor(Number(e.target.value))
+                            }
+                          />
+                        </td>
+                        <td className="text-center">
+                          <button
+                            className="btn btn-sm btn-success me-1"
+                            onClick={saveVariation}
+                          >
+                            <FontAwesomeIcon icon={faSave} />
+                          </button>
+                          <button
+                            className="btn btn-sm btn-secondary"
+                            onClick={cancelEditVariation}
+                          >
+                            <FontAwesomeIcon icon={faTimes} />
+                          </button>
+                        </td>
+                      </tr>
+                    ) : (
+                      // VISUALIZAR
+                      <tr key={v.id_variacao}>
+                        <td className="ps-3 fw-medium">{v.nome}</td>
+                        <td className="text-center">
+                          <span
+                            className={`badge ${
+                              v.quantidade > 0
+                                ? "bg-success-subtle text-success"
+                                : "bg-danger-subtle text-danger"
+                            }`}
+                          >
+                            {v.quantidade} un
+                          </span>
+                        </td>
+                        <td className="text-end font-monospace">
+                          R$ {Number(v.valor).toFixed(2)}
+                        </td>
+                        <td className="text-center">
+                          <button
+                            className="btn btn-link text-secondary p-1 me-2"
+                            onClick={() => startEditVariation(v)}
+                            disabled={!!editingVarId}
+                          >
+                            <FontAwesomeIcon icon={faPen} />
+                          </button>
+                          <button
+                            className="btn btn-link text-danger p-1"
+                            onClick={() => deleteVariation(v.id_variacao)}
+                            disabled={!!editingVarId}
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  )}
+
+                  {variations.length === 0 && editingVarId !== "new" && (
                     <tr>
                       <td colSpan={4} className="text-center py-3 text-muted">
                         Nenhuma variação encontrada.
@@ -584,6 +647,27 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* PAGINAÇÃO */}
+            <div className="d-flex justify-content-center align-items-center gap-3 mt-3">
+              <button
+                className="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                disabled={page <= 1}
+                onClick={() => setPage((prev) => prev - 1)}
+              >
+                Anterior
+              </button>
+              <span className="fw-bold small">
+                Página {page} / {totalPages}
+              </span>
+              <button
+                className="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                disabled={page >= totalPages}
+                onClick={() => setPage((prev) => prev + 1)}
+              >
+                Próxima
+              </button>
             </div>
           </div>
         </div>

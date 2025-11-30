@@ -7,6 +7,7 @@ import {
   faArrowLeft,
   faSearch,
   faTimes,
+  faShieldHalved,
 } from "@fortawesome/free-solid-svg-icons";
 
 import api from "../../utils/api";
@@ -21,7 +22,7 @@ interface PaginatedResponse {
   totalPages: number;
 }
 
-const LIMIT = 10;
+const LIMIT = 5;
 
 const AccessLogsPage = () => {
   const router = useRouter();
@@ -129,7 +130,13 @@ const AccessLogsPage = () => {
       <div className="container my-5 flex-grow-1">
         <div className="bg-white border rounded-4 shadow-sm overflow-hidden">
           <div className="bg-gradient-vl p-4 text-center text-white">
-            <h3 className="fw-bold m-0">Logs de Acesso</h3>
+            <h3 className="fw-bold m-0">
+              <FontAwesomeIcon
+                icon={faShieldHalved}
+                className="me-2 fs-3 opacity-75"
+              />
+              Logs de Acesso
+            </h3>
             <p className="m-0 opacity-75 small">
               Histórico de logins e tentativas de acesso ao sistema.
             </p>

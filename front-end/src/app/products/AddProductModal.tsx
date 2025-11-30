@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AxiosError } from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -26,6 +26,18 @@ const AddProductModal = ({ onClose, onSuccess }: AddProductProps) => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +77,13 @@ const AddProductModal = ({ onClose, onSuccess }: AddProductProps) => {
     <div
       className="modal-backdrop d-flex justify-content-center align-items-center"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.48)" }}
+      onClick={onClose}
     >
-      <div className="modal-dialog detail-box" style={{ maxWidth: "600px" }}>
+      <div
+        className="modal-dialog detail-box"
+        style={{ maxWidth: "600px" }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-content border-0 shadow">
           <div className="modal-header bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
             <h5 className="modal-title fw-bold text-secondary">Novo Produto</h5>
@@ -176,7 +193,10 @@ const AddProductModal = ({ onClose, onSuccess }: AddProductProps) => {
                     <option value="UNISSEX">Unissex</option>
                     <option value="MASCULINO">Masculino</option>
                     <option value="FEMININO">Feminino</option>
-                    <option value="INFANTIL">Infantil</option>
+                    <option value="INFANTIL_FEMININO">Infantil Feminino</option>
+                    <option value="INFANTIL_MASCULINO">
+                      Infantil Masculino
+                    </option>
                   </select>
                 </div>
               </div>

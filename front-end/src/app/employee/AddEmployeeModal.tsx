@@ -1,6 +1,6 @@
 //src/app/employee/AddEmployeeModal.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { IMaskInput } from "react-imask";
 import { AxiosError } from "axios"; // 1. Importar AxiosError
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -37,6 +37,18 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,8 +110,13 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
     <div
       className="modal-backdrop d-flex justify-content-center align-items-center"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.48)" }}
+      onClick={onClose}
     >
-      <div className="modal-dialog detail-box" style={{ maxWidth: "600px" }}>
+      <div
+        className="modal-dialog detail-box"
+        style={{ maxWidth: "600px" }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-content border-0 shadow">
           {/* HEADER */}
           <div className="modal-header bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">

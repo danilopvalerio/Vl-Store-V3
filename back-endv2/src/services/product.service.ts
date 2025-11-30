@@ -47,6 +47,23 @@ export class ProductService {
     }
   }
 
+  async getPaginatedVariationsByProduct(
+    productId: string,
+    page: number,
+    perPage: number
+  ) {
+    return this.repo.findVariationsPaginatedByProduct(productId, page, perPage);
+  }
+
+  async searchPaginatedVariationsByProduct(
+    productId: string,
+    term: string,
+    page: number,
+    perPage: number
+  ) {
+    return this.repo.searchVariationsByProduct(productId, term, page, perPage);
+  }
+
   async updateProduct(id: string, data: UpdateProductDTO, actorUserId: string) {
     const existing = await this.repo.findProductById(id);
     if (!existing) throw new Error("Produto não encontrado.");
@@ -54,32 +71,48 @@ export class ProductService {
     try {
       const updateData: any = {};
       const mudancas: string[] = [];
+      let novoNomeParaLog: string | undefined = undefined;
 
-      // Verifica mudança de referência
+      // Referência
       if (
         data.referencia !== undefined &&
         data.referencia !== existing.referencia
       ) {
         updateData.referencia = data.referencia;
-        mudancas.push(`Referência alterada`);
+        mudancas.push(
+          `Referência alterada de '${existing.referencia}' para '${data.referencia}'`
+        );
       }
 
-      // outras mudanças...
+      // Nome
       if (data.nome && data.nome !== existing.nome) {
         updateData.nome = data.nome;
-        mudancas.push(`Nome alterado`);
+        mudancas.push(
+          `Nome alterado de '${existing.nome}' para '${data.nome}'`
+        );
+        novoNomeParaLog = data.nome;
       }
+
+      // Categoria
       if (data.categoria !== existing.categoria) {
         updateData.categoria = data.categoria;
-        mudancas.push(`Categoria alterada`);
+        mudancas.push(
+          `Categoria alterada de '${existing.categoria}' para '${data.categoria}'`
+        );
       }
+
+      // Gênero
       if (data.genero !== existing.genero) {
         updateData.genero = data.genero;
-        mudancas.push(`Gênero alterado`);
+        mudancas.push(
+          `Gênero alterado de '${existing.genero}' para '${data.genero}'`
+        );
       }
+
+      // Ativo
       if (data.ativo !== undefined && data.ativo !== existing.ativo) {
         updateData.ativo = data.ativo;
-        mudancas.push(`Produto ${data.ativo ? "ativado" : "desativado"}`);
+        mudancas.push(`Produto ${existing.ativo ? "desativado" : "ativado"}`);
       }
 
       const updated = await this.repo.updateProduct(id, updateData);
@@ -88,9 +121,11 @@ export class ProductService {
         await this.logService.logSystem({
           id_user: actorUserId,
           acao: "Atualizar Produto",
-          detalhes: `Produto '${existing.nome}' atualizado. ${mudancas.join(
-            ". "
-          )}`,
+          detalhes: novoNomeParaLog
+            ? `Produto '${
+                existing.nome
+              }' atualizado para '${novoNomeParaLog}'. ${mudancas.join(". ")}.`
+            : `Produto '${existing.nome}' atualizado. ${mudancas.join(". ")}.`,
         });
       }
 
@@ -101,7 +136,6 @@ export class ProductService {
           `A referência '${data.referencia}' já está cadastrada em outro produto.`
         );
       }
-
       throw err;
     }
   }
