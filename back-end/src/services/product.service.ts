@@ -1,4 +1,5 @@
 // src/services/product.service.ts
+import { Prisma } from "../generated/prisma/client"; // Importa os tipos gerados
 import { ProductRepository } from "../repositories/product.repository";
 import { LogService } from "./log.service";
 import {
@@ -35,15 +36,17 @@ export class ProductService {
       });
 
       return product;
-    } catch (err: any) {
-      // erro de unique no Prisma
-      if (err.code === "P2002" && err.meta?.target?.includes("referencia")) {
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002" &&
+        (err.meta?.target as string[])?.includes("referencia")
+      ) {
         throw new Error(
           `A referência '${data.referencia}' já está sendo usada por outro produto.`
         );
       }
-
-      throw err; // erros desconhecidos
+      throw err;
     }
   }
 
@@ -69,11 +72,10 @@ export class ProductService {
     if (!existing) throw new Error("Produto não encontrado.");
 
     try {
-      const updateData: any = {};
+      const updateData: Prisma.produtoUpdateInput = {};
       const mudancas: string[] = [];
-      let novoNomeParaLog: string | undefined = undefined;
+      let novoNomeParaLog: string | undefined;
 
-      // Referência
       if (
         data.referencia !== undefined &&
         data.referencia !== existing.referencia
@@ -84,7 +86,6 @@ export class ProductService {
         );
       }
 
-      // Nome
       if (data.nome && data.nome !== existing.nome) {
         updateData.nome = data.nome;
         mudancas.push(
@@ -93,45 +94,49 @@ export class ProductService {
         novoNomeParaLog = data.nome;
       }
 
-      // Categoria
-      if (data.categoria !== existing.categoria) {
+      if (
+        data.categoria !== undefined &&
+        data.categoria !== existing.categoria
+      ) {
         updateData.categoria = data.categoria;
         mudancas.push(
           `Categoria alterada de '${existing.categoria}' para '${data.categoria}'`
         );
       }
 
-      // Gênero
-      if (data.genero !== existing.genero) {
+      if (data.genero !== undefined && data.genero !== existing.genero) {
         updateData.genero = data.genero;
         mudancas.push(
           `Gênero alterado de '${existing.genero}' para '${data.genero}'`
         );
       }
 
-      // Ativo
       if (data.ativo !== undefined && data.ativo !== existing.ativo) {
         updateData.ativo = data.ativo;
-        mudancas.push(`Produto ${existing.ativo ? "desativado" : "ativado"}`);
+        mudancas.push(`Produto ${data.ativo ? "ativado" : "desativado"}`);
       }
+
+      // Se não houve mudanças, retorna o existente sem chamar o banco
+      if (Object.keys(updateData).length === 0) return existing;
 
       const updated = await this.repo.updateProduct(id, updateData);
 
       if (mudancas.length > 0) {
+        const nomeLog = novoNomeParaLog || existing.nome;
         await this.logService.logSystem({
           id_user: actorUserId,
           acao: "Atualizar Produto",
-          detalhes: novoNomeParaLog
-            ? `Produto '${
-                existing.nome
-              }' atualizado para '${novoNomeParaLog}'. ${mudancas.join(". ")}.`
-            : `Produto '${existing.nome}' atualizado. ${mudancas.join(". ")}.`,
+          detalhes: `Produto '${nomeLog}' atualizado. ${mudancas.join(". ")}.`,
         });
       }
 
       return updated;
-    } catch (err: any) {
-      if (err.code === "P2002" && err.meta?.target?.includes("referencia")) {
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002" &&
+        (err.meta?.target as string[])?.includes("referencia")
+      ) {
         throw new Error(
           `A referência '${data.referencia}' já está cadastrada em outro produto.`
         );
@@ -149,7 +154,7 @@ export class ProductService {
     await this.logService.logSystem({
       id_user: actorUserId,
       acao: "Remover Produto",
-      detalhes: `Produto '${existing.nome}' (ID: ${id}) e suas variações foram removidos do sistema.`,
+      detalhes: `Produto '${existing.nome}' (ID: ${id}) e suas variações foram removidos.`,
     });
   }
 
@@ -186,13 +191,15 @@ export class ProductService {
     const existing = await this.repo.findVariationById(id);
     if (!existing) throw new Error("Variação não encontrada.");
 
-    const updateData: any = {};
+    // Tipagem estrita do Prisma para variação
+    const updateData: Prisma.produto_variacaoUpdateInput = {};
     const mudancas: string[] = [];
 
     if (data.nome && data.nome !== existing.nome) {
       updateData.nome = data.nome;
-      mudancas.push(`Nome da variação alterado para '${data.nome}'`);
+      mudancas.push(`Nome alterado para '${data.nome}'`);
     }
+
     if (
       data.quantidade !== undefined &&
       data.quantidade !== existing.quantidade
@@ -202,6 +209,7 @@ export class ProductService {
         `Estoque alterado de ${existing.quantidade} para ${data.quantidade}`
       );
     }
+
     if (
       data.valor !== undefined &&
       Number(data.valor) !== Number(existing.valor)
@@ -210,10 +218,11 @@ export class ProductService {
       mudancas.push(`Preço alterado de ${existing.valor} para ${data.valor}`);
     }
 
+    if (Object.keys(updateData).length === 0) return existing;
+
     const updated = await this.repo.updateVariation(id, updateData);
 
     if (mudancas.length > 0) {
-      // Agora updated.produto existe e o TypeScript não vai reclamar
       await this.logService.logSystem({
         id_user: actorUserId,
         acao: "Atualizar Variação",

@@ -12,7 +12,14 @@ export interface CreateProductDTO {
   nome: string;
   categoria?: string;
   material?: string;
-  genero?: "MASCULINO" | "FEMININO" | "UNISSEX" | "INFANTIL" | null;
+  genero?:
+    | "MASCULINO"
+    | "FEMININO"
+    | "UNISSEX"
+    | "INFANTIL_MASCULINO"
+    | "INFANTIL_FEMININO"
+    | "INFANTIL_UNISSEX"
+    | null;
 }
 
 export interface UpdateProductDTO {
@@ -20,10 +27,18 @@ export interface UpdateProductDTO {
   nome?: string;
   categoria?: string;
   material?: string;
-  genero?: "MASCULINO" | "FEMININO" | "UNISSEX" | "INFANTIL" | null;
+  genero?:
+    | "MASCULINO"
+    | "FEMININO"
+    | "UNISSEX"
+    | "INFANTIL_MASCULINO"
+    | "INFANTIL_FEMININO"
+    | "INFANTIL_UNISSEX"
+    | null;
   ativo?: boolean;
 }
 
+// Tipo de retorno combinado
 export type ProductResponseDTO = ProductModel & {
   produto_variacao?: VariationModel[];
 };

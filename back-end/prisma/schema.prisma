@@ -12,14 +12,14 @@ datasource db {
 model caixa {
   id_caixa        String         @id(map: "pk_caixa") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   id_loja         String         @db.Uuid
-  id_user         String         @db.Uuid
   status          String         @db.VarChar(20)
   saldo_inicial   Decimal?       @default(0) @db.Decimal(10, 2)
   saldo_final     Decimal?       @db.Decimal(10, 2)
   data_abertura   DateTime?      @default(now()) @db.Timestamp(6)
   data_fechamento DateTime?      @db.Timestamp(6)
+  id_user_profile String         @db.Uuid
   loja            loja           @relation(fields: [id_loja], references: [id_loja], onDelete: NoAction, onUpdate: NoAction, map: "fk_caixa_loja")
-  user            user           @relation(fields: [id_user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_caixa_user")
+  user_profile    user_profile   @relation(fields: [id_user_profile], references: [id_user_profile], onDelete: NoAction, onUpdate: NoAction, map: "fk_caixa_profile")
   movimentacao    movimentacao[]
   venda           venda[]
 }
@@ -196,7 +196,6 @@ model user {
   ativo              Boolean         @default(true)
   data_criacao       DateTime?       @default(now()) @db.Timestamp(6)
   ultima_atualizacao DateTime?       @default(now()) @db.Timestamp(6)
-  caixa              caixa[]
   log_acesso         log_acesso[]
   log_sistema        log_sistema[]
   loja               loja[]
@@ -217,6 +216,7 @@ model user_profile {
   ativo              Boolean?  @default(true)
   data_criacao       DateTime? @default(now()) @db.Timestamp(6)
   ultima_atualizacao DateTime? @default(now()) @db.Timestamp(6)
+  caixa              caixa[]
   loja               loja      @relation(fields: [id_loja], references: [id_loja], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_loja")
   user               user      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_profile_user")
 
@@ -227,7 +227,7 @@ model user_profile {
 model venda {
   id_venda           String            @id(map: "pk_venda") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   id_loja            String            @db.Uuid
-  id_caixa           String            @db.Uuid
+  id_caixa           String?           @db.Uuid
   id_user            String            @db.Uuid
   id_cliente         String?           @db.Uuid
   data               DateTime?         @default(dbgenerated("CURRENT_DATE")) @db.Date
@@ -242,7 +242,7 @@ model venda {
   item_venda         item_venda[]
   movimentacao       movimentacao[]
   pagamento_venda    pagamento_venda[]
-  caixa              caixa             @relation(fields: [id_caixa], references: [id_caixa], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_caixa")
+  caixa              caixa?            @relation(fields: [id_caixa], references: [id_caixa], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_caixa")
   cliente            cliente?          @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_cliente")
   loja               loja              @relation(fields: [id_loja], references: [id_loja], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_loja")
   user               user              @relation(fields: [id_user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_user")

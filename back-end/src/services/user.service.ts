@@ -16,6 +16,7 @@ function toDTO(
   user: User & { telefone_user?: TelefoneUser[] }
 ): UserResponseDTO {
   const { senha_hash, ...rest } = user;
+  void senha_hash;
   return {
     ...rest,
     telefones: user.telefone_user?.map((t) => t.telefone) || [],

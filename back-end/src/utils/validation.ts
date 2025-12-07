@@ -24,14 +24,22 @@ export function isValidString(str: string, min = 1, max = 255): boolean {
 }
 
 // Verifica se algo é número inteiro
-export function isValidInt(value: any): boolean {
-  const n = Number(value);
-  return Number.isInteger(n) && !isNaN(n);
+export function isValidInt(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value);
 }
 
-// Força converter um inteiro com fallback
-export function toInt(value: any, fallback: number): number {
-  return isValidInt(value) ? Number(value) : fallback;
+// Converte para inteiro com fallback
+export function toInt(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isInteger(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const n = Number(value);
+    return Number.isInteger(n) ? n : fallback;
+  }
+
+  return fallback;
 }
 
 export function isValidPhoneArray(phones?: string[]): boolean {

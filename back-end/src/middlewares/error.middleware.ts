@@ -13,7 +13,7 @@ export function errorMiddleware(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   // Se for um erro que a gente conhece (AppError), manda a mensagem bonitinha
   if (err instanceof AppError) {

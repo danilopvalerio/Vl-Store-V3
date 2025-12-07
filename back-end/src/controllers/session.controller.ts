@@ -1,4 +1,5 @@
-import { Request, Response } from "express";
+// src/controllers/session.controller.ts
+import { Request, Response, NextFunction } from "express";
 import { SessionService } from "../services/session.service";
 import { LoginDTO, RegisterStoreOwnerDTO } from "../dtos/session.dto";
 import {
@@ -6,6 +7,7 @@ import {
   isValidString,
   isValidPhoneArray,
 } from "../utils/validation";
+import { AppError } from "../middlewares/error.middleware"; // <--- Importante
 
 const sessionService = new SessionService();
 
@@ -19,21 +21,22 @@ const COOKIE_OPTIONS = {
 
 export class SessionController {
   // POST /auth/login
-  async login(req: Request, res: Response) {
+  async login(req: Request, res: Response, next: NextFunction) {
     try {
       const body = req.body as LoginDTO;
 
-      // Validações básicas de entrada
-      if (!isValidEmail(body.email))
-        return res.status(400).json({ error: "Email inválido" });
-      if (!isValidString(body.senha))
-        return res.status(400).json({ error: "Senha requerida" });
+      // Validações: Lançamos AppError em vez de retornar res.status
+      if (!isValidEmail(body.email)) {
+        throw new AppError("Email inválido.", 400);
+      }
+      if (!isValidString(body.senha)) {
+        throw new AppError("Senha requerida.", 400);
+      }
 
       // --- LOGICA PARA PEGAR IP E USER AGENT ---
-      // 1. Tenta pegar IP do proxy (x-forwarded-for), se não tiver, pega do socket
       const rawIp =
         req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
-      // 2. Se vier uma lista de IPs, pega o primeiro. Se for string, usa ela.
+
       let ip = Array.isArray(rawIp) ? rawIp[0] : rawIp;
       if (ip.includes(",")) {
         ip = ip.split(",")[0].trim();
@@ -42,70 +45,84 @@ export class SessionController {
       const userAgent = req.headers["user-agent"] || "Desconhecido";
       // -----------------------------------------
 
-      // Passamos o IP e o UserAgent para o service processar o log
       const result = await sessionService.authenticate(body, ip, userAgent);
 
       res.cookie("refreshToken", result.refreshToken, COOKIE_OPTIONS);
 
-      res.json({
+      return res.json({
         accessToken: result.accessToken,
         user: result.user,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro na autenticação";
-      // 401 Unauthorized é o código padrão para falha de login
-      res.status(401).json({ error: msg });
+      // TRUQUE DE SEGURANÇA:
+      // Se o erro foi "Usuário não existe" ou "Senha errada" vindo do service,
+      // você pode querer padronizar tudo como "Email ou senha incorretos" pro usuário não saber qual errou.
+
+      // Se for um erro de sistema (500), deixa passar o original pro log
+      if (err instanceof AppError) {
+        return next(new AppError("Email ou senha incorretos.", 401));
+      }
+
+      next(err);
     }
   }
 
   // POST /auth/refresh
-  async refresh(req: Request, res: Response) {
+  async refresh(req: Request, res: Response, next: NextFunction) {
     try {
       const refreshToken = req.cookies.refreshToken;
 
-      if (!refreshToken)
-        return res.status(401).json({ error: "Refresh token não encontrado" });
+      if (!refreshToken) {
+        throw new AppError("Refresh token não encontrado.", 401);
+      }
 
       const result = await sessionService.refreshToken(refreshToken);
 
-      res.json({ accessToken: result.accessToken });
+      return res.json({ accessToken: result.accessToken });
     } catch (err) {
-      res.status(403).json({ error: "Token inválido ou expirado" });
+      // Loga no terminal do servidor para você debugar se precisar
+      console.error("Erro no refresh:", err);
+
+      // Manda a mensagem genérica pro usuário
+      next(new AppError("Token inválido ou expirado.", 403));
     }
   }
 
   // POST /auth/register
-  async register(req: Request, res: Response) {
+  async register(req: Request, res: Response, next: NextFunction) {
     try {
       const body = req.body as RegisterStoreOwnerDTO;
 
-      if (!isValidEmail(body.email))
-        return res.status(400).json({ error: "Email inválido" });
+      // Validações manuais convertidas para AppError
+      if (!isValidEmail(body.email)) throw new AppError("Email inválido.", 400);
+
       if (!isValidString(body.senha, 6))
-        return res.status(400).json({ error: "Senha fraca (min 6)" });
+        throw new AppError("Senha deve ter no mínimo 6 caracteres.", 400);
+
       if (!isValidString(body.nome_loja))
-        return res.status(400).json({ error: "Nome da loja requerido" });
+        throw new AppError("Nome da loja requerido.", 400);
+
       if (!isValidString(body.nome_usuario))
-        return res.status(400).json({ error: "Nome do usuário requerido" });
+        throw new AppError("Nome do usuário requerido.", 400);
+
       if (!isValidPhoneArray(body.telefones))
-        return res.status(400).json({ error: "Telefones inválidos" });
+        throw new AppError("Telefones inválidos.", 400);
 
       const result = await sessionService.registerStoreOwner(body);
 
       res.cookie("refreshToken", result.refreshToken, COOKIE_OPTIONS);
 
-      res.status(201).json({
+      return res.status(201).json({
         accessToken: result.accessToken,
         user: result.user,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro no registro";
-      res.status(400).json({ error: msg });
+      next(err);
     }
   }
 
   // POST /auth/logout
-  async logout(req: Request, res: Response) {
+  async logout(req: Request, res: Response, next: NextFunction) {
     try {
       const refreshToken = req.cookies.refreshToken;
 
@@ -114,10 +131,9 @@ export class SessionController {
       }
 
       res.clearCookie("refreshToken", COOKIE_OPTIONS);
-      res.status(204).send();
+      return res.status(204).send();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro no logout";
-      res.status(500).json({ error: msg });
+      next(err);
     }
   }
 }

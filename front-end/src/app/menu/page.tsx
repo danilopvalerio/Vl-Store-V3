@@ -106,7 +106,7 @@ const MenuPage = () => {
         </div>
 
         <div
-          className="nav-item-custom text-white disabled"
+          className="nav-item-custom text-white"
           onClick={() => router.push("/cashier")}
         >
           <FontAwesomeIcon

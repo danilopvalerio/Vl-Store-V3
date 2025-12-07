@@ -31,7 +31,7 @@ app.use(helmet());
 // Restringe o acesso à origem especificada e permite o envio de credenciais (cookies).
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://192.168.0.6:3000"],
+    origin: ["http://localhost:3000", "http://192.168.2.3:3000"],
     credentials: true,
   })
 );

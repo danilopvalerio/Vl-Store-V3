@@ -1,14 +1,20 @@
 import { UserProfileRepository } from "../repositories/user_profile.repository";
-import { user_profile as UserProfile } from "../generated/prisma/client";
+import { user_profile as UserProfile } from "../generated/prisma/client"; // Ajuste o import conforme seu gerador
 import {
   CreateUserProfileDTO,
   UpdateUserProfileDTO,
 } from "../dtos/user_profile.dto";
 import { LogService } from "./log.service";
+import { AppError } from "../middlewares/error.middleware";
 
 export class UserProfileService {
-  private repo = new UserProfileRepository();
-  private logService = new LogService();
+  private repo: UserProfileRepository;
+  private logService: LogService;
+
+  constructor() {
+    this.repo = new UserProfileRepository();
+    this.logService = new LogService();
+  }
 
   // ============================================================================
   // CREATE PROFILE
@@ -17,22 +23,40 @@ export class UserProfileService {
     data: CreateUserProfileDTO,
     actorUserId: string
   ): Promise<UserProfile> {
-    const userHasProfile = await this.repo.findByUserId(data.user_id);
+    // 1. Verifica se usuário já tem perfil NESTA loja
+    // O repository foi atualizado para aceitar (userId, lojaId)
+    const userHasProfile = await this.repo.findByUserId(
+      data.user_id,
+      data.id_loja
+    );
+
     if (userHasProfile) {
-      throw new Error("Usuário já possui um perfil cadastrado.");
+      throw new AppError(
+        "Este usuário já possui um perfil cadastrado nesta loja.",
+        409
+      );
     }
 
+    // 2. Verifica se CPF já existe NESTA loja
     if (data.cpf_cnpj) {
-      const existing = await this.repo.findByCpfCnpj(data.cpf_cnpj);
+      const existing = await this.repo.findByCpfCnpj(
+        data.cpf_cnpj,
+        data.id_loja
+      );
       if (existing) {
-        throw new Error("O CPF/CNPJ já está cadastrado.");
+        throw new AppError("Este CPF/CNPJ já está cadastrado nesta loja.", 409);
       }
     }
 
+    // 3. Bloqueio de Segurança
     if (data.tipo_perfil === "SUPER_ADMIN") {
-      throw new Error("Criação de perfis SUPER_ADMIN não permitida.");
+      throw new AppError(
+        "Criação de perfis SUPER_ADMIN não permitida por esta rota.",
+        403
+      );
     }
 
+    // 4. Criação
     const newProfile = await this.repo.create({
       user_id: data.user_id,
       id_loja: data.id_loja,
@@ -42,18 +66,18 @@ export class UserProfileService {
       tipo_perfil: data.tipo_perfil,
     });
 
-    // Log de Sistema
+    // 5. Log
     await this.logService.logSystem({
       id_user: actorUserId,
       acao: "Criar Perfil",
-      detalhes: `Perfil de funcionário criado para '${data.nome}'. Cargo: ${data.cargo}, Permissão: ${data.tipo_perfil}.`,
+      detalhes: `Perfil criado para '${data.nome}'. Loja ID: ${data.id_loja}. Cargo: ${data.cargo}.`,
     });
 
     return newProfile;
   }
 
   // ============================================================================
-  // UPDATE PROFILE (Com Detalhamento)
+  // UPDATE PROFILE
   // ============================================================================
   async updateProfile(
     id: string,
@@ -61,34 +85,47 @@ export class UserProfileService {
     actorUserId: string
   ): Promise<UserProfile> {
     const existing = await this.repo.findById(id);
-    if (!existing) throw new Error("Perfil não encontrado.");
+    if (!existing) throw new AppError("Perfil não encontrado.", 404);
 
-    // Validações
+    // 1. Validação de CPF duplicado (Contexto da Loja)
     if (data.cpf_cnpj && data.cpf_cnpj !== existing.cpf_cnpj) {
-      const docExists = await this.repo.findByCpfCnpj(data.cpf_cnpj);
-      if (docExists) throw new Error("O CPF/CNPJ já está cadastrado.");
+      // Busca se existe esse CPF na MESMA loja do perfil que estamos editando
+      const docExists = await this.repo.findByCpfCnpj(
+        data.cpf_cnpj,
+        existing.id_loja
+      );
+
+      // Se encontrou alguém E não sou eu mesmo
+      if (docExists && docExists.id_user_profile !== id) {
+        throw new AppError(
+          "Este CPF/CNPJ já está cadastrado para outro usuário nesta loja.",
+          409
+        );
+      }
     }
 
+    // 2. Bloqueio de Segurança
     if (data.tipo_perfil === "SUPER_ADMIN") {
-      throw new Error("Alteração para SUPER_ADMIN não permitida.");
+      throw new AppError(
+        "Alteração manual para SUPER_ADMIN não permitida.",
+        403
+      );
     }
 
     const updateData: Partial<UserProfile> = {};
-    const mudancas: string[] = []; // Lista de alterações para o log
+    const mudancas: string[] = [];
 
-    // 1. Verifica Nome
+    // 3. Mapeamento de Mudanças
     if (data.nome && data.nome !== existing.nome) {
       updateData.nome = data.nome;
       mudancas.push(`Nome alterado de '${existing.nome}' para '${data.nome}'`);
     }
 
-    // 2. Verifica CPF
     if (data.cpf_cnpj && data.cpf_cnpj !== existing.cpf_cnpj) {
       updateData.cpf_cnpj = data.cpf_cnpj;
-      mudancas.push(`Documento (CPF) atualizado`);
+      mudancas.push(`CPF atualizado`);
     }
 
-    // 3. Verifica Cargo
     if (data.cargo && data.cargo !== existing.cargo) {
       updateData.cargo = data.cargo;
       mudancas.push(
@@ -96,7 +133,6 @@ export class UserProfileService {
       );
     }
 
-    // 4. Verifica Tipo de Perfil
     if (data.tipo_perfil && data.tipo_perfil !== existing.tipo_perfil) {
       updateData.tipo_perfil = data.tipo_perfil;
       mudancas.push(
@@ -104,16 +140,18 @@ export class UserProfileService {
       );
     }
 
-    // 5. Verifica Status
     if (typeof data.ativo !== "undefined" && data.ativo !== existing.ativo) {
       updateData.ativo = data.ativo;
-      mudancas.push(`Perfil ${data.ativo ? "ativado" : "desativado"}`);
+      mudancas.push(`Status alterado para ${data.ativo ? "Ativo" : "Inativo"}`);
     }
 
-    // Executa Update
-    const updatedProfile = await this.repo.updateById(id, updateData);
+    // 4. Executa Update (se houver dados)
+    let updatedProfile = existing;
+    if (Object.keys(updateData).length > 0) {
+      updatedProfile = await this.repo.updateById(id, updateData);
+    }
 
-    // Log de Sistema (Só se mudou algo)
+    // 5. Log (Só se houve mudança)
     if (mudancas.length > 0) {
       await this.logService.logSystem({
         id_user: actorUserId,
@@ -132,11 +170,10 @@ export class UserProfileService {
   // ============================================================================
   async deleteProfile(id: string, actorUserId: string): Promise<UserProfile> {
     const existing = await this.repo.findById(id);
-    if (!existing) throw new Error("Perfil não encontrado");
+    if (!existing) throw new AppError("Perfil não encontrado.", 404);
 
     const deletedProfile = await this.repo.deleteById(id);
 
-    // Log de Sistema
     await this.logService.logSystem({
       id_user: actorUserId,
       acao: "Remover Perfil",
@@ -147,14 +184,19 @@ export class UserProfileService {
   }
 
   // ============================================================================
-  // LEITURAS (GETTERS)
+  // LEITURAS (Delegam para o Repositório)
   // ============================================================================
+
   async getProfileById(id: string): Promise<UserProfile | null> {
     return this.repo.findById(id);
   }
 
-  async getProfileByUserId(userId: string): Promise<UserProfile | null> {
-    return this.repo.findByUserId(userId);
+  // Agora busca considerando a loja se possível, mas mantemos a assinatura flexível
+  async getProfileByUserId(
+    userId: string,
+    lojaId?: string
+  ): Promise<UserProfile | null> {
+    return this.repo.findByUserId(userId, lojaId);
   }
 
   async getAllProfiles(): Promise<UserProfile[]> {
@@ -168,7 +210,14 @@ export class UserProfileService {
   async searchProfiles(term: string, page = 1, perPage = 10, lojaId?: string) {
     const cleanedTerm = term?.trim() ?? "";
     if (cleanedTerm.length === 0) {
-      return { data: [], total: 0, page, perPage, totalPages: 0 };
+      // Retorna estrutura vazia de paginação se não tiver termo
+      return {
+        data: [],
+        total: 0,
+        page,
+        perPage,
+        totalPages: 0,
+      };
     }
     return this.repo.searchPaginated(cleanedTerm, page, perPage, lojaId);
   }

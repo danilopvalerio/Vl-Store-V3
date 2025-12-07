@@ -16,6 +16,7 @@
         "axios": "^1.9.0",
         "bootstrap": "^5.3.6",
         "chart.js": "^4.5.0",
+        "date-fns": "^4.1.0",
         "lucide-react": "^0.513.0",
         "my-next-app": "file:",
         "next": "^15.3.2",
