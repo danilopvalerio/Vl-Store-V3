@@ -10,7 +10,7 @@ datasource db {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model caixa {
-  id_caixa        String         @id(map: "pk_caixa") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_caixa        String         @id(map: "pk_caixa") @default(uuid()) @db.Uuid
   id_loja         String         @db.Uuid
   status          String         @db.VarChar(20)
   saldo_inicial   Decimal?       @default(0) @db.Decimal(10, 2)
@@ -25,7 +25,7 @@ model caixa {
 }
 
 model cliente {
-  id_cliente   String    @id(map: "pk_cliente") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_cliente   String    @id(map: "pk_cliente") @default(uuid()) @db.Uuid
   nome         String    @db.VarChar(255)
   cpf_cnpj     String?   @unique(map: "uk_cliente_cpf") @db.VarChar(20)
   email        String?   @db.VarChar(255)
@@ -35,7 +35,7 @@ model cliente {
 }
 
 model configuracoes_loja {
-  id_config String  @id(map: "pk_config_loja") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_config String  @id(map: "pk_config_loja") @default(uuid()) @db.Uuid
   id_loja   String  @db.Uuid
   chave     String  @db.VarChar(100)
   valor     String? @db.VarChar(255)
@@ -45,7 +45,7 @@ model configuracoes_loja {
 }
 
 model endereco_loja {
-  id_endereco String  @id(map: "pk_endereco_loja") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_endereco String  @id(map: "pk_endereco_loja") @default(uuid()) @db.Uuid
   id_loja     String  @db.Uuid
   logradouro  String? @db.VarChar(255)
   numero      String? @db.VarChar(20)
@@ -59,7 +59,7 @@ model endereco_loja {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model item_venda {
-  id_item_venda        String           @id(map: "pk_item_venda") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_item_venda        String           @id(map: "pk_item_venda") @default(uuid()) @db.Uuid
   id_venda             String           @db.Uuid
   id_variacao          String           @db.Uuid
   quantidade           Int
@@ -74,7 +74,7 @@ model item_venda {
 }
 
 model log_acesso {
-  id_log_acesso String    @id(map: "pk_log_acesso") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_log_acesso String    @id(map: "pk_log_acesso") @default(uuid()) @db.Uuid
   id_user       String?   @db.Uuid
   ip            String?   @db.VarChar(50)
   user_agent    String?   @db.VarChar(255)
@@ -84,7 +84,7 @@ model log_acesso {
 }
 
 model log_sistema {
-  id_log_sistema String    @id(map: "pk_log_sistema") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_log_sistema String    @id(map: "pk_log_sistema") @default(uuid()) @db.Uuid
   id_user        String?   @db.Uuid
   acao           String    @db.VarChar(255)
   detalhes       String?
@@ -93,7 +93,7 @@ model log_sistema {
 }
 
 model loja {
-  id_loja            String               @id(map: "pk_loja") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_loja            String               @id(map: "pk_loja") @default(uuid()) @db.Uuid
   admin_user_id      String?              @db.Uuid
   nome               String               @db.VarChar(255)
   cnpj_cpf           String?              @db.VarChar(20)
@@ -112,7 +112,7 @@ model loja {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model movimentacao {
-  id_movimentacao    String    @id(map: "pk_movimentacao") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_movimentacao    String    @id(map: "pk_movimentacao") @default(uuid()) @db.Uuid
   id_loja            String    @db.Uuid
   id_caixa           String    @db.Uuid
   id_venda           String?   @db.Uuid
@@ -128,7 +128,7 @@ model movimentacao {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model pagamento_venda {
-  id_pagamento   String  @id(map: "pk_pagamento") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_pagamento   String  @id(map: "pk_pagamento") @default(uuid()) @db.Uuid
   id_venda       String  @db.Uuid
   tipo_pagamento String  @db.VarChar(50)
   valor          Decimal @db.Decimal(10, 2)
@@ -137,7 +137,7 @@ model pagamento_venda {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model produto {
-  id_produto         String             @id(map: "pk_produto") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_produto         String             @id(map: "pk_produto") @default(uuid()) @db.Uuid
   id_loja            String             @db.Uuid
   referencia         String?            @unique(map: "uq_produto_referencia") @db.VarChar(100)
   nome               String             @db.VarChar(255)
@@ -153,7 +153,7 @@ model produto {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model produto_variacao {
-  id_variacao        String       @id(map: "pk_produto_variacao") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_variacao        String       @id(map: "pk_produto_variacao") @default(uuid()) @db.Uuid
   id_produto         String       @db.Uuid
   nome               String?      @db.VarChar(255)
   descricao          String?
@@ -166,7 +166,7 @@ model produto_variacao {
 }
 
 model refresh_token {
-  id_refresh_token String    @id(map: "pk_refresh_token") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_refresh_token String    @id(map: "pk_refresh_token") @default(uuid()) @db.Uuid
   id_user          String    @db.Uuid
   token            String    @unique(map: "uk_refresh_token") @db.VarChar(255)
   expiracao        DateTime  @db.Timestamp(6)
@@ -176,21 +176,21 @@ model refresh_token {
 }
 
 model telefone_loja {
-  id_telefone_loja String @id(map: "pk_telefone_loja") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_telefone_loja String @id(map: "pk_telefone_loja") @default(uuid()) @db.Uuid
   id_loja          String @db.Uuid
   telefone         String @db.VarChar(20)
   loja             loja   @relation(fields: [id_loja], references: [id_loja], onDelete: Cascade, onUpdate: NoAction, map: "fk_tel_loja")
 }
 
 model telefone_user {
-  id_telefone String @id(map: "pk_telefone_user") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_telefone String @id(map: "pk_telefone_user") @default(uuid()) @db.Uuid
   id_user     String @db.Uuid
   telefone    String @db.VarChar(20)
   user        user   @relation(fields: [id_user], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tel_user")
 }
 
 model user {
-  user_id            String          @id(map: "pk_user") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id            String          @id(map: "pk_user") @default(uuid()) @db.Uuid
   email              String          @unique(map: "uk_user_email") @db.VarChar(255)
   senha_hash         String          @db.VarChar(255)
   ativo              Boolean         @default(true)
@@ -206,7 +206,7 @@ model user {
 }
 
 model user_profile {
-  id_user_profile    String    @id(map: "pk_user_profile") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_user_profile    String    @id(map: "pk_user_profile") @default(uuid()) @db.Uuid
   user_id            String    @db.Uuid
   id_loja            String    @db.Uuid
   nome               String    @db.VarChar(255)
@@ -225,7 +225,7 @@ model user_profile {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model venda {
-  id_venda           String            @id(map: "pk_venda") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id_venda           String            @id(map: "pk_venda") @default(uuid()) @db.Uuid
   id_loja            String            @db.Uuid
   id_caixa           String?           @db.Uuid
   id_user            String            @db.Uuid
