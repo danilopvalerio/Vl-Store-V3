@@ -7,6 +7,7 @@ import userProfileRoutes from "./user_profile.routes";
 import logRoutes from "./log.routes";
 import produtoRoutes from "./product.routes";
 import caixaRoutes from "./caixa.routes";
+import dashboardRoutes from "./dashboard.routes";
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.use("/lojas", lojaRoutes);
 router.use("/profiles", userProfileRoutes);
 router.use("/products", produtoRoutes);
 router.use("/caixas", caixaRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 // Rotas de Logs
 router.use("/logs", logRoutes);
