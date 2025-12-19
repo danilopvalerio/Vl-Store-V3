@@ -1,4 +1,4 @@
-// lib/api.ts
+// utils/api.ts
 import axios from "axios";
 
 // URL base da API
