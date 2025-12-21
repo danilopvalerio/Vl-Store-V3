@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { IMaskInput } from "react-imask";
-import { AxiosError } from "axios"; // Adicionado
+import { AxiosError } from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
@@ -14,10 +14,8 @@ import {
   faShieldHalved,
 } from "@fortawesome/free-solid-svg-icons";
 
-// Imports originais mantidos
 import api from "../../utils/api";
 import { extractDigitsOnly } from "../../utils/validationUtils";
-// Import do tipo de erro (ajustado para o local correto do seu types/api.ts)
 import { ApiErrorResponse } from "../../types/api";
 
 interface AddEmployeeProps {
@@ -31,7 +29,11 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
   const [cpf, setCpf] = useState("");
   const [cargo, setCargo] = useState("");
   const [senha, setSenha] = useState("");
-  const [telefone, setTelefone] = useState("");
+
+  // ALTERAÇÃO: Dois telefones
+  const [telefone1, setTelefone1] = useState("");
+  const [telefone2, setTelefone2] = useState("");
+
   const [tipoPerfil, setTipoPerfil] = useState("FUNCIONARIO");
 
   const [loading, setLoading] = useState(false);
@@ -58,15 +60,20 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
       if (!userProfileData) throw new Error("Sessão inválida.");
       const currentUser = JSON.parse(userProfileData);
 
+      // Prepara telefones
+      const telefonesParaEnviar = [telefone1, telefone2]
+        .map((t) => extractDigitsOnly(t))
+        .filter((t) => t.length > 0);
+
       // 1. USER
       const userPayload = {
         email: email.toLowerCase(),
         senha: senha,
-        telefones: telefone ? [extractDigitsOnly(telefone)] : [],
+        telefones: telefonesParaEnviar,
       };
 
       const userRes = await api.post("/users", userPayload);
-      const userId = userRes.data.user_id;
+      const userId = userRes.data.user_id || userRes.data.id; // Suporte a ambos os formatos de retorno
 
       // 2. PROFILE
       const profilePayload = {
@@ -84,7 +91,6 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
     } catch (err) {
       console.error("Erro ao criar funcionário:", err);
 
-      // Tratamento de erro padronizado
       const axiosError = err as AxiosError<ApiErrorResponse>;
       const msg =
         axiosError.response?.data?.message ||
@@ -177,7 +183,7 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
                     className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
                   />
                   <input
-                    type="password"
+                    type="text"
                     className="p-2 ps-5 w-100 form-control-underline"
                     placeholder="******"
                     value={senha}
@@ -208,26 +214,6 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
                 </div>
               </div>
 
-              {/* CELULAR */}
-              <div className="col-md-6">
-                <label className="form-label small text-muted fw-bold">
-                  Celular
-                </label>
-                <div className="position-relative">
-                  <FontAwesomeIcon
-                    icon={faPhone}
-                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
-                  />
-                  <IMaskInput
-                    mask="(00) 00000-0000"
-                    className="p-2 ps-5 w-100 form-control-underline"
-                    placeholder="(99) 99999-9999"
-                    value={telefone}
-                    onAccept={(val: string) => setTelefone(val)}
-                  />
-                </div>
-              </div>
-
               {/* CARGO */}
               <div className="col-md-6">
                 <label className="form-label small text-muted fw-bold">
@@ -248,8 +234,48 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
                 </div>
               </div>
 
-              {/* TIPO DE PERFIL */}
+              {/* TELEFONE 1 */}
               <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Telefone 1
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faPhone}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <IMaskInput
+                    mask="(00) 00000-0000"
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="(99) 99999-9999"
+                    value={telefone1}
+                    onAccept={(val: string) => setTelefone1(val)}
+                  />
+                </div>
+              </div>
+
+              {/* TELEFONE 2 */}
+              <div className="col-md-6">
+                <label className="form-label small text-muted fw-bold">
+                  Telefone 2 (Opcional)
+                </label>
+                <div className="position-relative">
+                  <FontAwesomeIcon
+                    icon={faPhone}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                  />
+                  <IMaskInput
+                    mask="(00) 00000-0000"
+                    className="p-2 ps-5 w-100 form-control-underline"
+                    placeholder="(99) 99999-9999"
+                    value={telefone2}
+                    onAccept={(val: string) => setTelefone2(val)}
+                  />
+                </div>
+              </div>
+
+              {/* TIPO DE PERFIL */}
+              <div className="col-md-12">
                 <label className="form-label small text-muted fw-bold">
                   Tipo de Perfil
                 </label>
@@ -266,6 +292,7 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
                   >
                     <option value="FUNCIONARIO">Funcionário</option>
                     <option value="GERENTE">Gerente</option>
+                    <option value="ADMIN">Admin</option>
                   </select>
                 </div>
               </div>

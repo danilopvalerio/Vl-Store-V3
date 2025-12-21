@@ -2,24 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { IMaskInput } from "react-imask";
-import { AxiosError } from "axios"; // Adicionado
+import { AxiosError } from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
   faIdCard,
   faBriefcase,
   faEnvelope,
-  faLock,
   faPhone,
   faTrash,
   faShieldHalved,
 } from "@fortawesome/free-solid-svg-icons";
 
-// Imports originais mantidos
 import api from "../../utils/api";
 import { extractDigitsOnly } from "../../utils/validationUtils";
 import { UpdateUserPayload } from "./types";
-import { ApiErrorResponse } from "../../types/api"; // Import do tipo de erro
+import { ApiErrorResponse } from "../../types/api";
 
 interface EmployeeDetailModalProps {
   profileId: string;
@@ -44,8 +42,10 @@ const EmployeeDetailModal = ({
   const [cpf, setCpf] = useState("");
   const [cargo, setCargo] = useState("");
   const [email, setEmail] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [novaSenha, setNovaSenha] = useState("");
+
+  const [telefone1, setTelefone1] = useState("");
+  const [telefone2, setTelefone2] = useState("");
+
   const [tipoPerfil, setTipoPerfil] = useState("");
   const [ativo, setAtivo] = useState(true);
 
@@ -57,7 +57,9 @@ const EmployeeDetailModal = ({
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const currentUser = JSON.parse(storedUser);
-      setIsAdmin(["ADMIN", "SUPER_ADMIN"].includes(currentUser.role));
+      // ALTERAÇÃO: Verifica se a string contém "ADMIN" (ex: ADMIN, SUPER_ADMIN)
+      const role = currentUser.role ? currentUser.role.toUpperCase() : "";
+      setIsAdmin(role.includes("ADMIN"));
     }
   }, []);
 
@@ -88,11 +90,10 @@ const EmployeeDetailModal = ({
           const userData = userRes.data;
 
           setEmail(userData.email);
-          if (
-            Array.isArray(userData.telefones) &&
-            userData.telefones.length > 0
-          ) {
-            setTelefone(userData.telefones[0]);
+
+          if (Array.isArray(userData.telefones)) {
+            setTelefone1(userData.telefones[0] || "");
+            setTelefone2(userData.telefones[1] || "");
           }
         }
       } catch (err) {
@@ -142,12 +143,15 @@ const EmployeeDetailModal = ({
 
       // 2. Atualiza User (Login)
       if (userId) {
+        const telefonesParaEnviar = [telefone1, telefone2]
+          .map((t) => extractDigitsOnly(t))
+          .filter((t) => t.length > 0);
+
         const payload: UpdateUserPayload = {
           email: email.toLowerCase(),
-          telefones: telefone ? [extractDigitsOnly(telefone)] : [],
+          telefones: telefonesParaEnviar,
+          // Senha removida daqui
         };
-
-        if (novaSenha) payload.senha = novaSenha;
 
         await api.patch(`/users/${userId}`, payload);
       }
@@ -343,10 +347,10 @@ const EmployeeDetailModal = ({
                     </div>
                   </div>
 
-                  {/* TELEFONE */}
+                  {/* TELEFONE 1 */}
                   <div className="col-md-6">
                     <label className="form-label small text-muted fw-bold">
-                      Telefone
+                      Telefone 1
                     </label>
                     <div className="position-relative">
                       <FontAwesomeIcon
@@ -356,31 +360,32 @@ const EmployeeDetailModal = ({
                       <IMaskInput
                         mask="(00) 00000-0000"
                         className="p-2 ps-5 w-100 form-control-underline"
-                        value={telefone}
-                        onAccept={(val: string) => setTelefone(val)}
+                        value={telefone1}
+                        onAccept={(val: string) => setTelefone1(val)}
                       />
                     </div>
                   </div>
 
-                  {/* SENHA */}
-                  <div className="col-12">
+                  {/* TELEFONE 2 (Opcional) */}
+                  <div className="col-md-6">
                     <label className="form-label small text-muted fw-bold">
-                      Nova Senha
+                      Telefone 2 (Opcional)
                     </label>
                     <div className="position-relative">
                       <FontAwesomeIcon
-                        icon={faLock}
+                        icon={faPhone}
                         className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
                       />
-                      <input
-                        type="text"
+                      <IMaskInput
+                        mask="(00) 00000-0000"
                         className="p-2 ps-5 w-100 form-control-underline"
-                        placeholder="Preencha apenas para alterar"
-                        value={novaSenha}
-                        onChange={(e) => setNovaSenha(e.target.value)}
+                        value={telefone2}
+                        onAccept={(val: string) => setTelefone2(val)}
                       />
                     </div>
                   </div>
+
+                  {/* SENHA REMOVIDA DAQUI */}
                 </>
               )}
 

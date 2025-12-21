@@ -65,9 +65,9 @@ const AuditLogsPage = () => {
 
     try {
       const user = JSON.parse(storedUser);
-      if (user.role !== "SUPER_ADMIN") {
+      if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
         alert(
-          "Acesso restrito. Apenas SUPER_ADMIN pode visualizar logs de sistema."
+          "Acesso restrito. Apenas SUPER_ADMIN e ADMIN podem visualizar logs de sistema."
         );
         router.push("/dashboard");
         return;
