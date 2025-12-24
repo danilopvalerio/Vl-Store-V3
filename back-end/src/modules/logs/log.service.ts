@@ -14,6 +14,7 @@ export class LogService {
     private systemRepo: SystemLogRepository
   ) {}
 
+  // --- HELPERS ---
   private formatarDataBR(data: Date | null): string | null {
     if (!data) return null;
     return new Date(data).toLocaleString("pt-BR", {
@@ -53,55 +54,71 @@ export class LogService {
     };
   }
 
-  // --- MÉTODOS DE BUSCA ---
+  // --- MÉTODOS DE ESCRITA (Internos) ---
+
   async logAccess(data: CreateLogAcessoDTO) {
     return this.accessRepo.create(data);
-  }
-
-  async getAccessLogs(idLoja: string, page = 1, perPage = 10) {
-    const { data, total } = await this.accessRepo.findPaginated(
-      idLoja,
-      page,
-      perPage
-    );
-    return {
-      data: data.map((log) => this.mapAccessResponse(log)),
-      total,
-      page,
-      perPage,
-      totalPages: Math.ceil(total / perPage),
-    };
-  }
-
-  async searchAccessLogs(idLoja: string, term: string, page = 1, perPage = 10) {
-    if (!term || term.trim() === "") {
-      return this.getAccessLogs(idLoja, page, perPage);
-    }
-    const { data, total } = await this.accessRepo.searchPaginated(
-      idLoja,
-      term,
-      page,
-      perPage
-    );
-    return {
-      data: data.map((log) => this.mapAccessResponse(log)),
-      total,
-      page,
-      perPage,
-      totalPages: Math.ceil(total / perPage),
-    };
   }
 
   async logSystem(data: CreateLogSistemaDTO) {
     return this.systemRepo.create(data);
   }
 
-  async getSystemLogs(idLoja: string, page = 1, perPage = 10) {
+  // --- MÉTODOS DE LEITURA (Access Logs) ---
+
+  async getAccessLogs(idLoja: string, page: number, perPage: number) {
+    // page e perPage já chegam validados e tipados como number graças ao Zod
+    const { data, total } = await this.accessRepo.findPaginated(
+      idLoja,
+      page,
+      perPage
+    );
+
+    return {
+      data: data.map((log) => this.mapAccessResponse(log)),
+      total,
+      page,
+      perPage,
+      totalPages: Math.ceil(total / perPage),
+    };
+  }
+
+  async searchAccessLogs(
+    idLoja: string,
+    term: string,
+    page: number,
+    perPage: number
+  ) {
+    // Se termo vier vazio, redireciona para a listagem padrão
+    if (!term || term.trim() === "") {
+      return this.getAccessLogs(idLoja, page, perPage);
+    }
+
+    const { data, total } = await this.accessRepo.searchPaginated(
+      idLoja,
+      term,
+      page,
+      perPage
+    );
+
+    return {
+      data: data.map((log) => this.mapAccessResponse(log)),
+      total,
+      page,
+      perPage,
+      totalPages: Math.ceil(total / perPage),
+    };
+  }
+
+  // --- MÉTODOS DE LEITURA (System Logs) ---
+
+  async getSystemLogs(idLoja: string, page: number, perPage: number) {
     const { data, total } = await this.systemRepo.findPaginated(
       idLoja,
       page,
       perPage
     );
+
     return {
       data: data.map((log) => this.mapSystemResponse(log)),
       total,
@@ -111,16 +128,23 @@ export class LogService {
     };
   }
 
-  async searchSystemLogs(idLoja: string, term: string, page = 1, perPage = 10) {
+  async searchSystemLogs(
+    idLoja: string,
+    term: string,
+    page: number,
+    perPage: number
+  ) {
     if (!term || term.trim() === "") {
       return this.getSystemLogs(idLoja, page, perPage);
     }
+
     const { data, total } = await this.systemRepo.searchPaginated(
       idLoja,
       term,
       page,
       perPage
     );
+
     return {
       data: data.map((log) => this.mapSystemResponse(log)),
       total,

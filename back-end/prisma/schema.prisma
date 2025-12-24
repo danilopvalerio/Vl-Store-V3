@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../src/shared/database/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  
+  
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -227,8 +229,9 @@ model venda {
   id_venda           String            @id(map: "pk_venda") @default(uuid()) @db.Uuid
   id_loja            String            @db.Uuid
   id_caixa           String?           @db.Uuid
-  id_user            String            @db.Uuid
+  id_user            String?           @db.Uuid
   id_cliente         String?           @db.Uuid
+  tipo_venda         String?           @default("FISICA") @db.VarChar(20)
   data               DateTime?         @default(dbgenerated("CURRENT_DATE")) @db.Date
   hora               DateTime?         @default(dbgenerated("CURRENT_TIME")) @db.Time(6)
   desconto           Decimal?          @default(0) @db.Decimal(10, 2)
@@ -244,5 +247,5 @@ model venda {
   caixa              caixa?            @relation(fields: [id_caixa], references: [id_caixa], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_caixa")
   cliente            cliente?          @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_cliente")
   loja               loja              @relation(fields: [id_loja], references: [id_loja], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_loja")
-  user               user              @relation(fields: [id_user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_user")
+  user               user?              @relation(fields: [id_user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_user")
 }

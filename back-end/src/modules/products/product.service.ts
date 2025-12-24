@@ -9,8 +9,8 @@ import {
 } from "./product.dto";
 import { AppError } from "../../app/middleware/error.middleware";
 import { LogService } from "../logs/log.service";
-import { isValidUUID, isValidString } from "../../shared/utils/validation";
 import { Prisma } from "../../shared/database/generated/prisma/client";
+// Validações manuais (isValidUUID, isValidString) removidas -> Zod
 
 export class ProductService {
   constructor(
@@ -23,8 +23,7 @@ export class ProductService {
   // ==========================================================================
 
   async createProduct(data: CreateProductDTO): Promise<ProductEntity> {
-    if (!isValidUUID(data.id_loja)) throw new AppError("Loja inválida.");
-    if (!isValidString(data.nome)) throw new AppError("Nome obrigatório.");
+    // Validação de formato feita pelo Zod
 
     try {
       const product = await this.repo.create(data);
@@ -49,7 +48,7 @@ export class ProductService {
           );
         }
       }
-      throw err; // Relança para o erro 500 genérico se não for P2002
+      throw err;
     }
   }
 
@@ -57,7 +56,7 @@ export class ProductService {
     id: string,
     data: UpdateProductDTO
   ): Promise<ProductEntity> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido.");
+    // Validação ID UUID feita pelo Zod
 
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Produto não encontrado.", 404);
@@ -90,8 +89,6 @@ export class ProductService {
   }
 
   async deleteProduct(id: string, actorUserId: string): Promise<void> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido.");
-
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Produto não encontrado.", 404);
 
@@ -105,7 +102,6 @@ export class ProductService {
   }
 
   async getProductById(id: string): Promise<ProductEntity> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido.");
     const product = await this.repo.findById(id);
     if (!product) throw new AppError("Produto não encontrado", 404);
     return product;
@@ -136,10 +132,7 @@ export class ProductService {
   // ==========================================================================
 
   async createVariation(data: CreateVariationDTO): Promise<VariationEntity> {
-    if (!isValidUUID(data.id_produto)) throw new AppError("Produto inválido.");
-    if (!isValidString(data.nome)) throw new AppError("Nome obrigatório.");
-    if (data.quantidade < 0) throw new AppError("Quantidade inválida.");
-    if (data.valor < 0) throw new AppError("Valor inválido.");
+    // Validações de quantidade, valor e formato feitas pelo Zod
 
     const produtoPai = await this.repo.findById(data.id_produto);
     if (!produtoPai) throw new AppError("Produto pai não encontrado.", 404);
@@ -159,8 +152,6 @@ export class ProductService {
     id: string,
     data: UpdateVariationDTO
   ): Promise<VariationEntity> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido.");
-
     const existing = await this.repo.findVariationById(id);
     if (!existing) throw new AppError("Variação não encontrada.", 404);
 
@@ -176,8 +167,6 @@ export class ProductService {
   }
 
   async deleteVariation(id: string, actorUserId: string): Promise<void> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido.");
-
     const existing = await this.repo.findVariationById(id);
     if (!existing) throw new AppError("Variação não encontrada.", 404);
 
@@ -191,7 +180,6 @@ export class ProductService {
   }
 
   async getVariationById(id: string): Promise<VariationEntity> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido.");
     const variation = await this.repo.findVariationById(id);
     if (!variation) throw new AppError("Variação não encontrada", 404);
     return variation;

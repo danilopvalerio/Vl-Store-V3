@@ -8,6 +8,7 @@ import logRoutes from "./../modules/logs/log.routes";
 import produtoRoutes from "./../modules/products/product.routes";
 import caixaRoutes from "./../modules/cashier/caixa.routes";
 import dashboardRoutes from "../modules/dashboard/dashboard.routes";
+import vendaRoutes from "../modules/sale/venda.routes";
 
 const router = Router();
 
@@ -26,6 +27,7 @@ router.use("/profiles", userProfileRoutes);
 router.use("/products", produtoRoutes);
 router.use("/caixas", caixaRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/vendas", vendaRoutes);
 
 // Rotas de Logs
 router.use("/logs", logRoutes);

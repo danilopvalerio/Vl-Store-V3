@@ -8,7 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
-import type * as runtime from "@prisma/client/runtime/library"
+import type * as runtime from "@prisma/client/runtime/client"
 import type * as $Enums from "../enums"
 import type * as Prisma from "../internal/prismaNamespace"
 
@@ -486,10 +486,12 @@ export type userCreateNestedOneWithoutVendaInput = {
   connect?: Prisma.userWhereUniqueInput
 }
 
-export type userUpdateOneRequiredWithoutVendaNestedInput = {
+export type userUpdateOneWithoutVendaNestedInput = {
   create?: Prisma.XOR<Prisma.userCreateWithoutVendaInput, Prisma.userUncheckedCreateWithoutVendaInput>
   connectOrCreate?: Prisma.userCreateOrConnectWithoutVendaInput
   upsert?: Prisma.userUpsertWithoutVendaInput
+  disconnect?: Prisma.userWhereInput | boolean
+  delete?: Prisma.userWhereInput | boolean
   connect?: Prisma.userWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.userUpdateToOneWithWhereWithoutVendaInput, Prisma.userUpdateWithoutVendaInput>, Prisma.userUncheckedUpdateWithoutVendaInput>
 }

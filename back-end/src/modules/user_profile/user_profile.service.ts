@@ -6,7 +6,7 @@ import {
 } from "./user_profile.dto";
 import { AppError } from "../../app/middleware/error.middleware";
 import { LogService } from "../logs/log.service";
-import { isValidUUID, isValidString } from "../../shared/utils/validation";
+// VALIDATION IMPORTS REMOVIDOS (isValidUUID, isValidString) -> Zod cuida disso
 
 export class UserProfileService {
   constructor(
@@ -15,16 +15,12 @@ export class UserProfileService {
   ) {}
 
   async createProfile(data: CreateUserProfileDTO): Promise<UserProfileEntity> {
-    // Validações básicas antes de chamar repositório
-    if (!isValidUUID(data.user_id)) throw new AppError("Invalid User ID");
-    if (!isValidUUID(data.id_loja)) throw new AppError("Invalid Store ID");
-    if (!isValidString(data.nome)) throw new AppError("Invalid name");
-
-    // 1. Verifica duplicidade de perfil
+    // 1. Verifica duplicidade de perfil (REGRA DE NEGÓCIO)
     const userHasProfile = await this.repo.findByUserId(
       data.user_id,
       data.id_loja
     );
+
     if (userHasProfile) {
       throw new AppError(
         "Este usuário já possui um perfil cadastrado nesta loja.",
@@ -32,7 +28,7 @@ export class UserProfileService {
       );
     }
 
-    // 2. Verifica duplicidade de CPF
+    // 2. Verifica duplicidade de CPF (REGRA DE NEGÓCIO)
     if (data.cpf_cnpj) {
       const existing = await this.repo.findByCpfCnpj(
         data.cpf_cnpj,
@@ -43,7 +39,7 @@ export class UserProfileService {
       }
     }
 
-    // 3. Regra de Negócio
+    // 3. Regra de Negócio de Permissão
     if (data.tipo_perfil === "SUPER_ADMIN") {
       throw new AppError(
         "Criação de perfis SUPER_ADMIN não permitida por esta rota.",
@@ -66,9 +62,7 @@ export class UserProfileService {
     id: string,
     data: UpdateUserProfileDTO
   ): Promise<UserProfileEntity> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido");
-    if (data.nome && !isValidString(data.nome))
-      throw new AppError("Nome inválido");
+    // A validação de ID UUID já foi feita no middleware/Zod
 
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Perfil não encontrado.", 404);
@@ -96,7 +90,6 @@ export class UserProfileService {
 
     const updatedProfile = await this.repo.update(id, data);
 
-    // Log apenas se houve mudança relevante (simplificado)
     await this.logService.logSystem({
       id_user: data.actorUserId,
       acao: "Atualizar Perfil",
@@ -107,8 +100,7 @@ export class UserProfileService {
   }
 
   async deleteProfile(id: string, actorUserId?: string): Promise<void> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido");
-
+    // Validação de ID UUID feita pelo Zod
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Perfil não encontrado.", 404);
 
@@ -122,7 +114,7 @@ export class UserProfileService {
   }
 
   async getProfileById(id: string): Promise<UserProfileEntity> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido");
+    // Validação de ID UUID feita pelo Zod
     const profile = await this.repo.findById(id);
     if (!profile) throw new AppError("Perfil não encontrado", 404);
     return profile;
@@ -132,7 +124,7 @@ export class UserProfileService {
     userId: string,
     lojaId?: string
   ): Promise<UserProfileEntity> {
-    if (!isValidUUID(userId)) throw new AppError("ID de usuário inválido.");
+    // Validação de userId UUID feita pelo Zod
     const profile = await this.repo.findByUserId(userId, lojaId);
     if (!profile)
       throw new AppError("Perfil não encontrado para este usuário.", 404);
@@ -153,7 +145,8 @@ export class UserProfileService {
     lojaId?: string;
   }) {
     if (page <= 0 || limit <= 0)
-      throw new AppError("Parâmetros de paginação inválidos");
+      throw new AppError("Parâmetros de paginação inválidos"); // Isso aqui também poderia ir pro Zod se fosse via query params
+
     const { data, total } = await this.repo.findPaginatedWithFilter(
       page,
       limit,
@@ -174,6 +167,7 @@ export class UserProfileService {
     lojaId?: string;
   }) {
     if (!query) throw new AppError("O parâmetro 'term' é obrigatório");
+
     const { data, total } = await this.repo.searchPaginatedWithFilter(
       query,
       page,

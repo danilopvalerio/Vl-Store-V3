@@ -6,6 +6,8 @@ import {
   authMiddleware,
   requireRole,
 } from "../../app/middleware/auth.middleware";
+import { validate } from "../../app/middleware/validation.middleware"; // <--- Import middleware
+import { logPaginationSchema } from "./log.schema"; // <--- Import schema
 
 const router = Router();
 
@@ -20,35 +22,37 @@ router.use(authMiddleware);
 
 // ==============================================================================
 // LOGS DE ACESSO
-// Restrito a SUPER_ADMIN pois exibe IPs e acessos globais do sistema.
 // ==============================================================================
 
 router.get(
   "/access",
   requireRole(["SUPER_ADMIN", "ADMIN"]),
+  validate(logPaginationSchema), // Valida page e limit
   controller.getAccessPaginated
 );
 
 router.get(
   "/access/search",
   requireRole(["SUPER_ADMIN", "ADMIN"]),
+  validate(logPaginationSchema), // Valida page, limit e term
   controller.searchAccessPaginated
 );
 
 // ==============================================================================
 // LOGS DE SISTEMA
-// Restrito a SUPER_ADMIN pois exibe ações administrativas globais.
 // ==============================================================================
 
 router.get(
   "/system",
   requireRole(["SUPER_ADMIN", "ADMIN"]),
+  validate(logPaginationSchema),
   controller.getSystemPaginated
 );
 
 router.get(
   "/system/search",
   requireRole(["SUPER_ADMIN", "ADMIN"]),
+  validate(logPaginationSchema),
   controller.searchSystemPaginated
 );
 

@@ -6,19 +6,15 @@ import {
 } from "./loja.dto";
 import { AppError } from "../../app/middleware/error.middleware";
 import { LogService } from "../logs/log.service";
-import { isValidString, isValidUUID } from "../../shared/utils/validation";
+// Validações manuais (isValidString, isValidUUID) removidas -> Zod
 
 export class LojaService {
   constructor(private repo: ILojaRepository, private logService: LogService) {}
 
   async createLoja(data: CreateLojaDTO): Promise<LojaEntity> {
-    // Validações
-    if (!isValidString(data.nome)) throw new AppError("Nome de loja inválido");
-    if (data.admin_user_id && !isValidUUID(data.admin_user_id)) {
-      throw new AppError("ID de usuário administrador inválido");
-    }
+    // Validações de formato feitas pelo Zod
 
-    // Validação de Documento (Lógica de Rede/Filial)
+    // Regra de Negócio: Validação de Documento (Lógica de Rede/Filial)
     if (data.cnpj_cpf) {
       const existing = await this.repo.findByDoc(data.cnpj_cpf);
       if (existing) {
@@ -48,9 +44,7 @@ export class LojaService {
   }
 
   async updateLoja(id: string, data: UpdateLojaDTO): Promise<LojaEntity> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido");
-    if (data.nome && !isValidString(data.nome))
-      throw new AppError("Nome de loja inválido");
+    // Validação ID UUID feita no middleware
 
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Loja não encontrada.", 404);
@@ -70,7 +64,6 @@ export class LojaService {
 
     const updatedLoja = await this.repo.update(id, data);
 
-    // Log Simplificado (apenas registra que houve update)
     await this.logService.logSystem({
       id_user: data.actorUserId,
       acao: "Atualizar Loja",
@@ -81,8 +74,6 @@ export class LojaService {
   }
 
   async deleteLoja(id: string, actorUserId: string): Promise<void> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido");
-
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Loja não encontrada.", 404);
 
@@ -96,7 +87,6 @@ export class LojaService {
   }
 
   async getLojaById(id: string): Promise<LojaEntity> {
-    if (!isValidUUID(id)) throw new AppError("ID inválido");
     const loja = await this.repo.findById(id);
     if (!loja) throw new AppError("Loja não encontrada", 404);
     return loja;

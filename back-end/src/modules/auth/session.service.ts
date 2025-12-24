@@ -1,6 +1,6 @@
 import { prisma } from "../../shared/database/prisma";
 import { SessionRepository } from "./session.repository";
-import { UserRepository } from "../user/user.repository"; // Usa o repositório de user
+import { UserRepository } from "../user/user.repository";
 import { hashPassword, comparePassword } from "../../shared/utils/hash";
 import { LogService } from "../logs/log.service";
 import { AppError } from "../../app/middleware/error.middleware";
@@ -18,7 +18,7 @@ import {
 export class SessionService {
   constructor(
     private sessionRepo: SessionRepository,
-    private userRepo: UserRepository, // Injetado
+    private userRepo: UserRepository,
     private logService: LogService
   ) {}
 
@@ -30,10 +30,11 @@ export class SessionService {
     ip: string = "",
     userAgent: string = ""
   ): Promise<SessionResponseDTO> {
-    // 1. Busca User pelo Repositório (que retorna UserEntity com senha_hash)
+    // 1. Busca User
     const user = await this.userRepo.findByEmail(data.email);
 
     if (!user || !user.ativo) {
+      // Log de falha (segurança)
       await this.logService.logAccess({
         ip,
         user_agent: userAgent,
@@ -42,7 +43,7 @@ export class SessionService {
       throw new AppError("Email ou senha incorretos.", 401);
     }
 
-    // 2. Compara Senha (UserEntity tem senha_hash)
+    // 2. Compara Senha
     const passwordMatch = await comparePassword(data.senha, user.senha_hash);
 
     if (!passwordMatch) {
@@ -55,7 +56,7 @@ export class SessionService {
       throw new AppError("Email ou senha incorretos.", 401);
     }
 
-    // 3. Busca Perfil
+    // 3. Busca Perfil Ativo
     const profile = await prisma.user_profile.findFirst({
       where: { user_id: user.user_id, ativo: true },
       include: { loja: true },
@@ -85,6 +86,7 @@ export class SessionService {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(user.user_id);
 
+    // Rotaciona o token (apaga antigos, salva novo)
     await this.sessionRepo.deleteUserTokens(user.user_id);
     await this.sessionRepo.saveRefreshToken(user.user_id, refreshToken);
 
@@ -123,6 +125,7 @@ export class SessionService {
       throw new AppError("Refresh token inválido.", 401);
     }
 
+    // Busca perfil novamente para garantir permissões atualizadas
     const profile = await prisma.user_profile.findFirst({
       where: { user_id: storedToken.id_user, ativo: true },
     });
@@ -145,11 +148,13 @@ export class SessionService {
   async registerStoreOwner(
     data: RegisterStoreOwnerDTO
   ): Promise<SessionResponseDTO> {
+    // Validação de Duplicidade (Regra de Negócio)
     const existingUser = await this.userRepo.findByEmail(data.email);
     if (existingUser) throw new AppError("Email já cadastrado.", 409);
 
     const senhaHash = await hashPassword(data.senha);
 
+    // Transação: User -> Loja -> Profile
     const result = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: { email: data.email, senha_hash: senhaHash, ativo: true },
@@ -169,7 +174,7 @@ export class SessionService {
           id_loja: newLoja.id_loja,
           nome: data.nome_usuario,
           cpf_cnpj: data.cpf_usuario,
-          tipo_perfil: "ADMIN",
+          tipo_perfil: "ADMIN", // Primeiro user é sempre ADMIN da loja
           cargo: "Proprietário",
         },
       });
@@ -177,12 +182,14 @@ export class SessionService {
       return { newUser, newLoja, newProfile };
     });
 
+    // Log de Sistema
     await this.logService.logSystem({
       id_user: result.newUser.user_id,
       acao: "REGISTRO_LOJA",
       detalhes: `Nova loja registrada: ${result.newLoja.nome}`,
     });
 
+    // Gera tokens para já logar o usuário
     const accessToken = generateAccessToken({
       userId: result.newUser.user_id,
       profileId: result.newProfile.id_user_profile,

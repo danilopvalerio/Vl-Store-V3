@@ -9,6 +9,12 @@ import {
   SystemLogRepository,
 } from "../logs/log.repository";
 import { authLimiter } from "../../app/middleware/rateLimit.middleware";
+import { validate } from "../../app/middleware/validation.middleware"; // <--- Middleware
+import {
+  loginSchema,
+  registerSchema,
+  refreshTokenSchema,
+} from "./session.schema"; // <--- Schemas
 
 const router = Router();
 
@@ -27,16 +33,22 @@ const controller = new SessionController(service);
 
 // --- ROTAS ---
 
-// POST /api/auth/register (Cria Loja + Admin + User)
-router.post("/register", authLimiter, controller.register);
+// Registro de Nova Loja + Dono
+router.post(
+  "/register",
+  authLimiter,
+  validate(registerSchema),
+  controller.register
+);
 
-// POST /api/auth/login (Gera Access + Refresh Token)
-router.post("/login", authLimiter, controller.login);
+// Login (Gera Tokens)
+router.post("/login", authLimiter, validate(loginSchema), controller.login);
 
-// POST /api/auth/refresh (Renova o Access Token)
-router.post("/refresh", controller.refresh);
+// Renovação de Token
+router.post("/refresh", validate(refreshTokenSchema), controller.refresh);
 
-// POST /api/auth/logout
-router.post("/logout", controller.logout);
+// Logout (Invalida Refresh Token)
+// Geralmente espera o refreshToken no body para invalidá-lo no banco
+router.post("/logout", validate(refreshTokenSchema), controller.logout);
 
 export default router;

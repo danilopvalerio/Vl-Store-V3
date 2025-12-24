@@ -4,14 +4,28 @@ import { UserProfileService } from "./user_profile.service";
 import { UserProfileRepository } from "./user_profile.repository";
 import { LogService } from "../logs/log.service";
 import {
+  AccessLogRepository,
+  SystemLogRepository,
+} from "../logs/log.repository";
+import {
   authMiddleware,
   requireRole,
 } from "../../app/middleware/auth.middleware";
+import { validate } from "../../app/middleware/validation.middleware"; // <--- SEU MIDDLEWARE
+import {
+  createUserProfileSchema,
+  updateUserProfileSchema,
+  userProfileIdSchema,
+  userIdParamSchema,
+} from "./user_profile.schema"; // <--- SEUS SCHEMAS
 
 const router = Router();
 
 // Injeção de Dependências
-const logService = new LogService();
+const accessRepo = new AccessLogRepository();
+const systemRepo = new SystemLogRepository();
+const logService = new LogService(accessRepo, systemRepo);
+
 const repository = new UserProfileRepository();
 const service = new UserProfileService(repository, logService);
 const controller = new UserProfileController(service);
@@ -20,20 +34,27 @@ const controller = new UserProfileController(service);
 router.use(authMiddleware);
 
 // --- ROTAS GERAIS ---
-// Criar novo perfil: SUPER_ADMIN (na matriz) ou ADMIN (na loja dele)
-router.post("/", requireRole(["SUPER_ADMIN", "ADMIN"]), controller.create);
+// Criar novo perfil: Adicionado validate(createUserProfileSchema)
+router.post(
+  "/",
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
+  validate(createUserProfileSchema),
+  controller.create
+);
 
-// Listar perfis: SUPER_ADMIN vê tudo, ADMIN vê da loja, GERENTE vê da loja
+// Listar perfis
 router.get(
   "/",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
   controller.getAll
 );
 
-// Buscar perfil pelo user_id e não pelo id do perfil
+// Buscar perfil pelo user_id
+// Adicionado validação do parametro userId
 router.get(
   "/user/:userId",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE", "FUNCIONARIO"]),
+  validate(userIdParamSchema),
   controller.getByUserId
 );
 
@@ -51,16 +72,29 @@ router.get(
 );
 
 // --- ROTAS DINÂMICAS ---
+// Buscar por ID do perfil
 router.get(
   "/:id",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
+  validate(userProfileIdSchema),
   controller.getById
 );
 
 // Atualizar cargo/perfil
-router.patch("/:id", requireRole(["SUPER_ADMIN", "ADMIN"]), controller.update);
+// Adicionado validate(updateUserProfileSchema)
+router.patch(
+  "/:id",
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
+  validate(updateUserProfileSchema),
+  controller.update
+);
 
 // Demitir (Remover perfil)
-router.delete("/:id", requireRole(["SUPER_ADMIN", "ADMIN"]), controller.remove);
+router.delete(
+  "/:id",
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
+  validate(userProfileIdSchema),
+  controller.remove
+);
 
 export default router;

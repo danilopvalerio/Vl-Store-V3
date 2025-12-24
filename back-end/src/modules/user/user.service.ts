@@ -7,7 +7,7 @@ import {
 } from "./user.dto";
 import { AppError } from "../../app/middleware/error.middleware";
 import { LogService } from "../logs/log.service";
-import { isValidEmail } from "../../shared/utils/validation";
+// Validações manuais (isValidEmail) removidas, o Zod já garantiu.
 
 export class UserService {
   constructor(private repo: IUserRepository, private logService: LogService) {}
@@ -19,7 +19,7 @@ export class UserService {
       email: entity.email,
       ativo: entity.ativo,
       criadoEm: entity.data_criacao,
-      telefones: entity.telefones || [], // Garante array vazio se undefined
+      telefones: entity.telefones || [],
     };
   }
 
@@ -27,8 +27,9 @@ export class UserService {
     data: CreateUserDTO,
     actorUserId: string
   ): Promise<UserResponseDTO> {
-    if (!isValidEmail(data.email)) throw new AppError("Email inválido.");
+    // Validação de formato de e-mail removida (Zod fez)
 
+    // Regra de Negócio: Unicidade
     const exists = await this.repo.findByEmail(data.email);
     if (exists) throw new AppError("Email já cadastrado.", 409);
 
@@ -48,6 +49,8 @@ export class UserService {
     data: UpdateUserDTO,
     actorUserId: string
   ): Promise<UserResponseDTO> {
+    // Validação de ID UUID removida (Zod fez)
+
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Usuário não encontrado.", 404);
 
@@ -82,6 +85,7 @@ export class UserService {
   }
 
   async listPaginated(page: number, limit: number) {
+    // page e limit já garantidos como number pelo Zod (z.coerce.number)
     const result = await this.repo.findPaginatedSafe(page, limit);
     return { ...result, page, lastPage: Math.ceil(result.total / limit) };
   }

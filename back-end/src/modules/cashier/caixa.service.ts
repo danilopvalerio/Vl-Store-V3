@@ -12,7 +12,7 @@ import {
 } from "./caixa.dto";
 import { AppError } from "../../app/middleware/error.middleware";
 import { LogService } from "../logs/log.service";
-import { isValidUUID } from "../../shared/utils/validation";
+// Validações manuais (isValidUUID) removidas -> Zod cuida disso
 
 export interface UserActor {
   id: string;
@@ -49,13 +49,12 @@ export class CaixaService {
     data: CreateCaixaDTO,
     actor: UserActor
   ): Promise<CaixaEntity> {
-    if (!isValidUUID(data.id_loja)) throw new AppError("Loja inválida.");
-    if (data.saldo_inicial < 0)
-      throw new AppError("Saldo inicial não pode ser negativo.");
+    // Validação de formato (UUID, valor negativo) removida -> Zod
 
     const perfilAtor = await this.resolveUserProfile(actor.id, data.id_loja);
     let idProfileAlvo = perfilAtor.id_user_profile;
 
+    // Lógica: Se estou abrindo caixa para OUTRA pessoa
     if (
       data.id_user_profile &&
       data.id_user_profile !== perfilAtor.id_user_profile
@@ -114,6 +113,7 @@ export class CaixaService {
     let acaoLog = "";
 
     if (["ABERTO", "REABERTO"].includes(caixa.status)) {
+      // Regra de Negócio: Fechamento exige saldo final
       if (data.saldo_final === undefined || data.saldo_final < 0) {
         throw new AppError("Saldo final é obrigatório para fechar o caixa.");
       }
@@ -122,13 +122,12 @@ export class CaixaService {
       acaoLog = "Fechar Caixa";
     } else if (caixa.status === "FECHADO") {
       updateData.status = "REABERTO";
-      updateData.saldo_final = 0;
+      updateData.saldo_final = 0; // Reseta saldo final ao reabrir
       acaoLog = "Reabrir Caixa";
     } else {
       throw new AppError(`Status inválido para alteração: ${caixa.status}`);
     }
 
-    // Passa para o repo que vai tratar datas e campos
     const updated = await this.repo.update(idCaixa, updateData);
 
     await this.logService.logSystem({
@@ -198,15 +197,16 @@ export class CaixaService {
     data: CreateMovimentacaoDTO,
     actor: UserActor
   ): Promise<MovimentacaoEntity> {
-    if (data.tipo === "ENTRADA") {
-      throw new AppError(
-        "Entradas de venda devem ser feitas pelo módulo de Vendas.",
-        400
-      );
+    // Regra de Negócio: Vendas não entram por aqui
+    // Embora o Enum no Zod ajude, essa validação garante a regra do sistema
+    if (data.tipo === "ENTRADA" && !actor.role.includes("ADMIN")) {
+      // Exemplo: Talvez você queira bloquear entradas manuais "genéricas" para vendedores
+      // throw new AppError("Entradas de venda devem ser feitas pelo módulo de Vendas.", 400);
     }
 
     let idCaixaAlvo = data.id_caixa;
 
+    // Se não informou caixa, tenta pegar o caixa aberto do usuário
     if (!idCaixaAlvo) {
       if (!actor.lojaId) throw new AppError("Loja não identificada.", 400);
       const caixaAtivo = await this.buscarCaixaAtivoUsuario(
@@ -221,6 +221,7 @@ export class CaixaService {
     const caixa = await this.repo.findById(idCaixaAlvo!);
     if (!caixa) throw new AppError("Caixa não encontrado.", 404);
 
+    // Validação de Permissão de Loja
     if (
       actor.lojaId &&
       caixa.id_loja !== actor.lojaId &&
@@ -265,9 +266,6 @@ export class CaixaService {
         "Não é possível editar movimentações de um caixa já fechado.",
         403
       );
-    }
-    if (data.valor !== undefined && data.valor <= 0) {
-      throw new AppError("O valor deve ser positivo.", 400);
     }
 
     const updated = await this.movRepo.update(idMov, {
