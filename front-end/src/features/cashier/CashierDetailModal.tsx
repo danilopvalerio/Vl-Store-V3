@@ -96,6 +96,7 @@ const CaixaDetailModal = ({ caixaId, onClose, onSuccess }: Props) => {
   const loadMovimentacoes = useCallback(
     async (page = 1) => {
       try {
+        console.log(caixaId, page);
         const url = `/caixas/movimentacoes?caixaId=${caixaId}&page=${page}&perPage=5`;
         const res = await api.get<PaginatedResponse<MovimentacaoResponse>>(url);
         setMovimentacoes(res.data.data);

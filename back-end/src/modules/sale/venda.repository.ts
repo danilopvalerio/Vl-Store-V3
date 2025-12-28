@@ -1,207 +1,283 @@
 import { prisma } from "../../shared/database/prisma";
 import { Prisma } from "../../shared/database/generated/prisma/client";
-import {
-  IVendaRepository,
-  CreateVendaDTO,
-  VendaEntity,
-  VendaFullDTO,
-  PrismaTx,
-  VendaFullDb,
-  vendaInclude,
-} from "./venda.dto";
+import { isValidUUID } from "../../shared/utils/validation";
+// ✅ Importamos o RepositoryPaginatedResult do shared para tipar o retorno
 import { RepositoryPaginatedResult } from "../../shared/dtos/index.dto";
+import {
+  vendaInclude,
+  VendaFullDTO,
+  VendaEntity,
+  VendaListDb,
+} from "./venda.dto";
 
-// Tipos auxiliares para tipagem estrita nos maps
-type RepoPayment = VendaFullDb["pagamento_venda"][number];
-type RepoItem = VendaFullDb["item_venda"][number];
+export class VendaRepository {
+  // ===============================
+  // HELPER PRIVADO (Converte Decimal do Prisma para Number da Entity)
+  // ===============================
+  private mapToEntity(v: VendaListDb): VendaEntity {
+    const totalFinal = v.total_final.toNumber();
+    const valorPago = v.valor_pago.toNumber();
+    const troco = valorPago > totalFinal ? valorPago - totalFinal : 0;
 
-export class VendaRepository implements IVendaRepository {
-  // --- Mappers ---
-
-  private mapToEntity(row: Prisma.vendaGetPayload<object>): VendaEntity {
     return {
-      id_venda: row.id_venda,
-      id_loja: row.id_loja,
-      id_caixa: row.id_caixa,
-
-      // Ajuste: id_user agora pode ser string ou null (conforme seu novo schema)
-      id_user: row.id_user,
-
-      id_cliente: row.id_cliente,
-      data: row.data,
-      hora: row.hora,
-      status: row.status || "PENDENTE",
-
-      // REMOVIDO O CAST 'AS ANY': O Prisma já sabe que esse campo existe
-      tipo_venda: row.tipo_venda || "FISICA",
-
-      total_final: Number(row.total_final ?? 0),
-      valor_pago: Number(row.valor_pago ?? 0),
-      desconto: Number(row.desconto ?? 0),
-      acrescimo: Number(row.acrescimo ?? 0),
-      data_criacao: row.data_criacao,
-      ultima_atualizacao: row.ultima_atualizacao,
+      id_venda: v.id_venda,
+      id_loja: v.id_loja,
+      id_caixa: v.id_caixa,
+      id_user: v.id_user,
+      id_cliente: v.id_cliente,
+      tipo_venda: v.tipo_venda || "FISICA",
+      data: v.data,
+      hora: v.hora,
+      desconto: v.desconto ? v.desconto.toNumber() : 0,
+      acrescimo: v.acrescimo ? v.acrescimo.toNumber() : 0,
+      status: v.status || "PENDENTE",
+      total_final: totalFinal,
+      valor_pago: valorPago,
+      troco: troco,
+      data_criacao: v.data_criacao,
+      ultima_atualizacao: v.ultima_atualizacao,
+      nome_cliente: v.cliente?.nome || null,
     };
   }
 
-  private mapToFullDTO(row: VendaFullDb): VendaFullDTO {
-    const entity = this.mapToEntity(row);
-    return {
-      ...entity,
-      nome_cliente: row.cliente?.nome || null,
-      nome_vendedor: row.user?.email || null,
-
-      pagamentos: row.pagamento_venda.map((p: RepoPayment) => ({
-        id_pagamento: p.id_pagamento,
-        id_venda: p.id_venda,
-        tipo_pagamento: p.tipo_pagamento,
-        valor: Number(p.valor),
-      })),
-
-      itens: row.item_venda.map((i: RepoItem) => ({
-        id_item_venda: i.id_item_venda,
-        id_venda: i.id_venda,
-        id_variacao: i.id_variacao,
-        quantidade: i.quantidade,
-        preco_unitario: Number(i.preco_unitario),
-        preco_final_unitario: Number(i.preco_final_unitario),
-        preco_subtotal: Number(i.preco_subtotal),
-        desconto_por_item: Number(i.desconto_por_item ?? 0),
-        acrescimo_por_item: Number(i.acrescimo_por_item ?? 0),
-        nome_produto: i.produto_variacao?.produto?.nome || "Produto Removido",
-        referencia_produto: i.produto_variacao?.produto?.referencia || null,
-        nome_variacao: i.produto_variacao?.nome || null,
-      })),
-    };
-  }
-
-  // --- Métodos de Leitura ---
-
-  async findById(id: string): Promise<VendaFullDTO | null> {
-    const row = await prisma.venda.findUnique({
-      where: { id_venda: id },
-      include: vendaInclude,
-    });
-    return row ? this.mapToFullDTO(row) : null;
-  }
-
-  async findPaginated(
-    page: number,
-    limit: number,
-    id_loja?: string
-  ): Promise<RepositoryPaginatedResult<VendaEntity>> {
-    const skip = (page - 1) * limit;
-    const where: Prisma.vendaWhereInput = id_loja ? { id_loja } : {};
-
-    const [rows, total] = await Promise.all([
-      prisma.venda.findMany({
-        where,
-        take: limit,
-        skip,
-        orderBy: { data_criacao: "desc" },
-      }),
-      prisma.venda.count({ where }),
-    ]);
-
-    return { data: rows.map(this.mapToEntity), total };
-  }
-
-  async searchPaginated(
-    query: string,
-    page: number,
-    limit: number,
-    id_loja?: string
-  ): Promise<RepositoryPaginatedResult<VendaEntity>> {
-    const skip = (page - 1) * limit;
-
-    const where: Prisma.vendaWhereInput = {
-      AND: [
-        id_loja ? { id_loja } : {},
-        {
-          OR: [
-            { cliente: { nome: { contains: query, mode: "insensitive" } } },
-            { status: { contains: query.toUpperCase() } },
-
-            // REMOVIDO O CAST 'AS ANY':
-            // Se o generate rodou, vendaWhereInput tem a propriedade tipo_venda
-            { tipo_venda: { contains: query.toUpperCase() } },
-          ],
-        },
-      ],
-    };
-
-    const [rows, total] = await Promise.all([
-      prisma.venda.findMany({
-        where,
-        take: limit,
-        skip,
-        orderBy: { data_criacao: "desc" },
-      }),
-      prisma.venda.count({ where }),
-    ]);
-
-    return { data: rows.map(this.mapToEntity), total };
-  }
-
-  // --- Métodos de Escrita ---
-
-  async updateStatus(id: string, status: string): Promise<void> {
-    await prisma.venda.update({
-      where: { id_venda: id },
-      data: { status, ultima_atualizacao: new Date() },
-    });
-  }
-
-  async updateStatusWithTx(
-    tx: PrismaTx,
-    id: string,
-    status: string
-  ): Promise<void> {
-    await tx.venda.update({
-      where: { id_venda: id },
-      data: { status, ultima_atualizacao: new Date() },
-    });
-  }
-
+  // ===============================
+  // CREATE
+  // ===============================
   async createWithTx(
-    tx: PrismaTx,
-    data: CreateVendaDTO,
-    totalFinal: number
-  ): Promise<VendaEntity> {
-    const totalPago = data.pagamentos.reduce((acc, p) => acc + p.valor, 0);
-
-    // Lógica de ID de Usuário (Pode ser Null)
-    let idUserFinal: string | null = data.id_vendedor || data.actorUserId;
-
-    // Se for online e sem vendedor definido, deixa null
-    if (data.tipo_venda === "ONLINE" && !data.id_vendedor) {
-      idUserFinal = null;
+    tx: Prisma.TransactionClient,
+    data: {
+      id_loja: string;
+      id_caixa?: string | null;
+      id_user?: string | null;
+      id_cliente?: string | null;
+      tipo_venda?: string;
+      desconto?: number;
+      acrescimo?: number;
+      status: string;
+      total_final: number;
+      valor_pago: number;
     }
-
-    const venda = await tx.venda.create({
+  ): Promise<VendaEntity> {
+    const res = await tx.venda.create({
       data: {
         id_loja: data.id_loja,
-        id_user: idUserFinal, // Aceita null agora
-        id_caixa: data.id_caixa || null,
-        id_cliente: data.id_cliente || null,
-        desconto: data.desconto_global,
-        acrescimo: data.acrescimo_global,
-        status: data.status || "FINALIZADA",
-
-        // REMOVIDO O SPREAD E O CAST: Atribuição direta
-        tipo_venda: data.tipo_venda || "FISICA",
-
-        total_final: totalFinal,
-        valor_pago: totalPago,
-        pagamento_venda: {
-          create: data.pagamentos.map((p) => ({
-            tipo_pagamento: p.tipo_pagamento,
-            valor: p.valor,
-          })),
-        },
+        id_caixa: data.id_caixa ?? null,
+        id_user: data.id_user ?? null,
+        id_cliente: data.id_cliente ?? null,
+        tipo_venda: data.tipo_venda ?? "FISICA",
+        desconto: data.desconto ?? 0,
+        acrescimo: data.acrescimo ?? 0,
+        status: data.status,
+        total_final: data.total_final,
+        valor_pago: data.valor_pago,
       },
     });
 
-    return this.mapToEntity(venda);
+    // Mapeamento manual para retornar VendaEntity sem usar any
+    return {
+      id_venda: res.id_venda,
+      id_loja: res.id_loja,
+      id_caixa: res.id_caixa,
+      id_user: res.id_user,
+      id_cliente: res.id_cliente,
+      tipo_venda: res.tipo_venda || "FISICA",
+      data: res.data,
+      hora: res.hora,
+      desconto: res.desconto ? res.desconto.toNumber() : 0,
+      acrescimo: res.acrescimo ? res.acrescimo.toNumber() : 0,
+      status: res.status || "PENDENTE",
+      total_final: res.total_final.toNumber(),
+      valor_pago: res.valor_pago.toNumber(),
+      troco: 0,
+      data_criacao: res.data_criacao,
+      ultima_atualizacao: res.ultima_atualizacao,
+    };
+  }
+
+  // ===============================
+  // FIND BY ID (Detalhado)
+  // ===============================
+  async findById(id_venda: string): Promise<VendaFullDTO | null> {
+    const venda = await prisma.venda.findUnique({
+      where: { id_venda },
+      include: vendaInclude, // ✅ TypeScript infere VendaFullDb aqui
+    });
+
+    if (!venda) return null;
+
+    // ✅ MAPEAMENTO: Traz o nome do produto para o nível superior
+    const itensFormatados = venda.item_venda.map((item) => {
+      const produto = item.produto_variacao?.produto;
+      const variacao = item.produto_variacao;
+
+      return {
+        id_item_venda: item.id_item_venda,
+        id_venda: item.id_venda,
+        id_variacao: item.id_variacao,
+        quantidade: item.quantidade,
+        preco_unitario: item.preco_unitario.toNumber(),
+        desconto_por_item: item.desconto_por_item
+          ? item.desconto_por_item.toNumber()
+          : 0,
+        acrescimo_por_item: item.acrescimo_por_item
+          ? item.acrescimo_por_item.toNumber()
+          : 0,
+        preco_final_unitario: item.preco_final_unitario.toNumber(),
+        preco_subtotal: item.preco_subtotal.toNumber(),
+        // Campos achatados para o front
+        nome_produto: produto?.nome || "Produto Indisponível",
+        referencia_produto: produto?.referencia || null,
+        nome_variacao: variacao?.nome || null,
+      };
+    });
+
+    const pagamentosFormatados = venda.pagamento_venda.map((p) => ({
+      id_pagamento: p.id_pagamento,
+      id_venda: p.id_venda,
+      tipo_pagamento: p.tipo_pagamento,
+      valor: p.valor.toNumber(),
+    }));
+
+    const totalFinal = venda.total_final.toNumber();
+    const valorPago = venda.valor_pago.toNumber();
+    const troco = valorPago > totalFinal ? valorPago - totalFinal : 0;
+
+    return {
+      id_venda: venda.id_venda,
+      id_loja: venda.id_loja,
+      id_caixa: venda.id_caixa,
+      id_user: venda.id_user,
+      id_cliente: venda.id_cliente,
+      tipo_venda: venda.tipo_venda || "FISICA",
+      data: venda.data,
+      hora: venda.hora,
+      desconto: venda.desconto ? venda.desconto.toNumber() : 0,
+      acrescimo: venda.acrescimo ? venda.acrescimo.toNumber() : 0,
+      status: venda.status || "PENDENTE",
+      total_final: totalFinal,
+      valor_pago: valorPago,
+      troco: troco,
+      data_criacao: venda.data_criacao,
+      ultima_atualizacao: venda.ultima_atualizacao,
+      itens: itensFormatados,
+      pagamentos: pagamentosFormatados,
+      nome_cliente: venda.cliente?.nome || null,
+      nome_vendedor: venda.user?.email || null, // Correção do nome do vendedor (email)
+    };
+  }
+
+  // ===============================
+  // UPDATES
+  // ===============================
+  async updateStatusWithTx(
+    tx: Prisma.TransactionClient,
+    id_venda: string,
+    status: string
+  ): Promise<void> {
+    await tx.venda.update({ where: { id_venda }, data: { status } });
+  }
+
+  async updateStatus(id_venda: string, status: string): Promise<void> {
+    await prisma.venda.update({ where: { id_venda }, data: { status } });
+  }
+
+  async updateValorPagoWithTx(
+    tx: Prisma.TransactionClient,
+    id_venda: string,
+    valor_pago: number
+  ): Promise<void> {
+    await tx.venda.update({ where: { id_venda }, data: { valor_pago } });
+  }
+
+  // ===============================
+  // PAGINAÇÃO
+  // ===============================
+  async findPaginated(
+    page: number,
+    limit: number,
+    lojaId?: string
+  ): Promise<RepositoryPaginatedResult<VendaEntity>> {
+    // ✅ Tipado com a interface do shared
+
+    const where: Prisma.vendaWhereInput = lojaId ? { id_loja: lojaId } : {};
+
+    const [data, total] = await prisma.$transaction([
+      prisma.venda.findMany({
+        where,
+        orderBy: { data_criacao: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          cliente: true,
+        },
+      }),
+      prisma.venda.count({ where }),
+    ]);
+
+    // Usa o helper para garantir a conversão correta de Decimal -> Number
+    const dataMapped = data.map((v) => this.mapToEntity(v));
+
+    return { data: dataMapped, total };
+  }
+
+  // ===============================
+  // BUSCA
+  // ===============================
+  async searchPaginated(
+    term: string,
+    page: number,
+    limit: number,
+    lojaId?: string
+  ): Promise<RepositoryPaginatedResult<VendaEntity>> {
+    const orConditions: Prisma.vendaWhereInput["OR"] = [
+      {
+        cliente: {
+          nome: { contains: term, mode: "insensitive" },
+        },
+      },
+    ];
+
+    if (isValidUUID(term)) {
+      orConditions.push({ id_venda: term });
+    }
+
+    const where: Prisma.vendaWhereInput = {
+      ...(lojaId ? { id_loja: lojaId } : {}),
+      OR: orConditions,
+    };
+
+    const [data, total] = await prisma.$transaction([
+      prisma.venda.findMany({
+        where,
+        orderBy: { data_criacao: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          cliente: true,
+        },
+      }),
+      prisma.venda.count({ where }),
+    ]);
+
+    const dataMapped = data.map((v) => this.mapToEntity(v));
+
+    return { data: dataMapped, total };
+  }
+
+  // ===============================
+  // ADD PAGAMENTOS
+  // ===============================
+  async addPagamentosWithTx(
+    tx: Prisma.TransactionClient,
+    id_venda: string,
+    pagamentos: { tipo_pagamento: string; valor: number }[]
+  ) {
+    return tx.pagamento_venda.createMany({
+      data: pagamentos.map((p) => ({
+        id_venda,
+        tipo_pagamento: p.tipo_pagamento,
+        valor: p.valor,
+      })),
+    });
   }
 }

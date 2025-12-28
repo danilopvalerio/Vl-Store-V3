@@ -1,5 +1,5 @@
-//src/modules/sale/venda.service.ts
 import { prisma } from "../../shared/database/prisma";
+import Decimal from "decimal.js";
 import { VendaRepository } from "./venda.repository";
 import { ItemVendaRepository } from "./item_venda.repository";
 import { VendaAuxRepository } from "./venda-aux.repository";
@@ -21,157 +21,121 @@ export class VendaService {
   ) {}
 
   async createVenda(data: CreateVendaDTO) {
-    // 1. Validações
     if (!isValidUUID(data.id_loja)) throw new AppError("Loja inválida");
-    if (data.itens.length === 0) throw new AppError("A venda deve ter itens");
+    if (!data.itens.length) throw new AppError("Venda sem itens");
 
-    // 2. Leitura de Preço e Estoque (Fora da transação para não travar leitura)
     const variacaoIds = data.itens.map((i) => i.id_variacao);
 
-    // Busca apenas o necessário: ID, Quantidade, Valor e Nome
     const dbVariacoes = await prisma.produto_variacao.findMany({
       where: { id_variacao: { in: variacaoIds } },
       select: { id_variacao: true, quantidade: true, valor: true, nome: true },
     });
 
-    let totalItens = 0;
+    let totalItens = new Decimal(0);
     const itensFinal: PreparedItemVenda[] = [];
 
-    for (const itemInput of data.itens) {
+    for (const item of data.itens) {
       const variacao = dbVariacoes.find(
-        (v) => v.id_variacao === itemInput.id_variacao
+        (v) => v.id_variacao === item.id_variacao
       );
       if (!variacao)
-        throw new AppError(
-          `Variação ${itemInput.id_variacao} não encontrada`,
-          404
-        );
+        throw new AppError(`Variação ${item.id_variacao} não encontrada`);
 
-      const estoqueAtual = variacao.quantidade ?? 0;
-      if (estoqueAtual < itemInput.quantidade) {
-        throw new AppError(
-          `Estoque insuficiente para ${
-            variacao.nome || "Produto"
-          }. Disp: ${estoqueAtual}`
-        );
-      }
+      const precoBase = new Decimal(
+        item.preco_unitario_override ?? Number(variacao.valor)
+      );
 
-      // Converte Decimal para Number
-      const precoBase =
-        itemInput.preco_unitario_override ?? Number(variacao.valor);
+      const quantidade = new Decimal(item.quantidade);
+      const desconto = new Decimal(item.desconto_por_item || 0);
+      const acrescimo = new Decimal(item.acrescimo_por_item || 0);
 
-      const desconto = itemInput.desconto_por_item || 0;
-      const acrescimo = itemInput.acrescimo_por_item || 0;
-      const precoFinal = precoBase - desconto + acrescimo;
-      const subtotal = precoFinal * itemInput.quantidade;
+      const precoFinalUnitario = precoBase.minus(desconto).plus(acrescimo);
+      const subtotal = precoFinalUnitario.times(quantidade);
 
-      totalItens += subtotal;
+      totalItens = totalItens.plus(subtotal);
 
       itensFinal.push({
-        id_variacao: itemInput.id_variacao,
-        quantidade: itemInput.quantidade,
-        preco_unitario: precoBase,
-        desconto_por_item: desconto,
-        acrescimo_por_item: acrescimo,
-        preco_final_unitario: precoFinal,
-        preco_subtotal: subtotal,
+        id_variacao: item.id_variacao,
+        quantidade: item.quantidade,
+        preco_unitario: precoBase.toNumber(),
+        desconto_por_item: desconto.toNumber(),
+        acrescimo_por_item: acrescimo.toNumber(),
+        preco_final_unitario: precoFinalUnitario.toNumber(),
+        preco_subtotal: subtotal.toNumber(),
       });
     }
 
-    const totalFinalVenda =
-      totalItens - (data.desconto_global || 0) + (data.acrescimo_global || 0);
-    const totalPago = data.pagamentos.reduce((acc, p) => acc + p.valor, 0);
+    const totalFinal = totalItens
+      .minus(new Decimal(data.desconto_global || 0))
+      .plus(new Decimal(data.acrescimo_global || 0));
 
-    if (data.status === "FINALIZADA" && totalPago < totalFinalVenda) {
-      throw new AppError("Valor pago insuficiente para finalizar venda");
-    }
+    const totalPago = data.pagamentos.reduce(
+      (acc, p) => acc.plus(p.valor),
+      new Decimal(0)
+    );
 
-    // 3. Transação
+    const status =
+      totalPago.greaterThanOrEqualTo(totalFinal) && totalPago.greaterThan(0)
+        ? "FINALIZADA"
+        : "PENDENTE";
+
     const vendaId = await prisma.$transaction(async (tx) => {
-      // A. Criar Cabeçalho da Venda
-      const venda = await this.vendaRepo.createWithTx(
-        tx,
-        data,
-        totalFinalVenda
-      );
+      const venda = await this.vendaRepo.createWithTx(tx, {
+        ...data,
+        status,
+        total_final: totalFinal.toNumber(),
+        valor_pago: totalPago.toNumber(),
+      });
 
-      // B. Inserir Itens
       await this.itemRepo.createManyWithTx(tx, venda.id_venda, itensFinal);
 
-      // C. Baixar Estoque
-      for (const item of itensFinal) {
-        await this.auxRepo.decrementStock(
-          tx,
-          item.id_variacao,
-          item.quantidade
-        );
+      if (status === "FINALIZADA") {
+        for (const item of itensFinal) {
+          await this.auxRepo.decrementStock(
+            tx,
+            item.id_variacao,
+            item.quantidade
+          );
+        }
+
+        if (data.id_caixa) {
+          await this.auxRepo.createMovimentacao(tx, {
+            id_loja: data.id_loja,
+            id_caixa: data.id_caixa,
+            id_venda: venda.id_venda,
+            tipo: "ENTRADA",
+            valor: totalPago.toNumber(),
+            descricao: `Venda #${venda.id_venda.substring(0, 8)}`,
+          });
+        }
       }
 
-      // D. Movimentação Financeira
-      if (data.id_caixa && data.status === "FINALIZADA") {
-        const caixa = await tx.caixa.findUnique({
-          where: { id_caixa: data.id_caixa },
-        });
-        if (
-          !caixa ||
-          (caixa.status !== "ABERTO" && caixa.status !== "REABERTO")
-        ) {
-          throw new AppError("Caixa fechado ou inválido.", 409);
-        }
-        await this.auxRepo.createMovimentacao(tx, {
-          id_loja: data.id_loja,
-          id_caixa: data.id_caixa,
-          id_venda: venda.id_venda,
-          tipo: "ENTRADA",
-          valor: totalPago,
-          descricao: `Venda #${venda.id_venda.substring(0, 8)}`,
-        });
-      }
       return venda.id_venda;
     });
 
     await this.logService.logSystem({
       id_user: data.actorUserId,
       acao: "Criar Venda",
-      detalhes: `Venda ${vendaId} criada.`,
+      detalhes: `Venda ${vendaId} criada`,
     });
 
-    const result = await this.vendaRepo.findById(vendaId);
-    if (!result) throw new AppError("Erro ao recuperar venda criada", 500);
-    return result;
+    return this.vendaRepo.findById(vendaId);
   }
 
-  async getItensPaginated(idVenda: string, page: number, limit: number) {
-    // Verifica se a venda existe antes
-    const venda = await this.vendaRepo.findById(idVenda);
-    if (!venda) throw new AppError("Venda não encontrada", 404);
+  async mudarStatus(id: string, data: UpdateStatusDTO) {
+    const venda = await this.vendaRepo.findById(id);
+    if (!venda) throw new AppError("Venda não encontrada");
 
-    const { data, total } = await this.itemRepo.findPaginated(
-      page,
-      limit,
-      idVenda
-    );
+    if (data.status !== "CANCELADA")
+      throw new AppError("Apenas cancelamento permitido");
 
-    return {
-      data,
-      total,
-      page,
-      lastPage: Math.ceil(total / limit),
-    };
-  }
+    if (venda.status === "CANCELADA") throw new AppError("Venda já cancelada");
 
-  async mudarStatus(idVenda: string, data: UpdateStatusDTO) {
-    const venda = await this.vendaRepo.findById(idVenda);
-    if (!venda) throw new AppError("Venda não encontrada", 404);
+    await prisma.$transaction(async (tx) => {
+      await this.vendaRepo.updateStatusWithTx(tx, id, "CANCELADA");
 
-    if (data.status === "CANCELADA") {
-      if (venda.status === "CANCELADA")
-        throw new AppError("Venda já está cancelada", 400);
-
-      await prisma.$transaction(async (tx) => {
-        await this.vendaRepo.updateStatusWithTx(tx, idVenda, "CANCELADA");
-
-        // Estorna estoque (Devolve os itens)
+      if (venda.status === "FINALIZADA") {
+        // ✅ CORREÇÃO: Mudamos de venda.item_venda para venda.itens (nome no DTO)
         for (const item of venda.itens) {
           await this.auxRepo.incrementStock(
             tx,
@@ -179,68 +143,98 @@ export class VendaService {
             item.quantidade
           );
         }
-
-        // Estorna caixa (Gera SAIDA) se a venda original gerou ENTRADA
-        if (venda.id_caixa) {
-          const caixa = await tx.caixa.findUnique({
-            where: { id_caixa: venda.id_caixa },
-          });
-          // Só mexe no caixa se ele ainda estiver "ativo". Se fechado, o sistema não mexe.
-          if (
-            caixa &&
-            (caixa.status === "ABERTO" || caixa.status === "REABERTO")
-          ) {
-            await this.auxRepo.createMovimentacao(tx, {
-              id_loja: venda.id_loja,
-              id_caixa: venda.id_caixa,
-              id_venda: venda.id_venda,
-              tipo: "SAIDA",
-              valor: venda.valor_pago,
-              descricao: `Estorno Venda #${venda.id_venda.substring(0, 8)}`,
-            });
-          }
-        }
-      });
-    } else {
-      // Outros status (PENDENTE -> FINALIZADA)
-      // Obs: Simplificado. Idealmente ao finalizar uma pendente deveria baixar estoque se não baixou antes.
-      await this.vendaRepo.updateStatus(idVenda, data.status);
-    }
-
-    await this.logService.logSystem({
-      id_user: data.actorUserId,
-      acao: "Atualizar Status Venda",
-      detalhes: `Venda ${idVenda} para ${data.status}`,
+      }
     });
   }
 
-  async getById(id: string) {
-    const res = await this.vendaRepo.findById(id);
-    if (!res) throw new AppError("Venda não encontrada", 404);
-    return res;
+  getById(id: string) {
+    return this.vendaRepo.findById(id);
   }
 
-  async getPaginated(page: number, limit: number, lojaId?: string) {
-    const { data, total } = await this.vendaRepo.findPaginated(
-      page,
-      limit,
-      lojaId
-    );
-    return { data, total, page, lastPage: Math.ceil(total / limit) };
+  getPaginated(page: number, limit: number, lojaId?: string) {
+    return this.vendaRepo.findPaginated(page, limit, lojaId);
   }
 
-  async searchPaginated(
-    term: string,
-    page: number,
-    limit: number,
-    lojaId?: string
+  searchPaginated(term: string, page: number, limit: number, lojaId?: string) {
+    return this.vendaRepo.searchPaginated(term, page, limit, lojaId);
+  }
+
+  getItensPaginated(id: string, page: number, limit: number) {
+    return this.itemRepo.findPaginated(page, limit, id);
+  }
+
+  async addPayment(
+    id_venda: string,
+    data: {
+      pagamentos: { tipo_pagamento: string; valor: number }[];
+      actorUserId: string;
+    }
   ) {
-    const { data, total } = await this.vendaRepo.searchPaginated(
-      term,
-      page,
-      limit,
-      lojaId
+    const venda = await this.vendaRepo.findById(id_venda);
+    if (!venda) throw new AppError("Venda não encontrada");
+
+    if (venda.status === "FINALIZADA")
+      throw new AppError("Venda já está finalizada");
+    if (venda.status === "CANCELADA")
+      throw new AppError("Venda está cancelada e não aceita pagamentos");
+
+    // No novo DTO, valor_pago já é number. Passamos para Decimal para calculos precisos.
+    const valorJaPago = new Decimal(venda.valor_pago);
+    const valorTotalVenda = new Decimal(venda.total_final);
+
+    const novosPagamentosTotal = data.pagamentos.reduce(
+      (acc, p) => acc.plus(new Decimal(p.valor)),
+      new Decimal(0)
     );
-    return { data, total, page, lastPage: Math.ceil(total / limit) };
+
+    const novoValorPago = valorJaPago.plus(novosPagamentosTotal);
+
+    const deveFinalizar = novoValorPago.greaterThanOrEqualTo(valorTotalVenda);
+    const novoStatus = deveFinalizar ? "FINALIZADA" : "PENDENTE";
+
+    await prisma.$transaction(async (tx) => {
+      await this.vendaRepo.addPagamentosWithTx(tx, id_venda, data.pagamentos);
+
+      await this.vendaRepo.updateValorPagoWithTx(
+        tx,
+        id_venda,
+        novoValorPago.toNumber()
+      );
+
+      if (deveFinalizar) {
+        await this.vendaRepo.updateStatusWithTx(tx, id_venda, "FINALIZADA");
+
+        // ✅ CORREÇÃO: Mudamos de venda.item_venda para venda.itens
+        for (const item of venda.itens) {
+          await this.auxRepo.decrementStock(
+            tx,
+            item.id_variacao,
+            item.quantidade
+          );
+        }
+
+        if (venda.id_caixa) {
+          await this.auxRepo.createMovimentacao(tx, {
+            id_loja: venda.id_loja,
+            id_caixa: venda.id_caixa,
+            id_venda: venda.id_venda,
+            tipo: "ENTRADA",
+            valor: novosPagamentosTotal.toNumber(),
+            descricao: `Pagamento Adicional Venda #${venda.id_venda.substring(
+              0,
+              8
+            )}`,
+          });
+        }
+      }
+    });
+
+    await this.logService.logSystem({
+      id_user: data.actorUserId,
+      acao: "Adicionar Pagamento",
+      detalhes: `Venda ${id_venda} - Valor Add: ${novosPagamentosTotal.toNumber()} - Status: ${novoStatus}`,
+    });
+
+    return this.vendaRepo.findById(id_venda);
   }
 }

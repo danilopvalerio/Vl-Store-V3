@@ -12,7 +12,10 @@ async function startServer() {
     console.log("✅ Bando de dados e Prisma conectados com sucesso!");
 
     app.listen(PORT, () => {
-      console.log(`🚀 Servidor rodando na porta ${PORT}`);
+      console.log(`🚀 Servidor rodando na porta ${PORT}\n`);
+      console.log(
+        `Link de teste do servidor: http://localhost:${PORT}/api/health`
+      );
     });
   } catch (error) {
     console.error("❌ Erro ao iniciar o servidor:", error);

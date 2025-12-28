@@ -1,6 +1,8 @@
 import { IDashboardRepository, DashboardSummaryDTO } from "./dashboard.dto";
 import { DashboardRepository } from "./dashboard.repository";
 import { AppError } from "../../app/middleware/error.middleware";
+// 1. Importação do Decimal
+import Decimal from "decimal.js";
 
 export class DashboardService {
   constructor(private repo: IDashboardRepository = new DashboardRepository()) {}
@@ -23,23 +25,36 @@ export class DashboardService {
         this.repo.getRecentSales(lojaId, 5),
       ]);
 
-    const totalRevenue = salesStats._sum.total_final
-      ? Number(salesStats._sum.total_final)
-      : 0;
-    const totalSalesCount = salesStats._count.id_venda ?? 0;
-    const averageTicket =
-      totalSalesCount > 0 ? totalRevenue / totalSalesCount : 0;
+    // 2. Uso do Decimal para totais financeiros
+    // O Prisma retorna null se não houver vendas, então usamos || 0
+    const totalRevenueDecimal = new Decimal(
+      salesStats._sum.total_final?.toString() || 0
+    );
+    const totalRevenue = totalRevenueDecimal.toNumber();
 
+    const totalSalesCount = salesStats._count.id_venda ?? 0;
+
+    // 3. Cálculo do Ticket Médio com precisão (Divisão)
+    // Se count > 0, faz a divisão. Se não, é 0.
+    const averageTicket =
+      totalSalesCount > 0
+        ? totalRevenueDecimal.div(totalSalesCount).toNumber()
+        : 0;
+
+    // 4. Formatação dos gráficos (Parse Seguro)
     const formattedCharts = paymentStats.map((pm) => ({
       name: pm.tipo_pagamento,
-      value: pm._sum.valor ? Number(pm._sum.valor) : 0,
+      value: new Decimal(pm._sum.valor?.toString() || 0).toNumber(),
     }));
 
+    // 5. Formatação do Feed (Parse Seguro)
     const formattedFeed = recentSalesRaw.map((sale) => {
       const sellerName = sale.user?.user_profile?.[0]?.nome || "Vendedor";
       return {
         id: sale.id_venda,
-        total: Number(sale.total_final),
+        // Convertendo com Decimal
+        total: new Decimal(sale.total_final?.toString() || 0).toNumber(),
+
         time: sale.hora
           ? new Date(sale.hora).toLocaleTimeString("pt-BR", {
               hour: "2-digit",

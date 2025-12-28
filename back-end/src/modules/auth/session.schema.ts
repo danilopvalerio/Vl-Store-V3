@@ -35,7 +35,8 @@ export const registerSchema = z.object({
 });
 
 export const refreshTokenSchema = z.object({
-  body: z.object({
+  cookies: z.object({
+    // Mudou de body para cookies
     refreshToken: z.string().min(1, "Refresh Token é obrigatório"),
   }),
 });

@@ -45,7 +45,7 @@ router.post(
 router.post("/login", authLimiter, validate(loginSchema), controller.login);
 
 // Renovação de Token
-router.post("/refresh", validate(refreshTokenSchema), controller.refresh);
+router.post("/refresh", controller.refresh);
 
 // Logout (Invalida Refresh Token)
 // Geralmente espera o refreshToken no body para invalidá-lo no banco

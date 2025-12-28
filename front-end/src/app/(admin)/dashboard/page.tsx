@@ -140,7 +140,10 @@ const MenuPage = () => {
           Estoque & Produtos
         </div>
 
-        <div className="nav-item-custom disabled text-white-50">
+        <div
+          className="nav-item-custom text-white"
+          onClick={() => router.push("/sales")}
+        >
           <FontAwesomeIcon
             icon={faShoppingCart}
             className="me-3 fw-fixed-width"

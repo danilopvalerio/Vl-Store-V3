@@ -1,4 +1,4 @@
-//src/modules/sale/venda.controller.ts
+// src/modules/sale/venda.controller.ts
 import { Request, Response } from "express";
 import { VendaService } from "./venda.service";
 import { CreateVendaDTO, UpdateStatusDTO } from "./venda.dto";
@@ -20,6 +20,7 @@ export class VendaController {
   create = async (req: Request, res: Response) => {
     const body = req.body as CreateVendaDTO;
     const actor = this.getActor(req);
+
     const lojaId = actor.role === "SUPER_ADMIN" ? body.id_loja : actor.lojaId;
 
     if (!lojaId) throw new AppError("Loja não identificada", 400);
@@ -29,6 +30,7 @@ export class VendaController {
       id_loja: lojaId,
       actorUserId: actor.userId,
     });
+
     return res.status(201).json(result);
   };
 
@@ -43,6 +45,7 @@ export class VendaController {
       status: body.status,
       actorUserId: actor.userId,
     });
+
     return res.status(200).send();
   };
 
@@ -56,6 +59,7 @@ export class VendaController {
     const page = toInt(req.query.page, 1);
     const limit = toInt(req.query.limit, 10);
     const actor = this.getActor(req);
+
     const lojaId = actor.role === "SUPER_ADMIN" ? undefined : actor.lojaId;
 
     return res.json(await this.service.getPaginated(page, limit, lojaId));
@@ -68,8 +72,7 @@ export class VendaController {
 
     if (!isValidUUID(id)) throw new AppError("ID Inválido");
 
-    const result = await this.service.getItensPaginated(id, page, limit);
-    return res.json(result);
+    return res.json(await this.service.getItensPaginated(id, page, limit));
   };
 
   searchPaginated = async (req: Request, res: Response) => {
@@ -77,10 +80,29 @@ export class VendaController {
     const limit = toInt(req.query.limit, 10);
     const term = String(req.query.term || "");
     const actor = this.getActor(req);
+
     const lojaId = actor.role === "SUPER_ADMIN" ? undefined : actor.lojaId;
 
     return res.json(
       await this.service.searchPaginated(term, page, limit, lojaId)
     );
+  };
+
+  addPayment = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    // Tipamos o body conforme o schema, mas pegando apenas a parte de pagamentos
+    const body = req.body as {
+      pagamentos: { tipo_pagamento: string; valor: number }[];
+    };
+    const actor = this.getActor(req);
+
+    if (!isValidUUID(id)) throw new AppError("ID Inválido");
+
+    const result = await this.service.addPayment(id, {
+      pagamentos: body.pagamentos,
+      actorUserId: actor.userId,
+    });
+
+    return res.status(200).json(result);
   };
 }

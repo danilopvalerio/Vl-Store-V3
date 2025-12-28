@@ -1,5 +1,7 @@
 import { prisma } from "../../shared/database/prisma";
 import { Prisma } from "../../shared/database/generated/prisma/client";
+// 1. IMPORTAÇÃO DO DECIMAL.JS
+import Decimal from "decimal.js";
 import {
   ICaixaRepository,
   IMovimentacaoRepository,
@@ -13,20 +15,16 @@ import {
 } from "./caixa.dto";
 
 // ============================================================================
-// TIPOS INTERNOS (Para tipagem do retorno do banco dentro do repositório)
+// TIPOS INTERNOS
 // ============================================================================
 
-// Define o JOIN padrão para trazer o nome do responsável
 const caixaInclude = {
   user_profile: {
     select: { nome: true },
   },
 } satisfies Prisma.caixaInclude;
 
-// Tipo inferido pelo Prisma para o resultado da query com o include acima
 type CaixaFromDb = Prisma.caixaGetPayload<{ include: typeof caixaInclude }>;
-
-// Tipo inferido pelo Prisma para movimentação (sem includes)
 type MovimentacaoFromDb = Prisma.movimentacaoGetPayload<object>;
 
 // ============================================================================
@@ -34,19 +32,21 @@ type MovimentacaoFromDb = Prisma.movimentacaoGetPayload<object>;
 // ============================================================================
 
 export class CaixaRepository implements ICaixaRepository {
-  // Mapper: Converte o objeto do Prisma (com Decimals e Nulls específicos) para a Entidade limpa
   private mapToEntity(row: CaixaFromDb): CaixaEntity {
     return {
       id_caixa: row.id_caixa,
       id_loja: row.id_loja,
       id_user_profile: row.id_user_profile,
       status: row.status,
-      // Converte Decimal do Prisma para number do JS
-      saldo_inicial: row.saldo_inicial ? Number(row.saldo_inicial) : 0,
-      saldo_final: row.saldo_final ? Number(row.saldo_final) : null,
+
+      // 2. CONVERSÃO SEGURA
+      saldo_inicial: new Decimal(row.saldo_inicial?.toString() || 0).toNumber(),
+      saldo_final: row.saldo_final
+        ? new Decimal(row.saldo_final.toString()).toNumber()
+        : null,
+
       data_abertura: row.data_abertura,
       data_fechamento: row.data_fechamento,
-      // Mapeia o join do user_profile
       nome_responsavel: row.user_profile?.nome || "Desconhecido",
     };
   }
@@ -56,6 +56,7 @@ export class CaixaRepository implements ICaixaRepository {
       data: {
         id_loja: data.id_loja,
         id_user_profile: data.id_user_profile,
+        // Prisma lida bem recebendo number, mas se quiser garantir: new Decimal(data.saldo).toNumber()
         saldo_inicial: data.saldo_inicial,
         status: data.status,
         data_abertura: data.data_abertura,
@@ -190,9 +191,12 @@ export class CaixaRepository implements ICaixaRepository {
     return {
       porTipo: porTipo.map((t) => ({
         tipo: t.tipo,
-        _sum: { valor: t._sum.valor ? Number(t._sum.valor) : 0 },
+        // Garante conversão segura na saída da agregação
+        _sum: { valor: new Decimal(t._sum.valor?.toString() || 0).toNumber() },
       })),
-      totalVendas: Number(totalVendas._sum.valor || 0),
+      totalVendas: new Decimal(
+        totalVendas._sum.valor?.toString() || 0
+      ).toNumber(),
     };
   }
 }
@@ -202,7 +206,6 @@ export class CaixaRepository implements ICaixaRepository {
 // ============================================================================
 
 export class MovimentacaoRepository implements IMovimentacaoRepository {
-  // Mapper: Movimentação Prisma -> Movimentação Entity
   private mapToEntity(m: MovimentacaoFromDb): MovimentacaoEntity {
     return {
       id_movimentacao: m.id_movimentacao,
@@ -210,8 +213,10 @@ export class MovimentacaoRepository implements IMovimentacaoRepository {
       id_caixa: m.id_caixa,
       id_venda: m.id_venda,
       tipo: m.tipo,
-      // Conversão Decimal -> Number
-      valor: Number(m.valor),
+
+      // Conversão Decimal Segura
+      valor: new Decimal(m.valor?.toString() || 0).toNumber(),
+
       descricao: m.descricao,
       data_criacao: m.data_criacao,
       ultima_atualizacao: m.ultima_atualizacao,
@@ -300,7 +305,6 @@ export class MovimentacaoRepository implements IMovimentacaoRepository {
         {
           OR: [
             { descricao: { contains: query, mode: "insensitive" } },
-            // Cast para string para permitir buscar pelo ENUM no banco
             { tipo: { contains: query.toUpperCase() as string } },
           ],
         },

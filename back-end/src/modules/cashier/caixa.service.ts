@@ -12,7 +12,8 @@ import {
 } from "./caixa.dto";
 import { AppError } from "../../app/middleware/error.middleware";
 import { LogService } from "../logs/log.service";
-// Validações manuais (isValidUUID) removidas -> Zod cuida disso
+// 1. IMPORTAÇÃO
+import Decimal from "decimal.js";
 
 export interface UserActor {
   id: string;
@@ -27,9 +28,11 @@ export class CaixaService {
     private logService: LogService
   ) {}
 
-  // ==========================================================
-  // HELPERS
-  // ==========================================================
+  // ... (HELPERS, ABERTURA, GESTÃO DE STATUS e MOVIMENTAÇÕES mantêm a lógica,
+  // pois não fazem contas complexas, apenas CRUD simples) ...
+
+  // Vou omitir os métodos que não mudaram para focar no cálculo matemático.
+  // Pode manter os métodos abrirCaixa, alterarStatus, etc. idênticos ao anterior.
 
   private async resolveUserProfile(userId: string, lojaId: string) {
     const perfil = await prisma.user_profile.findFirst({
@@ -41,20 +44,13 @@ export class CaixaService {
     return perfil;
   }
 
-  // ==========================================================
-  // ABERTURA DE CAIXA
-  // ==========================================================
-
   async abrirCaixa(
     data: CreateCaixaDTO,
     actor: UserActor
   ): Promise<CaixaEntity> {
-    // Validação de formato (UUID, valor negativo) removida -> Zod
-
     const perfilAtor = await this.resolveUserProfile(actor.id, data.id_loja);
     let idProfileAlvo = perfilAtor.id_user_profile;
 
-    // Lógica: Se estou abrindo caixa para OUTRA pessoa
     if (
       data.id_user_profile &&
       data.id_user_profile !== perfilAtor.id_user_profile
@@ -91,10 +87,6 @@ export class CaixaService {
     return novoCaixa;
   }
 
-  // ==========================================================
-  // GESTÃO DO CAIXA
-  // ==========================================================
-
   async buscarCaixaAtivoUsuario(userId: string, lojaId?: string) {
     if (!lojaId) return null;
     const perfil = await this.resolveUserProfile(userId, lojaId);
@@ -113,7 +105,6 @@ export class CaixaService {
     let acaoLog = "";
 
     if (["ABERTO", "REABERTO"].includes(caixa.status)) {
-      // Regra de Negócio: Fechamento exige saldo final
       if (data.saldo_final === undefined || data.saldo_final < 0) {
         throw new AppError("Saldo final é obrigatório para fechar o caixa.");
       }
@@ -122,7 +113,7 @@ export class CaixaService {
       acaoLog = "Fechar Caixa";
     } else if (caixa.status === "FECHADO") {
       updateData.status = "REABERTO";
-      updateData.saldo_final = 0; // Reseta saldo final ao reabrir
+      updateData.saldo_final = 0;
       acaoLog = "Reabrir Caixa";
     } else {
       throw new AppError(`Status inválido para alteração: ${caixa.status}`);
@@ -142,10 +133,8 @@ export class CaixaService {
   async trocarResponsavel(idCaixa: string, data: UpdateCaixaUserDTO) {
     const caixa = await this.repo.findById(idCaixa);
     if (!caixa) throw new AppError("Caixa não encontrado.", 404);
-
-    if (caixa.status === "FECHADO") {
+    if (caixa.status === "FECHADO")
       throw new AppError("Não pode trocar responsável de caixa fechado.", 400);
-    }
 
     const updated = await this.repo.update(idCaixa, {
       id_user_profile: data.id_user_profile,
@@ -189,24 +178,16 @@ export class CaixaService {
     return { data, total, page, lastPage: Math.ceil(total / perPage) };
   }
 
-  // ==========================================================
-  // MOVIMENTAÇÕES
-  // ==========================================================
-
   async adicionarMovimentacaoManual(
     data: CreateMovimentacaoDTO,
     actor: UserActor
   ): Promise<MovimentacaoEntity> {
-    // Regra de Negócio: Vendas não entram por aqui
-    // Embora o Enum no Zod ajude, essa validação garante a regra do sistema
+    // ... validações iguais ao anterior ...
     if (data.tipo === "ENTRADA" && !actor.role.includes("ADMIN")) {
-      // Exemplo: Talvez você queira bloquear entradas manuais "genéricas" para vendedores
-      // throw new AppError("Entradas de venda devem ser feitas pelo módulo de Vendas.", 400);
+      // Regra opcional
     }
 
     let idCaixaAlvo = data.id_caixa;
-
-    // Se não informou caixa, tenta pegar o caixa aberto do usuário
     if (!idCaixaAlvo) {
       if (!actor.lojaId) throw new AppError("Loja não identificada.", 400);
       const caixaAtivo = await this.buscarCaixaAtivoUsuario(
@@ -221,7 +202,6 @@ export class CaixaService {
     const caixa = await this.repo.findById(idCaixaAlvo!);
     if (!caixa) throw new AppError("Caixa não encontrado.", 404);
 
-    // Validação de Permissão de Loja
     if (
       actor.lojaId &&
       caixa.id_loja !== actor.lojaId &&
@@ -248,7 +228,6 @@ export class CaixaService {
       descricao: data.descricao,
       id_venda: null,
     });
-
     return mov;
   }
 
@@ -261,12 +240,11 @@ export class CaixaService {
     if (!mov) throw new AppError("Movimentação não encontrada.", 404);
 
     const caixa = await this.repo.findById(mov.id_caixa);
-    if (caixa && caixa.status === "FECHADO") {
+    if (caixa && caixa.status === "FECHADO")
       throw new AppError(
         "Não é possível editar movimentações de um caixa já fechado.",
         403
       );
-    }
 
     const updated = await this.movRepo.update(idMov, {
       valor: data.valor,
@@ -279,7 +257,6 @@ export class CaixaService {
       acao: "Atualizar Movimentação",
       detalhes: `Movimentação ${idMov} (Caixa ${caixa?.id_caixa}) atualizada.`,
     });
-
     return updated;
   }
 
@@ -288,12 +265,11 @@ export class CaixaService {
     if (!mov) throw new AppError("Movimentação não encontrada.", 404);
 
     const caixa = await this.repo.findById(mov.id_caixa);
-    if (caixa && caixa.status === "FECHADO") {
+    if (caixa && caixa.status === "FECHADO")
       throw new AppError(
         "Não é possível excluir movimentações de um caixa já fechado.",
         403
       );
-    }
 
     await this.movRepo.delete(idMov);
 
@@ -331,7 +307,7 @@ export class CaixaService {
   }
 
   // ==========================================================
-  // DASHBOARD
+  // DASHBOARD (CÁLCULOS CRÍTICOS COM DECIMAL.JS)
   // ==========================================================
 
   async getDashboardStats(id_caixa: string): Promise<CaixaDashboardStats> {
@@ -340,41 +316,53 @@ export class CaixaService {
 
     const stats = await this.repo.getRawStats(id_caixa);
 
-    const resumo = {
-      VENDA: 0,
-      ENTRADA_AVULSA: 0,
-      SAIDA: 0,
-      SANGRIA: 0,
-      SUPRIMENTO: 0,
-    };
+    // Variáveis que serão alteradas no loop (let)
+    let decTotalEntradasGerais = new Decimal(0);
+    let decSaida = new Decimal(0);
+    let decSangria = new Decimal(0);
+    let decSuprimento = new Decimal(0);
 
-    let totalEntradasGerais = 0;
+    // Variável que não muda (const)
+    const decVenda = new Decimal(stats.totalVendas);
 
     stats.porTipo.forEach((stat) => {
-      const valor = stat._sum.valor || 0;
+      const valor = new Decimal(stat._sum.valor || 0);
       const tipo = stat.tipo;
 
       if (tipo === "ENTRADA") {
-        totalEntradasGerais = valor;
-      } else if (["SAIDA", "SANGRIA", "SUPRIMENTO"].includes(tipo)) {
-        resumo[tipo as keyof typeof resumo] = valor;
+        decTotalEntradasGerais = valor;
+      } else if (tipo === "SAIDA") {
+        decSaida = valor;
+      } else if (tipo === "SANGRIA") {
+        decSangria = valor;
+      } else if (tipo === "SUPRIMENTO") {
+        decSuprimento = valor;
       }
     });
 
-    resumo.VENDA = stats.totalVendas;
-    resumo.ENTRADA_AVULSA = totalEntradasGerais - stats.totalVendas;
+    // Cálculos finais (todos const, pois o resultado não muda mais)
+    const decEntradaAvulsa = decTotalEntradasGerais.minus(decVenda);
+    const decTotalEntradas = decTotalEntradasGerais.plus(decSuprimento);
+    const decTotalSaidas = decSaida.plus(decSangria);
 
-    const totalEntradas = totalEntradasGerais + resumo.SUPRIMENTO;
-    const totalSaidas = resumo.SAIDA + resumo.SANGRIA;
-    const saldoAtual = (caixa.saldo_inicial || 0) + totalEntradas - totalSaidas;
+    const decSaldoInicial = new Decimal(caixa.saldo_inicial || 0);
+    const decSaldoAtual = decSaldoInicial
+      .plus(decTotalEntradas)
+      .minus(decTotalSaidas);
 
     return {
       caixa,
       estatisticas: {
-        saldo_atual: saldoAtual,
-        total_entradas: totalEntradas,
-        total_saidas: totalSaidas,
-        detalhado: resumo,
+        saldo_atual: decSaldoAtual.toNumber(),
+        total_entradas: decTotalEntradas.toNumber(),
+        total_saidas: decTotalSaidas.toNumber(),
+        detalhado: {
+          VENDA: decVenda.toNumber(),
+          ENTRADA_AVULSA: decEntradaAvulsa.toNumber(),
+          SAIDA: decSaida.toNumber(),
+          SANGRIA: decSangria.toNumber(),
+          SUPRIMENTO: decSuprimento.toNumber(),
+        },
       },
     };
   }

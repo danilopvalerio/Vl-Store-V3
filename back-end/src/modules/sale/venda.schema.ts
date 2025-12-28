@@ -39,20 +39,20 @@ export const createVendaSchema = z.object({
     id_loja: z.uuid("ID da loja inválido"),
 
     // Se o caixa estiver lançando venda de outro, ele manda esse ID.
-    id_vendedor: z.uuid("ID do vendedor inválido").optional(),
+    id_vendedor: z.uuid({ message: "ID do vendedor inválido" }).optional(),
 
     id_caixa: z.uuid("ID do caixa inválido").optional(),
     id_cliente: z.uuid("ID do cliente inválido").optional(),
     desconto_global: z.number().min(0).default(0),
     acrescimo_global: z.number().min(0).default(0),
-    status: z.enum(["PENDENTE", "FINALIZADA"]).default("FINALIZADA"),
 
     tipo_venda: tipoVendaEnum.default("FISICA"),
 
     itens: z.array(itemSchema).min(1, "A venda deve ter pelo menos 1 item"),
     pagamentos: z
       .array(pagamentoSchema)
-      .min(1, "A venda deve ter pelo menos 1 forma de pagamento"),
+      .min(1, "A venda deve ter pelo menos 1 forma de pagamento")
+      .optional(),
   }),
 });
 
@@ -69,4 +69,13 @@ export const vendaIdSchema = z.object({
 
 export const vendaPaginationSchema = z.object({
   query: paginationQuery,
+});
+
+export const addPaymentSchema = z.object({
+  params: paramsId,
+  body: z.object({
+    pagamentos: z
+      .array(pagamentoSchema)
+      .min(1, "Informe pelo menos um pagamento"),
+  }),
 });

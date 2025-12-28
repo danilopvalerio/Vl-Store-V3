@@ -41,43 +41,52 @@ export const CaixaStats = ({ caixa, stats }: Props) => {
       <div className="col-12 col-md-8">
         <div className="row g-2 h-100">
           <div className="col-6 col-md-3">
-            <div className="p-2 bg-success-subtle rounded border border-success-subtle h-100 text-center">
+            <div className="p-2 bg-success-subtle rounded border border-success-subtle h-100 text-center d-flex flex-column justify-content-evenly align-items-center">
               <span className="d-block text-success small fw-bold mb-1">
                 Vendas
               </span>
               <span className="d-block fw-bold text-dark">
                 {toBRL(stats?.detalhado.VENDA || 0)}
               </span>
+
+              <span className="small">Vendas totais</span>
             </div>
           </div>
           <div className="col-6 col-md-3">
-            <div className="p-2 bg-primary-subtle rounded border border-primary-subtle h-100 text-center">
+            <div className="p-2 bg-primary-subtle rounded border border-primary-subtle h-100 text-center d-flex flex-column justify-content-evenly align-items-center">
               <span className="d-block text-primary small fw-bold mb-1">
                 Suprimentos
               </span>
               <span className="d-block fw-bold text-dark">
                 {toBRL(stats?.detalhado.SUPRIMENTO || 0)}
               </span>
+
+              <span className="small">Reforço de Caixa</span>
             </div>
           </div>
           <div className="col-6 col-md-3">
-            <div className="p-2 bg-warning-subtle rounded border border-warning-subtle h-100 text-center">
-              <span className="d-block text-warning-emphasis small fw-bold mb-1">
+            <div className="p-2 bg-warning-subtle rounded border border-warning-subtle h-100 text-center d-flex flex-column justify-content-evenly align-items-center">
+              <span className="text-warning-emphasis small fw-bold">
                 Sangrias
               </span>
-              <span className="d-block fw-bold text-dark">
+
+              <span className="fw-bold text-dark">
                 {toBRL(stats?.detalhado.SANGRIA || 0)}
               </span>
+
+              <span className="small">Retirada do caixa</span>
             </div>
           </div>
           <div className="col-6 col-md-3">
-            <div className="p-2 bg-danger-subtle rounded border border-danger-subtle h-100 text-center">
+            <div className="p-2 bg-danger-subtle rounded border border-danger-subtle h-100 text-center d-flex flex-column justify-content-evenly align-items-center">
               <span className="d-block text-danger small fw-bold mb-1">
                 Despesas
               </span>
               <span className="d-block fw-bold text-dark">
                 {toBRL(stats?.detalhado.SAIDA || 0)}
               </span>
+
+              <span className="small">Despesas totais</span>
             </div>
           </div>
         </div>

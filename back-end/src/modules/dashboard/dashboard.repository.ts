@@ -16,7 +16,7 @@ export class DashboardRepository implements IDashboardRepository {
       where: {
         id_loja: lojaId,
         data: { gte: startDate, lte: endDate },
-        status: { not: "CANCELADA" },
+        status: "FINALIZADA",
       },
       _sum: { total_final: true },
       _count: { id_venda: true },
@@ -61,7 +61,7 @@ export class DashboardRepository implements IDashboardRepository {
         venda: {
           id_loja: lojaId,
           data: { gte: startDate, lte: endDate },
-          status: { not: "CANCELADA" },
+          status: "FINALIZADA",
         },
       },
       _sum: { valor: true },

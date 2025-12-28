@@ -22,7 +22,8 @@ import {
   createVendaSchema,
   vendaIdSchema,
   vendaPaginationSchema,
-  updateStatusSchema, // <--- CORREÇÃO AQUI (Nome exato do export no schema.ts)
+  updateStatusSchema,
+  addPaymentSchema,
 } from "./venda.schema";
 
 const router = Router();
@@ -59,6 +60,13 @@ router.post(
   requireRole(["ADMIN", "GERENTE", "FUNCIONARIO", "VENDEDOR"]),
   validate(createVendaSchema),
   controller.create
+);
+
+router.post(
+  "/:id/payment", // Rota sugerida: POST /vendas/:id/payment
+  requireRole(["ADMIN", "GERENTE", "FUNCIONARIO", "VENDEDOR"]),
+  validate(addPaymentSchema),
+  controller.addPayment
 );
 
 // Atualizar Status (Ex: Cancelar)

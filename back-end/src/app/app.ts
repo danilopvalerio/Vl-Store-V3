@@ -10,7 +10,7 @@ import cors from "cors";
 import helmet from "helmet";
 
 // Importação de módulos internos
-import routes from ".";
+import routes from "./routes.index";
 import { errorMiddleware } from "./middleware/error.middleware";
 import { apiLimiter } from "./middleware/rateLimit.middleware";
 

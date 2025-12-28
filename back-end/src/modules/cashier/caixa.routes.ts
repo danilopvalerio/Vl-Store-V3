@@ -11,7 +11,7 @@ import {
   authMiddleware,
   requireRole,
 } from "../../app/middleware/auth.middleware";
-import { validate } from "../../app/middleware/validation.middleware"; // <--- Middleware
+import { validate } from "../../app/middleware/validation.middleware";
 import {
   createCaixaSchema,
   toggleCaixaStatusSchema,
@@ -21,11 +21,10 @@ import {
   updateMovimentacaoSchema,
   movIdSchema,
   movPaginationSchema,
-} from "./caixa.schema"; // <--- Schemas
+} from "./caixa.schema";
 
 const router = Router();
 
-// Dependências
 const accessRepo = new AccessLogRepository();
 const systemRepo = new SystemLogRepository();
 const logService = new LogService(accessRepo, systemRepo);
@@ -39,7 +38,7 @@ const controller = new CaixaController(service);
 router.use(authMiddleware);
 
 // ==========================================================
-// ROTAS DE CAIXA
+// 1. ROTAS ESPECÍFICAS (Devem vir ANTES de /:id)
 // ==========================================================
 
 // Buscar caixa ativo do usuário logado
@@ -47,6 +46,46 @@ router.get(
   "/me/active",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE", "FUNCIONARIO"]),
   controller.getCurrentUserCaixa
+);
+
+// Listar Movimentações (MOVIDO PARA CIMA)
+router.get(
+  "/movimentacoes",
+  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
+  validate(movPaginationSchema),
+  controller.getMovimentacoesPaginated
+);
+
+// Criar Movimentação (Sangria/Suprimento) (MOVIDO PARA CIMA)
+router.post(
+  "/movimentacoes",
+  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE", "FUNCIONARIO"]),
+  validate(createMovimentacaoSchema),
+  controller.addMovimentacao
+);
+
+// Atualizar Movimentação (MOVIDO PARA CIMA)
+router.patch(
+  "/movimentacoes/:id",
+  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
+  validate(updateMovimentacaoSchema),
+  controller.updateMovimentacao
+);
+
+// Deletar Movimentação (MOVIDO PARA CIMA)
+router.delete(
+  "/movimentacoes/:id",
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
+  validate(movIdSchema),
+  controller.deleteMovimentacao
+);
+
+// Listar Caixas (Geral)
+router.get(
+  "/",
+  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
+  validate(caixaPaginationSchema),
+  controller.getPaginated
 );
 
 // Abrir Caixa
@@ -57,16 +96,8 @@ router.post(
   controller.openCaixa
 );
 
-// Listar Caixas
-router.get(
-  "/",
-  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
-  validate(caixaPaginationSchema),
-  controller.getPaginated
-);
-
 // ==========================================================
-// ROTAS DE CAIXA - ESPECÍFICAS (POR ID)
+// 2. ROTAS GENÉRICAS / PARAMETRIZADAS (Devem vir POR ÚLTIMO)
 // ==========================================================
 
 // Dashboard do Caixa
@@ -85,48 +116,13 @@ router.patch(
   controller.toggleCaixaStatus
 );
 
-// Buscar por ID
+// Buscar por ID (O GRANDE VILÃO ESTAVA AQUI)
+// Como ele pega qualquer string após a barra, ele estava capturando "movimentacoes"
 router.get(
   "/:id",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE", "FUNCIONARIO"]),
   validate(caixaIdSchema),
   controller.getCaixaById
-);
-
-// ==========================================================
-// ROTAS DE MOVIMENTAÇÕES
-// ==========================================================
-
-// Listar Movimentações
-router.get(
-  "/movimentacoes",
-  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
-  validate(movPaginationSchema),
-  controller.getMovimentacoesPaginated
-);
-
-// Criar Movimentação (Sangria/Suprimento)
-router.post(
-  "/movimentacoes",
-  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE", "FUNCIONARIO"]),
-  validate(createMovimentacaoSchema),
-  controller.addMovimentacao
-);
-
-// Atualizar Movimentação
-router.patch(
-  "/movimentacoes/:id",
-  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
-  validate(updateMovimentacaoSchema),
-  controller.updateMovimentacao
-);
-
-// Deletar Movimentação
-router.delete(
-  "/movimentacoes/:id",
-  requireRole(["SUPER_ADMIN", "ADMIN"]),
-  validate(movIdSchema),
-  controller.deleteMovimentacao
 );
 
 export default router;

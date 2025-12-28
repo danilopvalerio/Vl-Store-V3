@@ -1,4 +1,6 @@
 import { prisma } from "../../shared/database/prisma";
+// 1. IMPORTAÇÃO DO DECIMAL.JS (Default Import)
+import Decimal from "decimal.js";
 import {
   IProductRepository,
   ProductEntity,
@@ -54,7 +56,11 @@ export class ProductRepository implements IProductRepository {
       nome: v.nome,
       descricao: v.descricao,
       quantidade: v.quantidade,
-      valor: Number(v.valor),
+
+      // 2. CONVERSÃO SEGURA: Prisma Decimal -> JS Number
+      // Usamos new Decimal().toNumber() para garantir que string/object do banco vire número
+      valor: new Decimal(v.valor?.toString() || 0).toNumber(),
+
       data_criacao: v.data_criacao,
       ultima_atualizacao: v.ultima_atualizacao,
     };
@@ -66,15 +72,21 @@ export class ProductRepository implements IProductRepository {
     return productsRaw.map((product) => {
       const variacoes = product.produto_variacao || [];
 
+      // Soma de estoque (inteiros, soma simples é segura, mas o reduce mantém padrão)
       const totalEstoque = variacoes.reduce(
         (acc, item) => acc + (item.quantidade ?? 0),
         0
       );
+
       const qtdVariacoes = variacoes.length;
 
       let menorValor = 0;
       if (variacoes.length > 0) {
-        const precos = variacoes.map((v) => Number(v.valor));
+        // 3. CÁLCULO DE MENOR VALOR COM SEGURANÇA
+        // Convertemos todos para number usando Decimal antes de achar o mínimo
+        const precos = variacoes.map((v) =>
+          new Decimal(v.valor?.toString() || 0).toNumber()
+        );
         menorValor = Math.min(...precos);
       }
 
@@ -93,7 +105,6 @@ export class ProductRepository implements IProductRepository {
   // IMPLEMENTAÇÃO DO IBASE REPOSITORY (PRODUTOS)
   // ==========================================================================
 
-  // createProduct -> create
   async create(data: CreateProductDTO): Promise<ProductEntity> {
     const product = await prisma.produto.create({
       data: {
@@ -109,7 +120,6 @@ export class ProductRepository implements IProductRepository {
     return this.mapToProductEntity(product);
   }
 
-  // updateProduct -> update
   async update(id: string, data: UpdateProductDTO): Promise<ProductEntity> {
     const product = await prisma.produto.update({
       where: { id_produto: id },
@@ -126,12 +136,10 @@ export class ProductRepository implements IProductRepository {
     return this.mapToProductEntity(product);
   }
 
-  // deleteProduct -> delete
   async delete(id: string): Promise<void> {
     await prisma.produto.delete({ where: { id_produto: id } });
   }
 
-  // findProductById -> findById
   async findById(id: string): Promise<ProductEntity | null> {
     const product = await prisma.produto.findUnique({
       where: { id_produto: id },
@@ -139,7 +147,6 @@ export class ProductRepository implements IProductRepository {
     return product ? this.mapToProductEntity(product) : null;
   }
 
-  // Novo método exigido pelo IBaseRepository (findAll)
   async findAll(): Promise<ProductEntity[]> {
     const products = await prisma.produto.findMany();
     return products.map((p) => this.mapToProductEntity(p));
@@ -149,8 +156,6 @@ export class ProductRepository implements IProductRepository {
   // LISTAGENS DE PRODUTO (Customizadas com Paginação)
   // ==========================================================================
 
-  // findProductsPaginated -> findPaginated
-  // TypeScript permite adicionar argumentos opcionais (lojaId) na implementação
   async findPaginated(
     page: number,
     limit: number,
@@ -177,7 +182,6 @@ export class ProductRepository implements IProductRepository {
     return { data: this.processProductListing(dataRaw), total };
   }
 
-  // searchProducts -> searchPaginated
   async searchPaginated(
     query: string,
     page: number,
@@ -217,7 +221,7 @@ export class ProductRepository implements IProductRepository {
   }
 
   // ==========================================================================
-  // VARIAÇÕES (Mantidos nomes específicos)
+  // VARIAÇÕES
   // ==========================================================================
 
   async createVariation(data: CreateVariationDTO): Promise<VariationEntity> {
@@ -227,7 +231,7 @@ export class ProductRepository implements IProductRepository {
         nome: data.nome,
         descricao: data.descricao,
         quantidade: data.quantidade,
-        valor: data.valor,
+        valor: data.valor, // Prisma aceita number e converte para Decimal internamente
       },
     });
     return this.mapToVariationEntity(variation);
