@@ -14,14 +14,14 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 // Ajuste os caminhos conforme sua estrutura
-import api from "../../../utils/api";
-import { ApiErrorResponse } from "../../../types/api";
+import api from "../../utils/api";
+import { ApiErrorResponse } from "../../types/api";
 import {
   isValidEmail,
   isValidCpfCnpj,
   isValidPassword,
   extractDigitsOnly,
-} from "../../../utils/validationUtils";
+} from "../../utils/validationUtils";
 
 export default function RegisterForm() {
   const router = useRouter();

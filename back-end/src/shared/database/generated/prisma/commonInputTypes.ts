@@ -323,6 +323,23 @@ export type BoolWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedBoolFilter<$PrismaModel>
 }
 
+export type EnumUserProfileStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.UserProfileStatus | Prisma.EnumUserProfileStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.UserProfileStatus[] | Prisma.ListEnumUserProfileStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UserProfileStatus[] | Prisma.ListEnumUserProfileStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUserProfileStatusFilter<$PrismaModel> | $Enums.UserProfileStatus
+}
+
+export type EnumUserProfileStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.UserProfileStatus | Prisma.EnumUserProfileStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.UserProfileStatus[] | Prisma.ListEnumUserProfileStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UserProfileStatus[] | Prisma.ListEnumUserProfileStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUserProfileStatusWithAggregatesFilter<$PrismaModel> | $Enums.UserProfileStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumUserProfileStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumUserProfileStatusFilter<$PrismaModel>
+}
+
 export type NestedUuidFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -639,6 +656,23 @@ export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedBoolFilter<$PrismaModel>
   _max?: Prisma.NestedBoolFilter<$PrismaModel>
+}
+
+export type NestedEnumUserProfileStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.UserProfileStatus | Prisma.EnumUserProfileStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.UserProfileStatus[] | Prisma.ListEnumUserProfileStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UserProfileStatus[] | Prisma.ListEnumUserProfileStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUserProfileStatusFilter<$PrismaModel> | $Enums.UserProfileStatus
+}
+
+export type NestedEnumUserProfileStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.UserProfileStatus | Prisma.EnumUserProfileStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.UserProfileStatus[] | Prisma.ListEnumUserProfileStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UserProfileStatus[] | Prisma.ListEnumUserProfileStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUserProfileStatusWithAggregatesFilter<$PrismaModel> | $Enums.UserProfileStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumUserProfileStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumUserProfileStatusFilter<$PrismaModel>
 }
 
 

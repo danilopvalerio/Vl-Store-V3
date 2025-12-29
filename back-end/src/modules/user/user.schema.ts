@@ -19,12 +19,17 @@ export const userPaginationSchema = z.object({
 // Schema para Criação (POST)
 export const createUserSchema = z.object({
   body: z.object({
+    // Dados do Usuário
     email: z.string().email({ message: "Formato de e-mail inválido" }),
-    senha: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"), // Assumindo que vem senha no create
-    // Ativo geralmente é true por padrão, mas pode vir
-    ativo: z.boolean().optional(),
-    // Telefones opcional
+    senha: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
     telefones: z.array(z.string()).optional(),
+
+    // Dados do Perfil (Adicione isto!)
+    nome: z.string().min(3, "Nome é obrigatório"),
+    id_loja: z.string().uuid("ID da loja inválido"),
+    cpf_cnpj: z.string().optional(),
+    cargo: z.string().optional(),
+    tipo_perfil: z.string().default("FUNCIONARIO"), // Ou use o enum se preferir
   }),
 });
 

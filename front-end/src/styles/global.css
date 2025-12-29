@@ -109,6 +109,12 @@ html {
   height: 2.2rem;
 }
 
+.button-dark-grey:hover {
+  background-color: var(--color-white);
+  color: var(--color-quartenary);
+  border: 1px solid var(--color-quartenary);
+}
+
 .button-white-grey-border {
   background-color: var(--color-white);
   color: var(--color-quartenary);

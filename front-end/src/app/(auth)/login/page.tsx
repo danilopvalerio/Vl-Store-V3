@@ -1,5 +1,5 @@
 // Nenhum "use client" aqui! Este agora é um Componente de Servidor.
-import LoginForm from "./../../../features/auth/components/LoginForm";
+import LoginForm from "../../../features/auth/LoginForm";
 
 export default function LoginPage() {
   return (

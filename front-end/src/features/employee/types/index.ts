@@ -1,6 +1,7 @@
 // app/employees/types.ts
 
 // --- Respostas da API ---
+export type UserProfileStatus = "PENDING" | "ACTIVE" | "INACTIVE" | "BLOCKED";
 
 export interface EmployeeSummary {
   id_user_profile: string;
@@ -18,7 +19,7 @@ export interface UserProfileResponse {
   cpf_cnpj: string; // O backend pode retornar 'cpf' ou 'cpf_cnpj', ajuste se necessário
   cargo: string;
   tipo_perfil: string;
-  ativo: boolean;
+  status: UserProfileStatus;
   data_criacao: string;
   ultima_atualizacao: string;
 }
@@ -27,7 +28,6 @@ export interface UserProfileResponse {
 export interface UserResponse {
   user_id: string;
   email: string;
-  ativo: boolean;
   data_criacao: string;
   ultima_atualizacao: string;
   role?: string; // Veio no JSON, mas sabemos que o sistema agora usa profile
@@ -66,12 +66,19 @@ export interface CreateProfilePayload {
   tipo_perfil: string;
 }
 
+export interface CreateProfileForExistingUserPayload {
+  email: string;
+  id_loja: string;
+  cargo: string;
+  tipo_perfil: string;
+}
+
 // PATCH /api/profiles/:id (Atualizar Profile)
 export interface UpdateProfilePayload {
   nome?: string;
   cpf?: string;
   cargo?: string;
-  ativo?: boolean;
+  status?: "ACTIVE" | "INACTIVE" | "BLOCKED";
 }
 
 // Dados do Usuário Logado (localStorage)

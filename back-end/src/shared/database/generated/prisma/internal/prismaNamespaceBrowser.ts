@@ -294,7 +294,7 @@ export const User_profileScalarFieldEnum = {
   cpf_cnpj: 'cpf_cnpj',
   cargo: 'cargo',
   tipo_perfil: 'tipo_perfil',
-  ativo: 'ativo',
+  status: 'status',
   data_criacao: 'data_criacao',
   ultima_atualizacao: 'ultima_atualizacao'
 } as const

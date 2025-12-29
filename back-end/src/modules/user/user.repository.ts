@@ -69,30 +69,34 @@ export class UserRepository implements IUserRepository {
   async create(data: CreateUserDTO): Promise<UserEntity> {
     const senhaHash = data.senha ? await hashPassword(data.senha) : "temp_hash";
 
-    // Transação implícita do Prisma (Nested Write)
-    const newUser = await prisma.user.create({
-      data: {
-        email: data.email,
-        senha_hash: senhaHash,
-        ativo: true,
-        // Cria telefones se houver
-        telefone_user: {
-          create: data.telefones?.map((tel) => ({ telefone: tel })),
+    // USA TRANSACTION PARA GARANTIR INTEGRIDADE
+    const newUser = await prisma.$transaction(async (tx) => {
+      // 1. Cria o User
+      const user = await tx.user.create({
+        data: {
+          email: data.email,
+          senha_hash: senhaHash,
+          ativo: true,
+          telefone_user: {
+            create: data.telefones?.map((tel) => ({ telefone: tel })),
+          },
         },
-      },
-      include: { telefone_user: true },
-    });
+        include: { telefone_user: true },
+      });
 
-    // Cria Profile vinculado
-    await prisma.user_profile.create({
-      data: {
-        user_id: newUser.user_id,
-        id_loja: data.id_loja,
-        nome: data.nome,
-        cpf_cnpj: data.cpf_cnpj,
-        cargo: data.cargo,
-        tipo_perfil: data.tipo_perfil,
-      },
+      // 2. Cria o Profile usando o ID do usuário recém-criado
+      await tx.user_profile.create({
+        data: {
+          user_id: user.user_id,
+          id_loja: data.id_loja,
+          nome: data.nome,
+          cpf_cnpj: data.cpf_cnpj,
+          cargo: data.cargo,
+          tipo_perfil: data.tipo_perfil,
+        },
+      });
+
+      return user;
     });
 
     return this.mapToEntity(newUser);

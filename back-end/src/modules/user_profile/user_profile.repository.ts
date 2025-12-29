@@ -26,7 +26,7 @@ export class UserProfileRepository implements IUserProfileRepository {
       cpf_cnpj: profile.cpf_cnpj,
       cargo: profile.cargo,
       tipo_perfil: profile.tipo_perfil,
-      ativo: profile.ativo,
+      status: profile.status,
       data_criacao: profile.data_criacao,
       ultima_atualizacao: profile.ultima_atualizacao,
     };
@@ -57,7 +57,7 @@ export class UserProfileRepository implements IUserProfileRepository {
         cpf_cnpj: data.cpf_cnpj,
         cargo: data.cargo,
         tipo_perfil: data.tipo_perfil,
-        ativo: data.ativo,
+        status: data.status,
         ultima_atualizacao: new Date(),
       },
     });

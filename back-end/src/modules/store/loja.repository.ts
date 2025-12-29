@@ -1,42 +1,42 @@
 import { prisma } from "../../shared/database/prisma";
 import {
   ILojaRepository,
-  LojaEntity,
   CreateLojaDTO,
   UpdateLojaDTO,
+  LojaResponseDTO,
 } from "./loja.dto";
 import { RepositoryPaginatedResult } from "../../shared/dtos/index.dto";
-import {
-  Prisma,
-  loja as LojaModel,
-} from "../../shared/database/generated/prisma/client";
+import { loja, Prisma } from "../../shared/database/generated/prisma/client";
 
 export class LojaRepository implements ILojaRepository {
-  // Mapper: Converte do Prisma para Entidade de Domínio
-  private mapToEntity(loja: LojaModel): LojaEntity {
+  // MAPPER: Prisma -> DTO
+  private mapToDTO(raw: loja): LojaResponseDTO {
     return {
-      id_loja: loja.id_loja,
-      admin_user_id: loja.admin_user_id,
-      nome: loja.nome,
-      cnpj_cpf: loja.cnpj_cpf,
-      data_criacao: loja.data_criacao,
-      ultima_atualizacao: loja.ultima_atualizacao,
+      id_loja: raw.id_loja,
+      admin_user_id: raw.admin_user_id,
+      nome: raw.nome,
+      cnpj_cpf: raw.cnpj_cpf,
+      data_criacao: raw.data_criacao,
+      ultima_atualizacao: raw.ultima_atualizacao,
     };
   }
 
-  async create(data: CreateLojaDTO): Promise<LojaEntity> {
-    const loja = await prisma.loja.create({
+  // --- CRUD ---
+
+  async create(data: CreateLojaDTO): Promise<LojaResponseDTO> {
+    // Nota: O Service usará transação, mas este método base existe para casos simples
+    const newLoja = await prisma.loja.create({
       data: {
         nome: data.nome,
         cnpj_cpf: data.cnpj_cpf,
         admin_user_id: data.admin_user_id,
       },
     });
-    return this.mapToEntity(loja);
+    return this.mapToDTO(newLoja);
   }
 
-  async update(id: string, data: UpdateLojaDTO): Promise<LojaEntity> {
-    const loja = await prisma.loja.update({
+  async update(id: string, data: UpdateLojaDTO): Promise<LojaResponseDTO> {
+    const updated = await prisma.loja.update({
       where: { id_loja: id },
       data: {
         nome: data.nome,
@@ -45,48 +45,35 @@ export class LojaRepository implements ILojaRepository {
         ultima_atualizacao: new Date(),
       },
     });
-    return this.mapToEntity(loja);
-  }
-
-  async findById(id: string): Promise<LojaEntity | null> {
-    const loja = await prisma.loja.findUnique({
-      where: { id_loja: id },
-    });
-    return loja ? this.mapToEntity(loja) : null;
-  }
-
-  async findByDoc(cnpj_cpf: string): Promise<LojaEntity | null> {
-    const loja = await prisma.loja.findFirst({
-      where: { cnpj_cpf },
-    });
-    return loja ? this.mapToEntity(loja) : null;
+    return this.mapToDTO(updated);
   }
 
   async delete(id: string): Promise<void> {
     await prisma.loja.delete({ where: { id_loja: id } });
   }
 
-  async findAll(): Promise<LojaEntity[]> {
-    const lojas = await prisma.loja.findMany();
-    return lojas.map((l) => this.mapToEntity(l));
+  async findById(id: string): Promise<LojaResponseDTO | null> {
+    const found = await prisma.loja.findUnique({ where: { id_loja: id } });
+    return found ? this.mapToDTO(found) : null;
   }
 
-  // Métodos de paginação exigidos pela Interface Base
-  // (Implementação básica pois geralmente não se pagina lojas da mesma forma que usuários)
-  async findPaginated(
-    page: number,
-    limit: number
-  ): Promise<RepositoryPaginatedResult<LojaEntity>> {
+  async findAll(): Promise<LojaResponseDTO[]> {
+    const all = await prisma.loja.findMany();
+    return all.map((l) => this.mapToDTO(l));
+  }
+
+  async findByDoc(cnpj_cpf: string): Promise<LojaResponseDTO | null> {
+    const found = await prisma.loja.findFirst({ where: { cnpj_cpf } });
+    return found ? this.mapToDTO(found) : null;
+  }
+
+  // --- PAGINAÇÃO ---
+  async findPaginated(page: number, limit: number) {
     return this.searchPaginated("", page, limit);
   }
 
-  async searchPaginated(
-    query: string,
-    page: number,
-    limit: number
-  ): Promise<RepositoryPaginatedResult<LojaEntity>> {
+  async searchPaginated(query: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
-
     const where: Prisma.lojaWhereInput = query
       ? {
           OR: [
@@ -106,6 +93,6 @@ export class LojaRepository implements ILojaRepository {
       prisma.loja.count({ where }),
     ]);
 
-    return { data: data.map((l) => this.mapToEntity(l)), total };
+    return { data: data.map((l) => this.mapToDTO(l)), total };
   }
 }

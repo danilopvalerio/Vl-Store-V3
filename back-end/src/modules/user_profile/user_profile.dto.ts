@@ -1,4 +1,5 @@
 import { IBaseRepository } from "../../shared/dtos/index.dto";
+import { UserProfileStatus } from "../../shared/database/generated/prisma/client";
 
 // ============================================================================
 // ENTIDADE DE DOMÍNIO (Espelho do Schema.prisma)
@@ -11,7 +12,7 @@ export interface UserProfileEntity {
   cpf_cnpj: string | null; // DateTime? no prisma = Date | null
   cargo: string | null;
   tipo_perfil: string | null;
-  ativo: boolean | null; // Boolean? no prisma = boolean | null
+  status: UserProfileStatus;
   data_criacao: Date | null;
   ultima_atualizacao: Date | null;
 }
@@ -35,7 +36,7 @@ export interface UpdateUserProfileDTO {
   cpf_cnpj?: string;
   cargo?: string;
   tipo_perfil?: string;
-  ativo?: boolean;
+  status?: "ACTIVE" | "INACTIVE" | "BLOCKED";
 
   actorUserId?: string;
 }

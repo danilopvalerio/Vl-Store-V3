@@ -10,14 +10,35 @@ import {
   faBriefcase,
   faEnvelope,
   faPhone,
-  faTrash,
   faShieldHalved,
+  faStore,
+  faUserSlash,
+  faStoreSlash,
 } from "@fortawesome/free-solid-svg-icons";
 
 import api from "../../utils/api";
 import { extractDigitsOnly } from "../../utils/validationUtils";
-import { UpdateUserPayload } from "./types";
-import { ApiErrorResponse } from "../../types/api";
+
+// Importando os tipos
+import {
+  UserProfileResponse,
+  UserResponse,
+  UpdateUserPayload,
+  UpdateProfilePayload,
+  UserProfileStatus,
+  ApiErrorResponse,
+} from "./types/index"; // Verifique o caminho
+
+// --- EXTENSÃO DE TIPOS LOCAIS ---
+interface ExtendedUpdateProfilePayload
+  extends Omit<UpdateProfilePayload, "status"> {
+  tipo_perfil?: string;
+  status?: UserProfileStatus;
+}
+
+interface ExtendedUpdateUserPayload extends UpdateUserPayload {
+  ativo?: boolean;
+}
 
 interface EmployeeDetailModalProps {
   profileId: string;
@@ -37,37 +58,41 @@ const EmployeeDetailModal = ({
 
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Estados do Formulário
+  // --- Estados do Formulário ---
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [cargo, setCargo] = useState("");
   const [email, setEmail] = useState("");
-
   const [telefone1, setTelefone1] = useState("");
   const [telefone2, setTelefone2] = useState("");
-
   const [tipoPerfil, setTipoPerfil] = useState("");
-  const [ativo, setAtivo] = useState(true);
 
+  // --- Estados de Controle ---
+  const [profileStatus, setProfileStatus] =
+    useState<UserProfileStatus>("ACTIVE");
+  const [userGlobalActive, setUserGlobalActive] = useState(true);
+
+  // --- Permissões ---
   const [blockExclusion, setBlockExclusion] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // CARREGAR DADOS DO USUÁRIO LOGADO
+  // 1. Identificar Usuário Logado
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const currentUser = JSON.parse(storedUser);
-      // ALTERAÇÃO: Verifica se a string contém "ADMIN" (ex: ADMIN, SUPER_ADMIN)
       const role = currentUser.role ? currentUser.role.toUpperCase() : "";
       setIsAdmin(role.includes("ADMIN"));
     }
   }, []);
 
-  // CARREGAR DADOS DO PERFIL
+  // 2. Carregar Dados
   useEffect(() => {
     const loadData = async () => {
       try {
-        const profRes = await api.get(`/profiles/${profileId}`);
+        const profRes = await api.get<UserProfileResponse>(
+          `/profiles/${profileId}`
+        );
         const profile = profRes.data;
 
         const storedUser = localStorage.getItem("user");
@@ -79,17 +104,22 @@ const EmployeeDetailModal = ({
         }
 
         setNome(profile.nome);
-        setCpf(profile.cpf_cnpj || profile.cpf || "");
+        setCpf(profile.cpf_cnpj || "");
         setCargo(profile.cargo);
         setTipoPerfil(profile.tipo_perfil || "FUNCIONARIO");
-        setAtivo(profile.ativo !== false);
+        setProfileStatus(profile.status);
         setUserId(profile.user_id);
 
         if (profile.user_id) {
-          const userRes = await api.get(`/users/${profile.user_id}`);
+          const userRes = await api.get<UserResponse>(
+            `/users/${profile.user_id}`
+          );
           const userData = userRes.data;
 
           setEmail(userData.email);
+
+          const fullUserData = userData as UserResponse & { ativo?: boolean };
+          setUserGlobalActive(fullUserData.ativo !== false);
 
           if (Array.isArray(userData.telefones)) {
             setTelefone1(userData.telefones[0] || "");
@@ -102,7 +132,7 @@ const EmployeeDetailModal = ({
         const msg =
           axiosError.response?.data?.message ||
           axiosError.response?.data?.error ||
-          "Erro ao carregar os dados dos funcionários.";
+          "Erro ao carregar os dados.";
         setError(msg);
       } finally {
         setLoading(false);
@@ -114,15 +144,13 @@ const EmployeeDetailModal = ({
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
-
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
+  // --- Update ---
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) return;
@@ -132,28 +160,28 @@ const EmployeeDetailModal = ({
     setSuccessMsg("");
 
     try {
-      // 1. Atualiza Perfil
-      await api.patch(`/profiles/${profileId}`, {
+      const profilePayload: ExtendedUpdateProfilePayload = {
         nome,
-        cpf_cnpj: extractDigitsOnly(cpf),
+        cpf: extractDigitsOnly(cpf),
         cargo,
+        status: profileStatus,
         tipo_perfil: tipoPerfil,
-        ativo: ativo,
-      });
+      };
 
-      // 2. Atualiza User (Login)
+      await api.patch(`/profiles/${profileId}`, profilePayload);
+
       if (userId) {
         const telefonesParaEnviar = [telefone1, telefone2]
           .map((t) => extractDigitsOnly(t))
           .filter((t) => t.length > 0);
 
-        const payload: UpdateUserPayload = {
+        const userPayload: ExtendedUpdateUserPayload = {
           email: email.toLowerCase(),
           telefones: telefonesParaEnviar,
-          // Senha removida daqui
+          ativo: userGlobalActive,
         };
 
-        await api.patch(`/users/${userId}`, payload);
+        await api.patch(`/users/${userId}`, userPayload);
       }
 
       setSuccessMsg("Atualizado com sucesso!");
@@ -171,24 +199,49 @@ const EmployeeDetailModal = ({
     }
   };
 
-  const handleDelete = async () => {
+  // --- 1. Excluir Perfil (Apenas desta Loja) ---
+  const handleDeleteProfile = async () => {
     if (!isAdmin || blockExclusion) return;
-    if (!confirm("Tem certeza? Essa ação excluirá login e perfil.")) return;
-    setSaving(true);
+    if (
+      !confirm(
+        "Tem certeza? Isso removerá o funcionário DESTA LOJA, mas o login dele continuará existindo no sistema."
+      )
+    )
+      return;
 
+    setSaving(true);
+    try {
+      // Rota para deletar profile: DELETE /profiles/:id
+      await api.delete(`/profiles/${profileId}`);
+      onSuccess();
+    } catch (err) {
+      console.error(err);
+      setError("Erro ao excluir perfil da loja.");
+      setSaving(false);
+    }
+  };
+
+  // --- 2. Excluir Usuário (Login Global) ---
+  const handleDeleteUser = async () => {
+    if (!isAdmin || blockExclusion) return;
+    if (
+      !confirm(
+        "ATENÇÃO CRÍTICA: Isso apagará a CONTA DE LOGIN (email/senha) permanentemente. O usuário perderá acesso a TODAS as lojas. Tem certeza absoluta?"
+      )
+    )
+      return;
+
+    setSaving(true);
     try {
       if (userId) {
+        // Rota para deletar user: DELETE /users/:id
         await api.delete(`/users/${userId}`);
         onSuccess();
       }
     } catch (err) {
       console.error(err);
-      const axiosError = err as AxiosError<ApiErrorResponse>;
-      const msg =
-        axiosError.response?.data?.message ||
-        axiosError.response?.data?.error ||
-        "Erro ao excluir.";
-      setError(msg);
+      setError("Erro ao excluir usuário global.");
+      setSaving(false);
     }
   };
 
@@ -211,6 +264,7 @@ const EmployeeDetailModal = ({
     >
       <div
         className="modal-dialog detail-box"
+        style={{ maxWidth: "700px" }} // Aumentado para caber os botões
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-content border-0 shadow">
@@ -233,7 +287,7 @@ const EmployeeDetailModal = ({
             )}
 
             <form onSubmit={handleUpdate} className="row g-3">
-              {/* NOME */}
+              {/* --- DADOS GERAIS --- */}
               <div className="col-12">
                 <label className="form-label small text-muted fw-bold">
                   Nome
@@ -253,7 +307,6 @@ const EmployeeDetailModal = ({
                 </div>
               </div>
 
-              {/* EMAIL */}
               <div className="col-md-12">
                 <label className="form-label small text-muted fw-bold">
                   Email
@@ -264,6 +317,7 @@ const EmployeeDetailModal = ({
                     className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
                   />
                   <input
+                    type="email"
                     className="p-2 ps-5 w-100 form-control-underline"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -273,7 +327,6 @@ const EmployeeDetailModal = ({
                 </div>
               </div>
 
-              {/* CARGO */}
               <div className="col-md-6">
                 <label className="form-label small text-muted fw-bold">
                   Cargo
@@ -293,10 +346,9 @@ const EmployeeDetailModal = ({
                 </div>
               </div>
 
-              {/* CAMPOS RESTRITOS AO ADMIN */}
+              {/* CAMPOS RESTRITOS */}
               {isAdmin && (
                 <>
-                  {/* TIPO DE PERFIL */}
                   <div className="col-md-6">
                     <label className="form-label small text-muted fw-bold">
                       Tipo de Perfil
@@ -316,9 +368,7 @@ const EmployeeDetailModal = ({
                         }
                       >
                         {tipoPerfil === "SUPER_ADMIN" && (
-                          <option value="SUPER_ADMIN">
-                            Super Administrador
-                          </option>
+                          <option value="SUPER_ADMIN">Super Admin</option>
                         )}
                         <option value="ADMIN">Admin</option>
                         <option value="GERENTE">Gerente</option>
@@ -327,7 +377,6 @@ const EmployeeDetailModal = ({
                     </div>
                   </div>
 
-                  {/* CPF */}
                   <div className="col-md-6">
                     <label className="form-label small text-muted fw-bold">
                       CPF
@@ -347,7 +396,6 @@ const EmployeeDetailModal = ({
                     </div>
                   </div>
 
-                  {/* TELEFONE 1 */}
                   <div className="col-md-6">
                     <label className="form-label small text-muted fw-bold">
                       Telefone 1
@@ -366,7 +414,6 @@ const EmployeeDetailModal = ({
                     </div>
                   </div>
 
-                  {/* TELEFONE 2 (Opcional) */}
                   <div className="col-md-6">
                     <label className="form-label small text-muted fw-bold">
                       Telefone 2 (Opcional)
@@ -385,54 +432,139 @@ const EmployeeDetailModal = ({
                     </div>
                   </div>
 
-                  {/* SENHA REMOVIDA DAQUI */}
+                  {/* CONTROLE DE ACESSO E STATUS */}
+                  <div className="col-12 mt-4 pt-3 border-top">
+                    <h6 className="fw-bold text-secondary mb-3">
+                      Controle de Acesso e Status
+                    </h6>
+                  </div>
+
+                  {/* Status na Loja */}
+                  <div className="col-md-6">
+                    <label className="form-label small text-muted fw-bold">
+                      Status na Loja
+                    </label>
+                    <div className="position-relative">
+                      <FontAwesomeIcon
+                        icon={faStore}
+                        className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                      />
+                      <select
+                        className="p-2 ps-5 w-100 form-control-underline"
+                        value={profileStatus}
+                        onChange={(e) =>
+                          setProfileStatus(e.target.value as UserProfileStatus)
+                        }
+                        disabled={blockExclusion}
+                      >
+                        <option value="ACTIVE">Ativo</option>
+                        <option value="INACTIVE">Inativo (Demitido)</option>
+                        <option value="BLOCKED">Bloqueado</option>
+                        <option value="PENDING">Pendente</option>
+                      </select>
+                    </div>
+                    <div
+                      className="form-text small mt-1"
+                      style={{ fontSize: "0.75rem" }}
+                    >
+                      Define se o funcionário trabalha nesta loja.
+                    </div>
+                  </div>
+
+                  {/* Login Global */}
+                  <div className="col-md-6 d-flex flex-column justify-content-center">
+                    <label className="form-label small text-muted fw-bold mb-2">
+                      Acesso ao Sistema (Login)
+                    </label>
+
+                    <div
+                      className={`form-check form-switch d-flex align-items-center button-white-grey-border px-3 py-2 rounded-pill ${
+                        blockExclusion ? "opacity-50" : ""
+                      }`}
+                    >
+                      <input
+                        className="form-check-input me-3 ms-0 mt-0"
+                        style={{
+                          cursor: "pointer",
+                          width: "2.5em",
+                          height: "1.25em",
+                        }}
+                        type="checkbox"
+                        checked={userGlobalActive}
+                        onChange={(e) => setUserGlobalActive(e.target.checked)}
+                        disabled={blockExclusion}
+                      />
+                      <div>
+                        <span
+                          className={`fw-bold small ${
+                            userGlobalActive ? "text-success" : "text-danger"
+                          }`}
+                        >
+                          {userGlobalActive
+                            ? "LOGIN LIBERADO"
+                            : "LOGIN BLOQUEADO"}
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      className="form-text small mt-1"
+                      style={{ fontSize: "0.75rem" }}
+                    >
+                      Bloqueia acesso do email em todas as lojas.
+                    </div>
+                  </div>
                 </>
               )}
 
-              {/* RODAPÉ COM BOTÕES */}
-              <div className="col-12 mt-4 row border-top pt-3 ">
-                {/* --- SWITCH DE STATUS (ATIVO/INATIVO) --- */}
-                {isAdmin && !blockExclusion && (
-                  <div className="col-12 d-flex justify-content-between align-items-center mb-2">
-                    {/* BOTÃO EXCLUIR */}
+              {/* RODAPÉ COM AÇÕES */}
+              <div className="col-12 mt-4 pt-3 border-top">
+                <div className="d-flex justify-content-between align-items-center">
+                  {/* ÁREA DE PERIGO (BOTÕES DE EXCLUSÃO) */}
+                  <div className="d-flex gap-2">
                     {isAdmin && !blockExclusion && (
-                      <button
-                        type="button"
-                        className="d-flex justify-content-center align-items-center button-white-grey-border px-4 py-2 rounded-pill"
-                        onClick={handleDelete}
-                        disabled={saving}
-                      >
-                        <FontAwesomeIcon icon={faTrash} className="me-2" />{" "}
-                        Excluir
-                      </button>
+                      <>
+                        {/* 1. EXCLUIR PERFIL (LOJA) */}
+                        <button
+                          type="button"
+                          className="btn btn-outline-warning border-0 d-flex align-items-center px-2 text-dark"
+                          onClick={handleDeleteProfile}
+                          disabled={saving}
+                          title="Remove o funcionário apenas desta loja"
+                        >
+                          <FontAwesomeIcon
+                            icon={faStoreSlash}
+                            className="me-2"
+                          />
+                          <span className="small fw-bold">Excluir da Loja</span>
+                        </button>
+
+                        {/* 2. EXCLUIR USUÁRIO (GLOBAL) */}
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger border-0 d-flex align-items-center px-2"
+                          onClick={handleDeleteUser}
+                          disabled={saving}
+                          title="Apaga a conta e o login do sistema inteiro"
+                        >
+                          <FontAwesomeIcon
+                            icon={faUserSlash}
+                            className="me-2"
+                          />
+                          <span className="small fw-bold">Excluir Conta</span>
+                        </button>
+                      </>
                     )}
-
-                    <div className="form-check form-switch d-flex justify-content-center align-items-center button-white-grey-border px-4 py-2 rounded-pill">
-                      <input
-                        className="form-check-input me-2 ms-0 mt-0"
-                        type="checkbox"
-                        checked={ativo}
-                        onChange={(e) => setAtivo(e.target.checked)}
-                        disabled={blockExclusion}
-                      />
-                      <label className="form-check-label fw-bold small">
-                        {ativo ? "ATIVO" : "INATIVO"}
-                      </label>
-                    </div>
                   </div>
-                )}
 
-                {/* ESPAÇADOR SE NÃO TIVER BOTÃO EXCLUIR */}
-                {(!isAdmin || blockExclusion) && <div></div>}
-
-                {/* BOTÃO SALVAR */}
-                <button
-                  type="submit"
-                  className="button-dark-grey px-5 py-2 rounded-pill"
-                  disabled={saving || !isAdmin}
-                >
-                  {saving ? "Salvando..." : "Salvar Alterações"}
-                </button>
+                  {/* BOTÃO SALVAR (LADO DIREITO) */}
+                  <button
+                    type="submit"
+                    className="button-dark-grey px-5 py-2 rounded-pill ms-auto"
+                    disabled={saving || !isAdmin}
+                  >
+                    {saving ? "Salvando..." : "Salvar Alterações"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

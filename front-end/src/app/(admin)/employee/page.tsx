@@ -1,4 +1,3 @@
-// app/employees/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,36 +14,49 @@ import api from "../../../utils/api";
 import EmployeeCard from "./../../../features/employee/EmployeeCard";
 import AddEmployeeModal from "./../../../features/employee/AddEmployeeModal";
 import EmployeeDetailModal from "./../../../features/employee/EmployeeDetailModal";
+import AddExistingUserProfileModal from "./../../../features/employee/AddExistingUserProfileModal";
+
 import {
   UserProfileResponse,
   EmployeeSummary,
-} from "./../../../features/employee/types/index"; // Importando os tipos definidos
+} from "./../../../features/employee/types/index";
 import { PaginatedResponse } from "@/types/api";
 
-// Interface local para o resumo exibido nos cards
-
-const LIMIT = 6; // Itens por página
+const LIMIT = 6;
 
 const EmployeePage = () => {
   const router = useRouter();
 
+  // =========================
   // Estados de Dados
+  // =========================
   const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // Estados de Paginação e Busca
+  // =========================
+  // Paginação e Busca
+  // =========================
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // =========================
   // Estados de Modal
+  // =========================
+  const [isChooseModeOpen, setIsChooseModeOpen] = useState(false);
+  const [employeeMode, setEmployeeMode] = useState<
+    "NEW_USER" | "EXISTING_USER" | null
+  >(null);
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
     null
   );
 
-  // --- 1. Verificação de Autenticação (Client Side) ---
+  // =========================
+  // Auth
+  // =========================
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
 
@@ -55,43 +67,43 @@ const EmployeePage = () => {
 
     try {
       const user = JSON.parse(storedUser);
+
       if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-        alert(
-          `Acesso negado. Apenas administradores podem gerenciar funcionários.TIPO: ${user.role}`
-        );
+        alert("Acesso negado.");
         router.push("/dashboard");
         return;
       }
+
       setCheckingAuth(false);
-      fetchEmployees(1); // Carrega dados iniciais
-    } catch (error) {
-      console.log(error);
+      fetchEmployees(1);
+    } catch {
       localStorage.clear();
       router.push("/login");
     }
   }, [router]);
 
-  // --- 2. Busca de Dados (API) ---
+  // =========================
+  // API
+  // =========================
   const fetchEmployees = async (page = 1, term = "") => {
     setLoading(true);
+
     try {
-      // Define qual endpoint chamar (Busca ou Paginação simples)
       let url = `/profiles/paginated?page=${page}&perPage=${LIMIT}`;
+
       if (term) {
         url = `/profiles/search?term=${encodeURIComponent(
           term
         )}&page=${page}&perPage=${LIMIT}`;
       }
 
-      // Chama API tipada
       const response = await api.get<PaginatedResponse<UserProfileResponse>>(
         url
       );
 
-      // Mapeia a resposta para o formato simplificado do Card
       const data = response.data.data.map((p) => ({
         id_user_profile: p.id_user_profile,
-        cpf: p.cpf_cnpj, // O backend retorna cpf_cnpj
+        cpf: p.cpf_cnpj,
         nome: p.nome,
         cargo: p.cargo,
       }));
@@ -106,37 +118,38 @@ const EmployeePage = () => {
     }
   };
 
-  // --- Handlers de Eventos ---
-
+  // =========================
+  // Handlers
+  // =========================
   const handleSearch = () => {
-    // Sempre volta para página 1 ao pesquisar
     fetchEmployees(1, searchTerm);
   };
 
   const handleClearSearch = () => {
     setSearchTerm("");
-    fetchEmployees(1, "");
+    fetchEmployees(1);
   };
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      fetchEmployees(newPage, searchTerm);
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      fetchEmployees(page, searchTerm);
     }
   };
 
-  // Callback chamado quando um funcionário é criado/editado/excluído
   const handleRefresh = () => {
     fetchEmployees(currentPage, searchTerm);
     setIsAddModalOpen(false);
+    setEmployeeMode(null);
     setSelectedProfileId(null);
   };
 
-  // --- Renderização ---
-
+  // =========================
+  // Render
+  // =========================
   if (checkingAuth) {
     return (
       <div className="d-flex vh-100 justify-content-center align-items-center bg-light">
-        <div className="spinner-border text-secondary" role="status" />
+        <div className="spinner-border text-secondary" />
       </div>
     );
   }
@@ -144,101 +157,85 @@ const EmployeePage = () => {
   return (
     <div
       className="d-flex flex-column min-vh-100"
-      style={{ backgroundColor: "#e9e9e9ff" }}
+      style={{ background: "#e9e9e9" }}
     >
-      {/* Header / Navbar Simples */}
-      <header className="header-panel bg-gradient-vl d-flex align-items-center bg-danger  px-2">
+      {/* Header */}
+      <header className="header-panel bg-gradient-vl d-flex align-items-center px-2">
         <button
-          className="btn btn-link text-white ms-0"
+          className="btn btn-link text-white"
           onClick={() => router.push("/dashboard")}
-          title="Voltar ao Menu"
         >
           <FontAwesomeIcon icon={faArrowLeft} className="fs-4" />
         </button>
       </header>
 
       <div className="container my-5 flex-grow-1">
-        <div className="bg-white border rounded-4 shadow-sm overflow-hidden">
-          {/* Título com Gradiente */}
+        <div className="bg-white border rounded-4 shadow-sm">
           <div className="bg-gradient-vl p-4 text-center text-white">
-            <h3 className="fw-bold m-0">Gerenciar Funcionários</h3>
-            <p className="m-0 opacity-75 small">
-              Visualize, adicione e edite sua equipe.
+            <h3 className="fw-bold">Gerenciar Funcionários</h3>
+            <p className="opacity-75 small">
+              Visualize, adicione e edite sua equipe
             </p>
           </div>
 
           <div className="p-4">
-            {/* Barra de Ferramentas: Busca e Botão Adicionar */}
-            <div className="row g-3 mb-4 justify-content-evenly align-items-top">
-              {/* Campo de Busca */}
-              <div className="col-12 col-md-6 col-lg-5">
-                <div className="position-relative mb-3">
-                  {/* Ícone de Lupa à Esquerda */}
+            {/* Toolbar */}
+            <div className="row g-3 mb-4 align-items-end">
+              <div className="col-md-6">
+                <div className="position-relative">
                   <FontAwesomeIcon
                     icon={faSearch}
                     className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
                   />
-
-                  {/* Input */}
                   <input
-                    type="text"
-                    className="p-2 ps-5 col-12 form-control-underline2"
-                    placeholder="Buscar por nome, cargo ou CPF..."
+                    className="form-control ps-5"
+                    placeholder="Buscar por nome, cargo ou CPF"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   />
-
-                  {/* Botão Limpar (X) */}
                   {searchTerm && (
                     <span
-                      className="position-absolute top-50 end-0 translate-middle-y me-5"
-                      style={{ cursor: "pointer", zIndex: 100 }}
+                      className="position-absolute top-50 end-0 translate-middle-y me-3"
                       onClick={handleClearSearch}
+                      style={{ cursor: "pointer" }}
                     >
-                      <FontAwesomeIcon
-                        className="text-secondary"
-                        icon={faTimes}
-                      />
+                      <FontAwesomeIcon icon={faTimes} />
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Botão Buscar */}
-              <button
-                className="col-12 col-md-2 col-lg-2 button-bottom-line-rounded px-4"
-                onClick={handleSearch}
-              >
-                Buscar
-              </button>
+              <div className="col-md-2">
+                <button
+                  className="button-bottom-line-rounded w-100"
+                  onClick={handleSearch}
+                >
+                  Buscar
+                </button>
+              </div>
 
-              {/* Botão Adicionar */}
-
-              <button
-                className="col-12 col-md-3 col-lg-2 button-bottom-line-rounded px-2"
-                onClick={() => setIsAddModalOpen(true)}
-              >
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Novo Funcionário
-              </button>
+              <div className="col-md-4">
+                <button
+                  className="button-bottom-line-rounded w-100"
+                  onClick={() => setIsChooseModeOpen(true)}
+                >
+                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  Novo Funcionário
+                </button>
+              </div>
             </div>
 
-            {/* Área de Conteúdo (Lista ou Loading) */}
+            {/* Conteúdo */}
             {loading ? (
               <div className="text-center py-5">
-                <div className="spinner-border text-secondary" role="status" />
-                <p className="mt-2 text-muted">Carregando equipe...</p>
+                <div className="spinner-border text-secondary" />
               </div>
-            ) : employees.length > 0 ? (
+            ) : employees.length ? (
               <>
-                {/* Grid de Cards */}
                 <div className="row g-3">
                   {employees.map((emp) => (
-                    <div
-                      key={emp.id_user_profile}
-                      className="col-12 col-md-6 col-lg-4"
-                    >
+                    <div key={emp.id_user_profile} className="col-md-4">
                       <EmployeeCard
                         employee={emp}
                         onClick={() =>
@@ -249,48 +246,79 @@ const EmployeePage = () => {
                   ))}
                 </div>
 
-                {/* Controles de Paginação */}
-                <div className="d-flex justify-content-center align-items-center gap-3 mt-5">
+                <div className="d-flex justify-content-center gap-3 mt-4">
                   <button
                     className="btn btn-outline-secondary btn-sm rounded-pill px-3"
-                    onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
+                    onClick={() => handlePageChange(currentPage - 1)}
                   >
                     Anterior
                   </button>
-                  <span className="text-muted small fw-bold">
+                  <span className="fw-bold small">
                     Página {currentPage} de {totalPages}
                   </span>
                   <button
                     className="btn btn-outline-secondary btn-sm rounded-pill px-3"
-                    onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
+                    onClick={() => handlePageChange(currentPage + 1)}
                   >
                     Próxima
                   </button>
                 </div>
               </>
             ) : (
-              /* Estado Vazio */
-              <div className="text-center py-5 text-muted">
-                <p className="fs-5 mb-1">Nenhum funcionário encontrado.</p>
-                <small>
-                  Tente buscar por outro termo ou adicione um novo registro.
-                </small>
-              </div>
+              <p className="text-center text-muted py-5">
+                Nenhum funcionário encontrado
+              </p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="">
-        © 2025 Danilo Valério. Todos os direitos reservados.
-      </footer>
+      {/* ========================= MODAIS ========================= */}
 
-      {/* --- MODAIS --- */}
+      {/* Escolha de tipo */}
+      {isChooseModeOpen && (
+        <div
+          className="modal fade show d-block"
+          style={{ background: "rgba(0,0,0,.5)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4">
+              <div className="modal-header">
+                <h5>Novo Funcionário</h5>
+                <button
+                  className="btn-close"
+                  onClick={() => setIsChooseModeOpen(false)}
+                />
+              </div>
+              <div className="modal-body d-flex flex-column gap-3">
+                <button
+                  className="button-dark-grey rounded-pill px-3"
+                  onClick={() => {
+                    setEmployeeMode("NEW_USER");
+                    setIsChooseModeOpen(false);
+                    setIsAddModalOpen(true);
+                  }}
+                >
+                  Criar usuário novo
+                </button>
 
-      {/* Modal de Adicionar */}
+                <button
+                  className="button-dark-grey rounded-pill px-3"
+                  onClick={() => {
+                    setEmployeeMode("EXISTING_USER");
+                    setIsChooseModeOpen(false);
+                  }}
+                >
+                  Criar perfil para usuário existente
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAddModalOpen && (
         <AddEmployeeModal
           onClose={() => setIsAddModalOpen(false)}
@@ -298,7 +326,13 @@ const EmployeePage = () => {
         />
       )}
 
-      {/* Modal de Detalhes/Edição */}
+      {employeeMode === "EXISTING_USER" && (
+        <AddExistingUserProfileModal
+          onClose={() => setEmployeeMode(null)}
+          onSuccess={handleRefresh}
+        />
+      )}
+
       {selectedProfileId && (
         <EmployeeDetailModal
           profileId={selectedProfileId}

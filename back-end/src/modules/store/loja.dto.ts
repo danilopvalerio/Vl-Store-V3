@@ -1,9 +1,7 @@
 import { IBaseRepository } from "../../shared/dtos/index.dto";
 
-// ============================================================================
-// ENTIDADE DE DOMÍNIO (Espelho do Schema Prisma)
-// ============================================================================
-export interface LojaEntity {
+// --- SAÍDA (Response) ---
+export interface LojaResponseDTO {
   id_loja: string;
   admin_user_id: string | null;
   nome: string;
@@ -12,32 +10,24 @@ export interface LojaEntity {
   ultima_atualizacao: Date | null;
 }
 
-// ============================================================================
-// DTOs DE ENTRADA
-// ============================================================================
+// --- ENTRADA (Input) ---
 export interface CreateLojaDTO {
   nome: string;
   cnpj_cpf?: string;
-  admin_user_id?: string;
-
-  actorUserId?: string; // Para Log
+  admin_user_id?: string; // O ID do usuário que será o dono (vem do token)
+  actorUserId?: string; // ID de quem está executando a ação (para logs)
 }
 
 export interface UpdateLojaDTO {
   nome?: string;
   cnpj_cpf?: string;
   admin_user_id?: string;
-
-  actorUserId?: string; // Para Log
+  actorUserId?: string;
 }
 
-// ============================================================================
-// INTERFACE DO REPOSITÓRIO
-// ============================================================================
+// --- INTERFACE DO REPOSITÓRIO ---
 export interface ILojaRepository
-  extends IBaseRepository<LojaEntity, CreateLojaDTO, UpdateLojaDTO> {
-  findByDoc(cnpj_cpf: string): Promise<LojaEntity | null>;
-
-  // Como loja geralmente não tem paginação massiva por tenant (são poucas lojas),
-  // manteremos apenas o findAll e findById padrão, mas deixarei o contrato base.
+  extends IBaseRepository<LojaResponseDTO, CreateLojaDTO, UpdateLojaDTO> {
+  // Método específico para verificar duplicidade de documento
+  findByDoc(cnpj_cpf: string): Promise<LojaResponseDTO | null>;
 }

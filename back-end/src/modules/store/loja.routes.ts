@@ -44,7 +44,7 @@ router.get(
 // Criar loja avulsa
 router.post(
   "/",
-  requireRole(["SUPER_ADMIN"]),
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
   validate(createLojaSchema),
   controller.create
 );

@@ -206,6 +206,13 @@ model user {
   venda              venda[]
 }
 
+enum UserProfileStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
 model user_profile {
   id_user_profile    String    @id(map: "pk_user_profile") @default(uuid()) @db.Uuid
   user_id            String    @db.Uuid
@@ -214,7 +221,7 @@ model user_profile {
   cpf_cnpj           String?   @db.VarChar(20)
   cargo              String?   @db.VarChar(100)
   tipo_perfil        String?   @db.VarChar(50)
-  ativo              Boolean?  @default(true)
+  status             UserProfileStatus @default(ACTIVE)
   data_criacao       DateTime? @default(now()) @db.Timestamp(6)
   ultima_atualizacao DateTime? @default(now()) @db.Timestamp(6)
   caixa              caixa[]
@@ -249,3 +256,4 @@ model venda {
   loja               loja              @relation(fields: [id_loja], references: [id_loja], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_loja")
   user               user?              @relation(fields: [id_user], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_venda_user")
 }
+

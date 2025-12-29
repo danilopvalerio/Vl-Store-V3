@@ -9,31 +9,30 @@ import {
   SystemLogRepository,
 } from "../logs/log.repository";
 import { authLimiter } from "../../app/middleware/rateLimit.middleware";
-import { validate } from "../../app/middleware/validation.middleware"; // <--- Middleware
+import { authMiddleware } from "../../app/middleware/auth.middleware"; // Importante
+import { validate } from "../../app/middleware/validation.middleware";
 import {
   loginSchema,
   registerSchema,
+  selectStoreSchema, // Novo schema
   refreshTokenSchema,
-} from "./session.schema"; // <--- Schemas
+} from "./session.schema";
 
 const router = Router();
 
-// 1. Instancia dependências de Logs
 const accessLogRepo = new AccessLogRepository();
 const systemLogRepo = new SystemLogRepository();
 const logService = new LogService(accessLogRepo, systemLogRepo);
 
-// 2. Instancia dependências de Session
 const sessionRepo = new SessionRepository();
 const userRepo = new UserRepository();
 
-// 3. Instancia Service e Controller
 const service = new SessionService(sessionRepo, userRepo, logService);
 const controller = new SessionController(service);
 
 // --- ROTAS ---
 
-// Registro de Nova Loja + Dono
+// Registro
 router.post(
   "/register",
   authLimiter,
@@ -41,14 +40,22 @@ router.post(
   controller.register
 );
 
-// Login (Gera Tokens)
+// Login (Pode retornar token final OU lista de perfis)
 router.post("/login", authLimiter, validate(loginSchema), controller.login);
 
-// Renovação de Token
+// Seleção de Loja (Requer Token Pre-Auth gerado no Login)
+router.post(
+  "/select-store",
+  authMiddleware, // Valida o token temporário
+  validate(selectStoreSchema),
+  controller.selectStore
+);
+
+// Renovação
 router.post("/refresh", controller.refresh);
 
-// Logout (Invalida Refresh Token)
-// Geralmente espera o refreshToken no body para invalidá-lo no banco
+// Logout
 router.post("/logout", validate(refreshTokenSchema), controller.logout);
 
+router.get("/me/profiles", authMiddleware, controller.getProfiles);
 export default router;

@@ -9,8 +9,6 @@ import {
   faIdCard,
   faBriefcase,
   faEnvelope,
-  faLock,
-  faPhone,
   faShieldHalved,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -18,22 +16,19 @@ import api from "../../utils/api";
 import { extractDigitsOnly } from "../../utils/validationUtils";
 import { ApiErrorResponse } from "../../types/api";
 
-interface AddEmployeeProps {
+interface AddExistingEmployeeProps {
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
-  const [nome, setNome] = useState("");
+const AddExistingEmployeeModal = ({
+  onClose,
+  onSuccess,
+}: AddExistingEmployeeProps) => {
   const [email, setEmail] = useState("");
+  const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [cargo, setCargo] = useState("");
-  const [senha, setSenha] = useState("");
-
-  // ALTERAÇÃO: Dois telefones
-  const [telefone1, setTelefone1] = useState("");
-  const [telefone2, setTelefone2] = useState("");
-
   const [tipoPerfil, setTipoPerfil] = useState("FUNCIONARIO");
 
   const [loading, setLoading] = useState(false);
@@ -41,9 +36,7 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
 
     window.addEventListener("keydown", handleEsc);
@@ -58,40 +51,29 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
     try {
       const userProfileData = localStorage.getItem("user");
       if (!userProfileData) throw new Error("Sessão inválida.");
+
       const currentUser = JSON.parse(userProfileData);
 
-      const telefonesParaEnviar = [telefone1, telefone2]
-        .map((t) => extractDigitsOnly(t))
-        .filter((t) => t.length > 0);
-
-      // PAYLOAD UNIFICADO
-      const fullPayload = {
-        // Dados User
-        email: email.toLowerCase(),
-        senha: senha,
-        telefones: telefonesParaEnviar,
-
-        // Dados Profile (Agora enviados juntos)
+      const payload = {
+        email: email.toLowerCase(), // backend resolve o user
         id_loja: currentUser.lojaId,
-        nome: nome,
+        nome,
         cpf_cnpj: extractDigitsOnly(cpf),
-        cargo: cargo,
+        cargo,
         tipo_perfil: tipoPerfil,
       };
 
-      // Apenas UMA chamada
-      await api.post("/users", fullPayload);
+      await api.post("/profiles/existing", payload);
 
       onSuccess();
     } catch (err) {
-      console.error("Erro ao criar funcionário:", err);
+      console.error("Erro ao vincular funcionário existente:", err);
 
       const axiosError = err as AxiosError<ApiErrorResponse>;
-
       const msg =
         axiosError.response?.data?.message ||
         axiosError.response?.data?.error ||
-        "Erro ao criar funcionário.";
+        "Erro ao adicionar funcionário existente.";
 
       setError(msg);
     } finally {
@@ -114,43 +96,19 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
           {/* HEADER */}
           <div className="modal-header bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
             <h5 className="modal-title fw-bold text-secondary">
-              Novo Funcionário
+              Vincular Funcionário Existente
             </h5>
-            <button
-              type="button"
-              className="btn-close"
-              onClick={onClose}
-            ></button>
+            <button type="button" className="btn-close" onClick={onClose} />
           </div>
 
           <div className="modal-body p-4 pt-2">
             {error && <div className="alert alert-danger">{error}</div>}
 
             <form onSubmit={handleSubmit} className="row g-3">
-              {/* NOME */}
+              {/* EMAIL */}
               <div className="col-12">
                 <label className="form-label small text-muted fw-bold">
-                  Nome Completo
-                </label>
-                <div className="position-relative">
-                  <FontAwesomeIcon
-                    icon={faUser}
-                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
-                  />
-                  <input
-                    className="p-2 ps-5 w-100 form-control-underline"
-                    placeholder="Ex: João Silva"
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* EMAIL */}
-              <div className="col-md-6">
-                <label className="form-label small text-muted fw-bold">
-                  E-mail
+                  E-mail do Usuário
                 </label>
                 <div className="position-relative">
                   <FontAwesomeIcon
@@ -168,22 +126,21 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
                 </div>
               </div>
 
-              {/* SENHA */}
-              <div className="col-md-6">
+              {/* NOME */}
+              <div className="col-12">
                 <label className="form-label small text-muted fw-bold">
-                  Senha
+                  Nome Completo
                 </label>
                 <div className="position-relative">
                   <FontAwesomeIcon
-                    icon={faLock}
+                    icon={faUser}
                     className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
                   />
                   <input
-                    type="text"
                     className="p-2 ps-5 w-100 form-control-underline"
-                    placeholder="******"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="Ex: João Silva"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
                     required
                   />
                 </div>
@@ -230,48 +187,8 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
                 </div>
               </div>
 
-              {/* TELEFONE 1 */}
-              <div className="col-md-6">
-                <label className="form-label small text-muted fw-bold">
-                  Telefone 1
-                </label>
-                <div className="position-relative">
-                  <FontAwesomeIcon
-                    icon={faPhone}
-                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
-                  />
-                  <IMaskInput
-                    mask="(00) 00000-0000"
-                    className="p-2 ps-5 w-100 form-control-underline"
-                    placeholder="(99) 99999-9999"
-                    value={telefone1}
-                    onAccept={(val: string) => setTelefone1(val)}
-                  />
-                </div>
-              </div>
-
-              {/* TELEFONE 2 */}
-              <div className="col-md-6">
-                <label className="form-label small text-muted fw-bold">
-                  Telefone 2 (Opcional)
-                </label>
-                <div className="position-relative">
-                  <FontAwesomeIcon
-                    icon={faPhone}
-                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
-                  />
-                  <IMaskInput
-                    mask="(00) 00000-0000"
-                    className="p-2 ps-5 w-100 form-control-underline"
-                    placeholder="(99) 99999-9999"
-                    value={telefone2}
-                    onAccept={(val: string) => setTelefone2(val)}
-                  />
-                </div>
-              </div>
-
               {/* TIPO DE PERFIL */}
-              <div className="col-md-12">
+              <div className="col-12">
                 <label className="form-label small text-muted fw-bold">
                   Tipo de Perfil
                 </label>
@@ -318,4 +235,4 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
   );
 };
 
-export default AddEmployeeModal;
+export default AddExistingEmployeeModal;

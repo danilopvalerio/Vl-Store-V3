@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { LojaService } from "./loja.service";
+import { CreateLojaDTO, UpdateLojaDTO } from "./loja.dto";
 
 export class LojaController {
   constructor(private service: LojaService) {}
@@ -10,26 +11,29 @@ export class LojaController {
 
   create = async (req: Request, res: Response) => {
     const actorUserId = this.getActorId(req);
-    const result = await this.service.createLoja({ ...req.body, actorUserId });
+
+    // Injeta o ID do usuário logado como 'admin_user_id' e 'actorUserId'
+    const body: CreateLojaDTO = {
+      ...req.body,
+      admin_user_id: actorUserId, // O usuário logado SERÁ o dono da nova loja
+      actorUserId,
+    };
+
+    const result = await this.service.createLoja(body);
     return res.status(201).json(result);
   };
 
   update = async (req: Request, res: Response) => {
     const actorUserId = this.getActorId(req);
-    if (!actorUserId)
-      return res.status(401).json({ error: "Usuário não autenticado." });
+    const body: UpdateLojaDTO = { ...req.body, actorUserId };
 
-    const result = await this.service.updateLoja(req.params.id, {
-      ...req.body,
-      actorUserId,
-    });
+    const result = await this.service.updateLoja(req.params.id, body);
     return res.json(result);
   };
 
   remove = async (req: Request, res: Response) => {
     const actorUserId = this.getActorId(req);
-    if (!actorUserId)
-      return res.status(401).json({ error: "Usuário não autenticado." });
+    if (!actorUserId) return res.status(401).json({ error: "Auth required" });
 
     await this.service.deleteLoja(req.params.id, actorUserId);
     return res.status(204).send();

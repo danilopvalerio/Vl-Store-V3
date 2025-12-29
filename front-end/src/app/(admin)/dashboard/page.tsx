@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Nav, Button, Offcanvas, Table } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { AxiosResponse } from "axios";
 import {
   faBox,
   faUsers,
@@ -15,15 +16,19 @@ import {
   faCog,
   faChartPie,
   faClipboardList,
-  faExclamationTriangle, // Usado no alerta de estoque
+  faExclamationTriangle,
+  faStore,
+  faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
 
-// Imports corrigidos para a profundidade original (../../../)
 import api from "../../../utils/api";
 import InfoCard from "../../../components/ui/infoCard";
+import StoreSwitcherModal from "../../../features/auth/StoreSwitcherModal";
+
 import {
   UserData,
   DashboardData,
+  StoreData,
 } from "../../../features/dashboard/types/index";
 
 const MenuPage = () => {
@@ -32,8 +37,12 @@ const MenuPage = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
     null
   );
+  const [storeName, setStoreName] = useState<string>("");
+
   const [loading, setLoading] = useState(true);
   const [showMobile, setShowMobile] = useState(false);
+
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -46,13 +55,30 @@ const MenuPage = () => {
       }
 
       try {
-        setUserData(JSON.parse(storedUser));
+        const parsedUser: UserData = JSON.parse(storedUser);
+        setUserData(parsedUser);
 
-        // Busca dados reais do Dashboard
-        const { data } = await api.get("/dashboard");
-        setDashboardData(data);
+        const dashPromise = api.get<DashboardData>("/dashboard");
+
+        let storePromise: Promise<AxiosResponse<StoreData> | null> =
+          Promise.resolve(null);
+
+        if (parsedUser.lojaId) {
+          storePromise = api.get<StoreData>(`/lojas/${parsedUser.lojaId}`);
+        }
+
+        const [dashRes, storeRes] = await Promise.all([
+          dashPromise,
+          storePromise,
+        ]);
+
+        setDashboardData(dashRes.data);
+
+        if (storeRes && storeRes.data) {
+          setStoreName(storeRes.data.nome);
+        }
       } catch (err) {
-        console.error("Erro ao carregar dados do dashboard:", err);
+        console.error("Erro ao carregar dados:", err);
       } finally {
         setLoading(false);
       }
@@ -75,17 +101,14 @@ const MenuPage = () => {
   const isAdmin =
     userData?.role === "ADMIN" || userData?.role === "SUPER_ADMIN";
 
-  // Formatador de Moeda
   const toBRL = (val: number) =>
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  // --- Sidebar Content ---
   const SidebarContent = () => (
     <div
       className="h-100 beauty-scroll border-top border-secondary bg-gradient-vl d-flex flex-column"
       style={{ maxHeight: "100vh", overflowY: "auto" }}
     >
-      {/* Perfil */}
       <div className="d-flex flex-column align-items-center py-4 border-bottom border-secondary">
         <div className="avatar-circle">{getUserInitial()}</div>
         <div className="fw-bold text-truncate w-75 text-center mt-2">
@@ -247,7 +270,6 @@ const MenuPage = () => {
   return (
     <div className="d-flex flex-column vh-100 bg-light">
       <div className="d-flex flex-grow-1 overflow-hidden">
-        {/* Sidebar Desktop */}
         <aside
           className="d-none d-lg-block sidebar-wrapper shadow-sm z-1"
           style={{ width: "280px", minWidth: "280px" }}
@@ -255,7 +277,6 @@ const MenuPage = () => {
           <SidebarContent />
         </aside>
 
-        {/* Sidebar Mobile */}
         <Offcanvas
           show={showMobile}
           onHide={() => setShowMobile(false)}
@@ -270,9 +291,7 @@ const MenuPage = () => {
           </Offcanvas.Body>
         </Offcanvas>
 
-        {/* Conteúdo Principal */}
         <div className="d-flex flex-column flex-grow-1 w-100 overflow-hidden">
-          {/* Header Superior */}
           <header className="bg-white shadow-sm px-4 py-3 d-flex justify-content-between align-items-center z-0">
             <div className="d-flex align-items-center gap-3">
               <Button
@@ -283,8 +302,29 @@ const MenuPage = () => {
                 <FontAwesomeIcon icon={faBars} size="lg" />
               </Button>
               <div>
-                <h4 className="fw-bold m-0 text-dark">Dashboard</h4>
-                <small className="text-muted">Visão Geral da Loja</small>
+                <div
+                  className="d-flex align-items-center gap-2 cursor-pointer btn btn-link text-decoration-none p-0"
+                  onClick={() => setShowSwitchModal(true)}
+                  title="Clique para trocar de loja"
+                >
+                  <h4 className="fw-bold m-0 text-dark d-flex align-items-center gap-2">
+                    <FontAwesomeIcon
+                      icon={faStore}
+                      className="text-secondary"
+                      style={{ fontSize: "1.2rem" }}
+                    />
+                    {storeName || "Carregando..."}
+                    <FontAwesomeIcon
+                      icon={faChevronDown}
+                      className="text-muted ms-1"
+                      style={{ fontSize: "0.9rem" }}
+                    />
+                  </h4>
+                </div>
+
+                <small className="text-muted d-block mt-1">
+                  Visão Geral & Dashboard
+                </small>
               </div>
             </div>
             <div className="d-none d-md-block text-end">
@@ -298,14 +338,14 @@ const MenuPage = () => {
             </div>
           </header>
 
-          {/* Área Principal */}
           <main className="flex-grow-1 overflow-auto p-4">
-            {/* 1. KPIs FINANCEIROS */}
-            <h6 className="fw-bold mb-3 text-secondary text-uppercase small ls-1">
+            <h6 className="fw-bold mb-3 text-secondary text-uppercase small ls-1 w-100 text-center">
               Performance Hoje
             </h6>
-            <div className="row g-3 mb-4">
-              <div className="col-12 col-md-6 col-xl-3">
+
+            {/* InfoCards Centralizados */}
+            <div className="row g-3 mb-4 justify-content-center">
+              <div className="col-12 col-sm-6 col-lg-3 d-flex justify-content-center">
                 <InfoCard
                   title="Faturamento"
                   value={toBRL(dashboardData?.financial.revenue || 0)}
@@ -313,7 +353,7 @@ const MenuPage = () => {
                   borderColor="#00C9A8"
                 />
               </div>
-              <div className="col-12 col-md-6 col-xl-3">
+              <div className="col-12 col-sm-6 col-lg-3 d-flex justify-content-center">
                 <InfoCard
                   title="Vendas Realizadas"
                   value={dashboardData?.financial.salesCount || 0}
@@ -321,7 +361,7 @@ const MenuPage = () => {
                   borderColor="#C900DB"
                 />
               </div>
-              <div className="col-12 col-md-6 col-xl-3">
+              <div className="col-12 col-sm-6 col-lg-3 d-flex justify-content-center">
                 <InfoCard
                   title="Ticket Médio"
                   value={toBRL(dashboardData?.financial.ticket || 0)}
@@ -329,7 +369,7 @@ const MenuPage = () => {
                   borderColor="#FF8800"
                 />
               </div>
-              <div className="col-12 col-md-6 col-xl-3">
+              <div className="col-12 col-sm-6 col-lg-3 d-flex justify-content-center">
                 <InfoCard
                   title="Caixas Abertos"
                   value={dashboardData?.operational.openCashiers || 0}
@@ -340,7 +380,6 @@ const MenuPage = () => {
             </div>
 
             <div className="row g-4">
-              {/* 2. TABELA DE ÚLTIMAS VENDAS */}
               <div className="col-12 col-xl-8">
                 <div className="card border-0 shadow-sm h-100">
                   <div className="card-header bg-white border-0 pt-4 px-4 pb-2">
@@ -392,7 +431,6 @@ const MenuPage = () => {
                 </div>
               </div>
 
-              {/* 3. ALERTAS OPERACIONAIS */}
               <div className="col-12 col-xl-4">
                 <div className="card border-0 shadow-sm h-100">
                   <div className="card-header bg-white border-0 pt-4 px-4 pb-2">
@@ -401,7 +439,6 @@ const MenuPage = () => {
                     </h6>
                   </div>
                   <div className="card-body p-4">
-                    {/* Alerta de Estoque */}
                     <div
                       className={`alert ${
                         dashboardData?.operational.lowStock
@@ -442,7 +479,14 @@ const MenuPage = () => {
           </main>
         </div>
       </div>
+
       <footer className="">© 2025 Sistema VL. Gestão Financeira.</footer>
+
+      <StoreSwitcherModal
+        show={showSwitchModal}
+        onClose={() => setShowSwitchModal(false)}
+        currentStoreName={storeName}
+      />
     </div>
   );
 };

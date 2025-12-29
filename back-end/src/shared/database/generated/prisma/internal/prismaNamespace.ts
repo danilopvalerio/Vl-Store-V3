@@ -1999,7 +1999,7 @@ export const User_profileScalarFieldEnum = {
   cpf_cnpj: 'cpf_cnpj',
   cargo: 'cargo',
   tipo_perfil: 'tipo_perfil',
-  ativo: 'ativo',
+  status: 'status',
   data_criacao: 'data_criacao',
   ultima_atualizacao: 'ultima_atualizacao'
 } as const
@@ -2118,6 +2118,20 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
+ * Reference to a field of type 'UserProfileStatus'
+ */
+export type EnumUserProfileStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserProfileStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'UserProfileStatus[]'
+ */
+export type ListEnumUserProfileStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserProfileStatus[]'>
     
 
 

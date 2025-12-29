@@ -3,6 +3,7 @@ export type UserData = {
   email: string;
   nome: string;
   role: string;
+  lojaId?: string;
 };
 
 // Interface para o retorno da API
@@ -24,4 +25,10 @@ export interface DashboardData {
     customer: string;
     seller: string;
   }[];
+}
+
+export interface StoreData {
+  id_loja: string;
+  nome: string;
+  cnpj_cpf?: string | null;
 }

@@ -1,9 +1,12 @@
 import { prisma } from "../../shared/database/prisma";
+import { refresh_token } from "../../shared/database/generated/prisma/client";
 import dayjs from "dayjs";
 
 export class SessionRepository {
-  async saveRefreshToken(userId: string, token: string) {
-    // Expira em 7 dias
+  async saveRefreshToken(
+    userId: string,
+    token: string
+  ): Promise<refresh_token> {
     const expiracao = dayjs().add(7, "day").toDate();
 
     return prisma.refresh_token.create({
@@ -16,20 +19,20 @@ export class SessionRepository {
     });
   }
 
-  async findRefreshToken(token: string) {
+  async findRefreshToken(token: string): Promise<refresh_token | null> {
     return prisma.refresh_token.findUnique({
       where: { token },
     });
   }
 
-  // Limpa tokens antigos do usuário para evitar lixo no banco
-  async deleteUserTokens(userId: string) {
-    return prisma.refresh_token.deleteMany({ where: { id_user: userId } });
+  async deleteUserTokens(userId: string): Promise<void> {
+    await prisma.refresh_token.deleteMany({
+      where: { id_user: userId },
+    });
   }
 
-  async deleteRefreshToken(token: string) {
-    // deleteMany é mais seguro que delete se o token não existir (evita erro P2025)
-    return prisma.refresh_token.deleteMany({
+  async deleteRefreshToken(token: string): Promise<void> {
+    await prisma.refresh_token.deleteMany({
       where: { token },
     });
   }
