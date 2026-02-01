@@ -80,12 +80,12 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.2.0
- * Query Engine version: 0c8ef2ce45c83248ab3df073180d5eda9e8be7a3
+ * Prisma Client JS version: 7.3.0
+ * Query Engine version: 9d6ad21cbbceab97458517b147a6a09ff43aa735
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.2.0",
-  engine: "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3"
+  client: "7.3.0",
+  engine: "9d6ad21cbbceab97458517b147a6a09ff43aa735"
 }
 
 /**
@@ -401,7 +401,8 @@ export const ModelName = {
   telefone_user: 'telefone_user',
   user: 'user',
   user_profile: 'user_profile',
-  venda: 'venda'
+  venda: 'venda',
+  imagem_variacao: 'imagem_variacao'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -417,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "caixa" | "cliente" | "configuracoes_loja" | "endereco_loja" | "item_venda" | "log_acesso" | "log_sistema" | "loja" | "movimentacao" | "pagamento_venda" | "produto" | "produto_variacao" | "refresh_token" | "telefone_loja" | "telefone_user" | "user" | "user_profile" | "venda"
+    modelProps: "caixa" | "cliente" | "configuracoes_loja" | "endereco_loja" | "item_venda" | "log_acesso" | "log_sistema" | "loja" | "movimentacao" | "pagamento_venda" | "produto" | "produto_variacao" | "refresh_token" | "telefone_loja" | "telefone_user" | "user" | "user_profile" | "venda" | "imagem_variacao"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1753,6 +1754,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    imagem_variacao: {
+      payload: Prisma.$imagem_variacaoPayload<ExtArgs>
+      fields: Prisma.imagem_variacaoFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.imagem_variacaoFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.imagem_variacaoFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload>
+        }
+        findFirst: {
+          args: Prisma.imagem_variacaoFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.imagem_variacaoFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload>
+        }
+        findMany: {
+          args: Prisma.imagem_variacaoFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload>[]
+        }
+        create: {
+          args: Prisma.imagem_variacaoCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload>
+        }
+        createMany: {
+          args: Prisma.imagem_variacaoCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.imagem_variacaoCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload>[]
+        }
+        delete: {
+          args: Prisma.imagem_variacaoDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload>
+        }
+        update: {
+          args: Prisma.imagem_variacaoUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload>
+        }
+        deleteMany: {
+          args: Prisma.imagem_variacaoDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.imagem_variacaoUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.imagem_variacaoUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload>[]
+        }
+        upsert: {
+          args: Prisma.imagem_variacaoUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$imagem_variacaoPayload>
+        }
+        aggregate: {
+          args: Prisma.Imagem_variacaoAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateImagem_variacao>
+        }
+        groupBy: {
+          args: Prisma.imagem_variacaoGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Imagem_variacaoGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.imagem_variacaoCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Imagem_variacaoCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1999,9 +2074,10 @@ export const User_profileScalarFieldEnum = {
   cpf_cnpj: 'cpf_cnpj',
   cargo: 'cargo',
   tipo_perfil: 'tipo_perfil',
-  status: 'status',
   data_criacao: 'data_criacao',
-  ultima_atualizacao: 'ultima_atualizacao'
+  ultima_atualizacao: 'ultima_atualizacao',
+  status: 'status',
+  foto_url: 'foto_url'
 } as const
 
 export type User_profileScalarFieldEnum = (typeof User_profileScalarFieldEnum)[keyof typeof User_profileScalarFieldEnum]
@@ -2013,7 +2089,6 @@ export const VendaScalarFieldEnum = {
   id_caixa: 'id_caixa',
   id_user: 'id_user',
   id_cliente: 'id_cliente',
-  tipo_venda: 'tipo_venda',
   data: 'data',
   hora: 'hora',
   desconto: 'desconto',
@@ -2022,10 +2097,23 @@ export const VendaScalarFieldEnum = {
   total_final: 'total_final',
   valor_pago: 'valor_pago',
   data_criacao: 'data_criacao',
-  ultima_atualizacao: 'ultima_atualizacao'
+  ultima_atualizacao: 'ultima_atualizacao',
+  tipo_venda: 'tipo_venda'
 } as const
 
 export type VendaScalarFieldEnum = (typeof VendaScalarFieldEnum)[keyof typeof VendaScalarFieldEnum]
+
+
+export const Imagem_variacaoScalarFieldEnum = {
+  id_imagem: 'id_imagem',
+  id_variacao: 'id_variacao',
+  caminho: 'caminho',
+  ordem: 'ordem',
+  principal: 'principal',
+  data_criacao: 'data_criacao'
+} as const
+
+export type Imagem_variacaoScalarFieldEnum = (typeof Imagem_variacaoScalarFieldEnum)[keyof typeof Imagem_variacaoScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -2261,6 +2349,7 @@ export type GlobalOmitConfig = {
   user?: Prisma.userOmit
   user_profile?: Prisma.user_profileOmit
   venda?: Prisma.vendaOmit
+  imagem_variacao?: Prisma.imagem_variacaoOmit
 }
 
 /* Types for Logging */

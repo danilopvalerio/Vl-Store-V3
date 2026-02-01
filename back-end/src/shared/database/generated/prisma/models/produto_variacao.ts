@@ -244,6 +244,7 @@ export type produto_variacaoWhereInput = {
   valor?: Prisma.DecimalFilter<"produto_variacao"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.DateTimeNullableFilter<"produto_variacao"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableFilter<"produto_variacao"> | Date | string | null
+  imagem_variacao?: Prisma.Imagem_variacaoListRelationFilter
   item_venda?: Prisma.Item_vendaListRelationFilter
   produto?: Prisma.XOR<Prisma.ProdutoScalarRelationFilter, Prisma.produtoWhereInput>
 }
@@ -257,6 +258,7 @@ export type produto_variacaoOrderByWithRelationInput = {
   valor?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrderInput | Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrderInput | Prisma.SortOrder
+  imagem_variacao?: Prisma.imagem_variacaoOrderByRelationAggregateInput
   item_venda?: Prisma.item_vendaOrderByRelationAggregateInput
   produto?: Prisma.produtoOrderByWithRelationInput
 }
@@ -273,6 +275,7 @@ export type produto_variacaoWhereUniqueInput = Prisma.AtLeast<{
   valor?: Prisma.DecimalFilter<"produto_variacao"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.DateTimeNullableFilter<"produto_variacao"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableFilter<"produto_variacao"> | Date | string | null
+  imagem_variacao?: Prisma.Imagem_variacaoListRelationFilter
   item_venda?: Prisma.Item_vendaListRelationFilter
   produto?: Prisma.XOR<Prisma.ProdutoScalarRelationFilter, Prisma.produtoWhereInput>
 }, "id_variacao">
@@ -315,6 +318,7 @@ export type produto_variacaoCreateInput = {
   valor: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoCreateNestedManyWithoutProduto_variacaoInput
   item_venda?: Prisma.item_vendaCreateNestedManyWithoutProduto_variacaoInput
   produto: Prisma.produtoCreateNestedOneWithoutProduto_variacaoInput
 }
@@ -328,6 +332,7 @@ export type produto_variacaoUncheckedCreateInput = {
   valor: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoUncheckedCreateNestedManyWithoutProduto_variacaoInput
   item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutProduto_variacaoInput
 }
 
@@ -339,6 +344,7 @@ export type produto_variacaoUpdateInput = {
   valor?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoUpdateManyWithoutProduto_variacaoNestedInput
   item_venda?: Prisma.item_vendaUpdateManyWithoutProduto_variacaoNestedInput
   produto?: Prisma.produtoUpdateOneRequiredWithoutProduto_variacaoNestedInput
 }
@@ -352,6 +358,7 @@ export type produto_variacaoUncheckedUpdateInput = {
   valor?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoUncheckedUpdateManyWithoutProduto_variacaoNestedInput
   item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutProduto_variacaoNestedInput
 }
 
@@ -509,6 +516,20 @@ export type NullableIntFieldUpdateOperationsInput = {
   divide?: number
 }
 
+export type produto_variacaoCreateNestedOneWithoutImagem_variacaoInput = {
+  create?: Prisma.XOR<Prisma.produto_variacaoCreateWithoutImagem_variacaoInput, Prisma.produto_variacaoUncheckedCreateWithoutImagem_variacaoInput>
+  connectOrCreate?: Prisma.produto_variacaoCreateOrConnectWithoutImagem_variacaoInput
+  connect?: Prisma.produto_variacaoWhereUniqueInput
+}
+
+export type produto_variacaoUpdateOneRequiredWithoutImagem_variacaoNestedInput = {
+  create?: Prisma.XOR<Prisma.produto_variacaoCreateWithoutImagem_variacaoInput, Prisma.produto_variacaoUncheckedCreateWithoutImagem_variacaoInput>
+  connectOrCreate?: Prisma.produto_variacaoCreateOrConnectWithoutImagem_variacaoInput
+  upsert?: Prisma.produto_variacaoUpsertWithoutImagem_variacaoInput
+  connect?: Prisma.produto_variacaoWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.produto_variacaoUpdateToOneWithWhereWithoutImagem_variacaoInput, Prisma.produto_variacaoUpdateWithoutImagem_variacaoInput>, Prisma.produto_variacaoUncheckedUpdateWithoutImagem_variacaoInput>
+}
+
 export type produto_variacaoCreateWithoutItem_vendaInput = {
   id_variacao?: string
   nome?: string | null
@@ -517,6 +538,7 @@ export type produto_variacaoCreateWithoutItem_vendaInput = {
   valor: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoCreateNestedManyWithoutProduto_variacaoInput
   produto: Prisma.produtoCreateNestedOneWithoutProduto_variacaoInput
 }
 
@@ -529,6 +551,7 @@ export type produto_variacaoUncheckedCreateWithoutItem_vendaInput = {
   valor: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoUncheckedCreateNestedManyWithoutProduto_variacaoInput
 }
 
 export type produto_variacaoCreateOrConnectWithoutItem_vendaInput = {
@@ -555,6 +578,7 @@ export type produto_variacaoUpdateWithoutItem_vendaInput = {
   valor?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoUpdateManyWithoutProduto_variacaoNestedInput
   produto?: Prisma.produtoUpdateOneRequiredWithoutProduto_variacaoNestedInput
 }
 
@@ -567,6 +591,7 @@ export type produto_variacaoUncheckedUpdateWithoutItem_vendaInput = {
   valor?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoUncheckedUpdateManyWithoutProduto_variacaoNestedInput
 }
 
 export type produto_variacaoCreateWithoutProdutoInput = {
@@ -577,6 +602,7 @@ export type produto_variacaoCreateWithoutProdutoInput = {
   valor: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoCreateNestedManyWithoutProduto_variacaoInput
   item_venda?: Prisma.item_vendaCreateNestedManyWithoutProduto_variacaoInput
 }
 
@@ -588,6 +614,7 @@ export type produto_variacaoUncheckedCreateWithoutProdutoInput = {
   valor: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoUncheckedCreateNestedManyWithoutProduto_variacaoInput
   item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutProduto_variacaoInput
 }
 
@@ -631,6 +658,70 @@ export type produto_variacaoScalarWhereInput = {
   ultima_atualizacao?: Prisma.DateTimeNullableFilter<"produto_variacao"> | Date | string | null
 }
 
+export type produto_variacaoCreateWithoutImagem_variacaoInput = {
+  id_variacao?: string
+  nome?: string | null
+  descricao?: string | null
+  quantidade?: number | null
+  valor: runtime.Decimal | runtime.DecimalJsLike | number | string
+  data_criacao?: Date | string | null
+  ultima_atualizacao?: Date | string | null
+  item_venda?: Prisma.item_vendaCreateNestedManyWithoutProduto_variacaoInput
+  produto: Prisma.produtoCreateNestedOneWithoutProduto_variacaoInput
+}
+
+export type produto_variacaoUncheckedCreateWithoutImagem_variacaoInput = {
+  id_variacao?: string
+  id_produto: string
+  nome?: string | null
+  descricao?: string | null
+  quantidade?: number | null
+  valor: runtime.Decimal | runtime.DecimalJsLike | number | string
+  data_criacao?: Date | string | null
+  ultima_atualizacao?: Date | string | null
+  item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutProduto_variacaoInput
+}
+
+export type produto_variacaoCreateOrConnectWithoutImagem_variacaoInput = {
+  where: Prisma.produto_variacaoWhereUniqueInput
+  create: Prisma.XOR<Prisma.produto_variacaoCreateWithoutImagem_variacaoInput, Prisma.produto_variacaoUncheckedCreateWithoutImagem_variacaoInput>
+}
+
+export type produto_variacaoUpsertWithoutImagem_variacaoInput = {
+  update: Prisma.XOR<Prisma.produto_variacaoUpdateWithoutImagem_variacaoInput, Prisma.produto_variacaoUncheckedUpdateWithoutImagem_variacaoInput>
+  create: Prisma.XOR<Prisma.produto_variacaoCreateWithoutImagem_variacaoInput, Prisma.produto_variacaoUncheckedCreateWithoutImagem_variacaoInput>
+  where?: Prisma.produto_variacaoWhereInput
+}
+
+export type produto_variacaoUpdateToOneWithWhereWithoutImagem_variacaoInput = {
+  where?: Prisma.produto_variacaoWhereInput
+  data: Prisma.XOR<Prisma.produto_variacaoUpdateWithoutImagem_variacaoInput, Prisma.produto_variacaoUncheckedUpdateWithoutImagem_variacaoInput>
+}
+
+export type produto_variacaoUpdateWithoutImagem_variacaoInput = {
+  id_variacao?: Prisma.StringFieldUpdateOperationsInput | string
+  nome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  descricao?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  quantidade?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  valor?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  item_venda?: Prisma.item_vendaUpdateManyWithoutProduto_variacaoNestedInput
+  produto?: Prisma.produtoUpdateOneRequiredWithoutProduto_variacaoNestedInput
+}
+
+export type produto_variacaoUncheckedUpdateWithoutImagem_variacaoInput = {
+  id_variacao?: Prisma.StringFieldUpdateOperationsInput | string
+  id_produto?: Prisma.StringFieldUpdateOperationsInput | string
+  nome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  descricao?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  quantidade?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  valor?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutProduto_variacaoNestedInput
+}
+
 export type produto_variacaoCreateManyProdutoInput = {
   id_variacao?: string
   nome?: string | null
@@ -649,6 +740,7 @@ export type produto_variacaoUpdateWithoutProdutoInput = {
   valor?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoUpdateManyWithoutProduto_variacaoNestedInput
   item_venda?: Prisma.item_vendaUpdateManyWithoutProduto_variacaoNestedInput
 }
 
@@ -660,6 +752,7 @@ export type produto_variacaoUncheckedUpdateWithoutProdutoInput = {
   valor?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  imagem_variacao?: Prisma.imagem_variacaoUncheckedUpdateManyWithoutProduto_variacaoNestedInput
   item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutProduto_variacaoNestedInput
 }
 
@@ -679,10 +772,12 @@ export type produto_variacaoUncheckedUpdateManyWithoutProdutoInput = {
  */
 
 export type Produto_variacaoCountOutputType = {
+  imagem_variacao: number
   item_venda: number
 }
 
 export type Produto_variacaoCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  imagem_variacao?: boolean | Produto_variacaoCountOutputTypeCountImagem_variacaoArgs
   item_venda?: boolean | Produto_variacaoCountOutputTypeCountItem_vendaArgs
 }
 
@@ -694,6 +789,13 @@ export type Produto_variacaoCountOutputTypeDefaultArgs<ExtArgs extends runtime.T
    * Select specific fields to fetch from the Produto_variacaoCountOutputType
    */
   select?: Prisma.Produto_variacaoCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * Produto_variacaoCountOutputType without action
+ */
+export type Produto_variacaoCountOutputTypeCountImagem_variacaoArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.imagem_variacaoWhereInput
 }
 
 /**
@@ -713,6 +815,7 @@ export type produto_variacaoSelect<ExtArgs extends runtime.Types.Extensions.Inte
   valor?: boolean
   data_criacao?: boolean
   ultima_atualizacao?: boolean
+  imagem_variacao?: boolean | Prisma.produto_variacao$imagem_variacaoArgs<ExtArgs>
   item_venda?: boolean | Prisma.produto_variacao$item_vendaArgs<ExtArgs>
   produto?: boolean | Prisma.produtoDefaultArgs<ExtArgs>
   _count?: boolean | Prisma.Produto_variacaoCountOutputTypeDefaultArgs<ExtArgs>
@@ -755,6 +858,7 @@ export type produto_variacaoSelectScalar = {
 
 export type produto_variacaoOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id_variacao" | "id_produto" | "nome" | "descricao" | "quantidade" | "valor" | "data_criacao" | "ultima_atualizacao", ExtArgs["result"]["produto_variacao"]>
 export type produto_variacaoInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  imagem_variacao?: boolean | Prisma.produto_variacao$imagem_variacaoArgs<ExtArgs>
   item_venda?: boolean | Prisma.produto_variacao$item_vendaArgs<ExtArgs>
   produto?: boolean | Prisma.produtoDefaultArgs<ExtArgs>
   _count?: boolean | Prisma.Produto_variacaoCountOutputTypeDefaultArgs<ExtArgs>
@@ -769,6 +873,7 @@ export type produto_variacaoIncludeUpdateManyAndReturn<ExtArgs extends runtime.T
 export type $produto_variacaoPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "produto_variacao"
   objects: {
+    imagem_variacao: Prisma.$imagem_variacaoPayload<ExtArgs>[]
     item_venda: Prisma.$item_vendaPayload<ExtArgs>[]
     produto: Prisma.$produtoPayload<ExtArgs>
   }
@@ -1175,6 +1280,7 @@ readonly fields: produto_variacaoFieldRefs;
  */
 export interface Prisma__produto_variacaoClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  imagem_variacao<T extends Prisma.produto_variacao$imagem_variacaoArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.produto_variacao$imagem_variacaoArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$imagem_variacaoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   item_venda<T extends Prisma.produto_variacao$item_vendaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.produto_variacao$item_vendaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$item_vendaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   produto<T extends Prisma.produtoDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.produtoDefaultArgs<ExtArgs>>): Prisma.Prisma__produtoClient<runtime.Types.Result.GetResult<Prisma.$produtoPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
@@ -1607,6 +1713,30 @@ export type produto_variacaoDeleteManyArgs<ExtArgs extends runtime.Types.Extensi
    * Limit how many produto_variacaos to delete.
    */
   limit?: number
+}
+
+/**
+ * produto_variacao.imagem_variacao
+ */
+export type produto_variacao$imagem_variacaoArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the imagem_variacao
+   */
+  select?: Prisma.imagem_variacaoSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the imagem_variacao
+   */
+  omit?: Prisma.imagem_variacaoOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.imagem_variacaoInclude<ExtArgs> | null
+  where?: Prisma.imagem_variacaoWhereInput
+  orderBy?: Prisma.imagem_variacaoOrderByWithRelationInput | Prisma.imagem_variacaoOrderByWithRelationInput[]
+  cursor?: Prisma.imagem_variacaoWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Imagem_variacaoScalarFieldEnum | Prisma.Imagem_variacaoScalarFieldEnum[]
 }
 
 /**

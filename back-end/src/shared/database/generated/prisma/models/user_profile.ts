@@ -32,9 +32,10 @@ export type User_profileMinAggregateOutputType = {
   cpf_cnpj: string | null
   cargo: string | null
   tipo_perfil: string | null
-  status: $Enums.UserProfileStatus | null
   data_criacao: Date | null
   ultima_atualizacao: Date | null
+  status: $Enums.UserProfileStatus | null
+  foto_url: string | null
 }
 
 export type User_profileMaxAggregateOutputType = {
@@ -45,9 +46,10 @@ export type User_profileMaxAggregateOutputType = {
   cpf_cnpj: string | null
   cargo: string | null
   tipo_perfil: string | null
-  status: $Enums.UserProfileStatus | null
   data_criacao: Date | null
   ultima_atualizacao: Date | null
+  status: $Enums.UserProfileStatus | null
+  foto_url: string | null
 }
 
 export type User_profileCountAggregateOutputType = {
@@ -58,9 +60,10 @@ export type User_profileCountAggregateOutputType = {
   cpf_cnpj: number
   cargo: number
   tipo_perfil: number
-  status: number
   data_criacao: number
   ultima_atualizacao: number
+  status: number
+  foto_url: number
   _all: number
 }
 
@@ -73,9 +76,10 @@ export type User_profileMinAggregateInputType = {
   cpf_cnpj?: true
   cargo?: true
   tipo_perfil?: true
-  status?: true
   data_criacao?: true
   ultima_atualizacao?: true
+  status?: true
+  foto_url?: true
 }
 
 export type User_profileMaxAggregateInputType = {
@@ -86,9 +90,10 @@ export type User_profileMaxAggregateInputType = {
   cpf_cnpj?: true
   cargo?: true
   tipo_perfil?: true
-  status?: true
   data_criacao?: true
   ultima_atualizacao?: true
+  status?: true
+  foto_url?: true
 }
 
 export type User_profileCountAggregateInputType = {
@@ -99,9 +104,10 @@ export type User_profileCountAggregateInputType = {
   cpf_cnpj?: true
   cargo?: true
   tipo_perfil?: true
-  status?: true
   data_criacao?: true
   ultima_atualizacao?: true
+  status?: true
+  foto_url?: true
   _all?: true
 }
 
@@ -185,9 +191,10 @@ export type User_profileGroupByOutputType = {
   cpf_cnpj: string | null
   cargo: string | null
   tipo_perfil: string | null
-  status: $Enums.UserProfileStatus
   data_criacao: Date | null
   ultima_atualizacao: Date | null
+  status: $Enums.UserProfileStatus
+  foto_url: string | null
   _count: User_profileCountAggregateOutputType | null
   _min: User_profileMinAggregateOutputType | null
   _max: User_profileMaxAggregateOutputType | null
@@ -219,9 +226,10 @@ export type user_profileWhereInput = {
   cpf_cnpj?: Prisma.StringNullableFilter<"user_profile"> | string | null
   cargo?: Prisma.StringNullableFilter<"user_profile"> | string | null
   tipo_perfil?: Prisma.StringNullableFilter<"user_profile"> | string | null
-  status?: Prisma.EnumUserProfileStatusFilter<"user_profile"> | $Enums.UserProfileStatus
   data_criacao?: Prisma.DateTimeNullableFilter<"user_profile"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableFilter<"user_profile"> | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFilter<"user_profile"> | $Enums.UserProfileStatus
+  foto_url?: Prisma.StringNullableFilter<"user_profile"> | string | null
   caixa?: Prisma.CaixaListRelationFilter
   loja?: Prisma.XOR<Prisma.LojaScalarRelationFilter, Prisma.lojaWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.userWhereInput>
@@ -235,9 +243,10 @@ export type user_profileOrderByWithRelationInput = {
   cpf_cnpj?: Prisma.SortOrderInput | Prisma.SortOrder
   cargo?: Prisma.SortOrderInput | Prisma.SortOrder
   tipo_perfil?: Prisma.SortOrderInput | Prisma.SortOrder
-  status?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrderInput | Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrderInput | Prisma.SortOrder
+  status?: Prisma.SortOrder
+  foto_url?: Prisma.SortOrderInput | Prisma.SortOrder
   caixa?: Prisma.caixaOrderByRelationAggregateInput
   loja?: Prisma.lojaOrderByWithRelationInput
   user?: Prisma.userOrderByWithRelationInput
@@ -255,9 +264,10 @@ export type user_profileWhereUniqueInput = Prisma.AtLeast<{
   cpf_cnpj?: Prisma.StringNullableFilter<"user_profile"> | string | null
   cargo?: Prisma.StringNullableFilter<"user_profile"> | string | null
   tipo_perfil?: Prisma.StringNullableFilter<"user_profile"> | string | null
-  status?: Prisma.EnumUserProfileStatusFilter<"user_profile"> | $Enums.UserProfileStatus
   data_criacao?: Prisma.DateTimeNullableFilter<"user_profile"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableFilter<"user_profile"> | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFilter<"user_profile"> | $Enums.UserProfileStatus
+  foto_url?: Prisma.StringNullableFilter<"user_profile"> | string | null
   caixa?: Prisma.CaixaListRelationFilter
   loja?: Prisma.XOR<Prisma.LojaScalarRelationFilter, Prisma.lojaWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.userWhereInput>
@@ -271,9 +281,10 @@ export type user_profileOrderByWithAggregationInput = {
   cpf_cnpj?: Prisma.SortOrderInput | Prisma.SortOrder
   cargo?: Prisma.SortOrderInput | Prisma.SortOrder
   tipo_perfil?: Prisma.SortOrderInput | Prisma.SortOrder
-  status?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrderInput | Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrderInput | Prisma.SortOrder
+  status?: Prisma.SortOrder
+  foto_url?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.user_profileCountOrderByAggregateInput
   _max?: Prisma.user_profileMaxOrderByAggregateInput
   _min?: Prisma.user_profileMinOrderByAggregateInput
@@ -290,9 +301,10 @@ export type user_profileScalarWhereWithAggregatesInput = {
   cpf_cnpj?: Prisma.StringNullableWithAggregatesFilter<"user_profile"> | string | null
   cargo?: Prisma.StringNullableWithAggregatesFilter<"user_profile"> | string | null
   tipo_perfil?: Prisma.StringNullableWithAggregatesFilter<"user_profile"> | string | null
-  status?: Prisma.EnumUserProfileStatusWithAggregatesFilter<"user_profile"> | $Enums.UserProfileStatus
   data_criacao?: Prisma.DateTimeNullableWithAggregatesFilter<"user_profile"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableWithAggregatesFilter<"user_profile"> | Date | string | null
+  status?: Prisma.EnumUserProfileStatusWithAggregatesFilter<"user_profile"> | $Enums.UserProfileStatus
+  foto_url?: Prisma.StringNullableWithAggregatesFilter<"user_profile"> | string | null
 }
 
 export type user_profileCreateInput = {
@@ -301,9 +313,10 @@ export type user_profileCreateInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
   caixa?: Prisma.caixaCreateNestedManyWithoutUser_profileInput
   loja: Prisma.lojaCreateNestedOneWithoutUser_profileInput
   user: Prisma.userCreateNestedOneWithoutUser_profileInput
@@ -317,9 +330,10 @@ export type user_profileUncheckedCreateInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
   caixa?: Prisma.caixaUncheckedCreateNestedManyWithoutUser_profileInput
 }
 
@@ -329,9 +343,10 @@ export type user_profileUpdateInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   caixa?: Prisma.caixaUpdateManyWithoutUser_profileNestedInput
   loja?: Prisma.lojaUpdateOneRequiredWithoutUser_profileNestedInput
   user?: Prisma.userUpdateOneRequiredWithoutUser_profileNestedInput
@@ -345,9 +360,10 @@ export type user_profileUncheckedUpdateInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   caixa?: Prisma.caixaUncheckedUpdateManyWithoutUser_profileNestedInput
 }
 
@@ -359,9 +375,10 @@ export type user_profileCreateManyInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
 }
 
 export type user_profileUpdateManyMutationInput = {
@@ -370,9 +387,10 @@ export type user_profileUpdateManyMutationInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type user_profileUncheckedUpdateManyInput = {
@@ -383,9 +401,10 @@ export type user_profileUncheckedUpdateManyInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type User_profileScalarRelationFilter = {
@@ -416,9 +435,10 @@ export type user_profileCountOrderByAggregateInput = {
   cpf_cnpj?: Prisma.SortOrder
   cargo?: Prisma.SortOrder
   tipo_perfil?: Prisma.SortOrder
-  status?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  foto_url?: Prisma.SortOrder
 }
 
 export type user_profileMaxOrderByAggregateInput = {
@@ -429,9 +449,10 @@ export type user_profileMaxOrderByAggregateInput = {
   cpf_cnpj?: Prisma.SortOrder
   cargo?: Prisma.SortOrder
   tipo_perfil?: Prisma.SortOrder
-  status?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  foto_url?: Prisma.SortOrder
 }
 
 export type user_profileMinOrderByAggregateInput = {
@@ -442,9 +463,10 @@ export type user_profileMinOrderByAggregateInput = {
   cpf_cnpj?: Prisma.SortOrder
   cargo?: Prisma.SortOrder
   tipo_perfil?: Prisma.SortOrder
-  status?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  foto_url?: Prisma.SortOrder
 }
 
 export type user_profileCreateNestedOneWithoutCaixaInput = {
@@ -555,9 +577,10 @@ export type user_profileCreateWithoutCaixaInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
   loja: Prisma.lojaCreateNestedOneWithoutUser_profileInput
   user: Prisma.userCreateNestedOneWithoutUser_profileInput
 }
@@ -570,9 +593,10 @@ export type user_profileUncheckedCreateWithoutCaixaInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
 }
 
 export type user_profileCreateOrConnectWithoutCaixaInput = {
@@ -597,9 +621,10 @@ export type user_profileUpdateWithoutCaixaInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   loja?: Prisma.lojaUpdateOneRequiredWithoutUser_profileNestedInput
   user?: Prisma.userUpdateOneRequiredWithoutUser_profileNestedInput
 }
@@ -612,9 +637,10 @@ export type user_profileUncheckedUpdateWithoutCaixaInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type user_profileCreateWithoutLojaInput = {
@@ -623,9 +649,10 @@ export type user_profileCreateWithoutLojaInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
   caixa?: Prisma.caixaCreateNestedManyWithoutUser_profileInput
   user: Prisma.userCreateNestedOneWithoutUser_profileInput
 }
@@ -637,9 +664,10 @@ export type user_profileUncheckedCreateWithoutLojaInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
   caixa?: Prisma.caixaUncheckedCreateNestedManyWithoutUser_profileInput
 }
 
@@ -680,9 +708,10 @@ export type user_profileScalarWhereInput = {
   cpf_cnpj?: Prisma.StringNullableFilter<"user_profile"> | string | null
   cargo?: Prisma.StringNullableFilter<"user_profile"> | string | null
   tipo_perfil?: Prisma.StringNullableFilter<"user_profile"> | string | null
-  status?: Prisma.EnumUserProfileStatusFilter<"user_profile"> | $Enums.UserProfileStatus
   data_criacao?: Prisma.DateTimeNullableFilter<"user_profile"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableFilter<"user_profile"> | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFilter<"user_profile"> | $Enums.UserProfileStatus
+  foto_url?: Prisma.StringNullableFilter<"user_profile"> | string | null
 }
 
 export type user_profileCreateWithoutUserInput = {
@@ -691,9 +720,10 @@ export type user_profileCreateWithoutUserInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
   caixa?: Prisma.caixaCreateNestedManyWithoutUser_profileInput
   loja: Prisma.lojaCreateNestedOneWithoutUser_profileInput
 }
@@ -705,9 +735,10 @@ export type user_profileUncheckedCreateWithoutUserInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
   caixa?: Prisma.caixaUncheckedCreateNestedManyWithoutUser_profileInput
 }
 
@@ -744,9 +775,10 @@ export type user_profileCreateManyLojaInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
 }
 
 export type user_profileUpdateWithoutLojaInput = {
@@ -755,9 +787,10 @@ export type user_profileUpdateWithoutLojaInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   caixa?: Prisma.caixaUpdateManyWithoutUser_profileNestedInput
   user?: Prisma.userUpdateOneRequiredWithoutUser_profileNestedInput
 }
@@ -769,9 +802,10 @@ export type user_profileUncheckedUpdateWithoutLojaInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   caixa?: Prisma.caixaUncheckedUpdateManyWithoutUser_profileNestedInput
 }
 
@@ -782,9 +816,10 @@ export type user_profileUncheckedUpdateManyWithoutLojaInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type user_profileCreateManyUserInput = {
@@ -794,9 +829,10 @@ export type user_profileCreateManyUserInput = {
   cpf_cnpj?: string | null
   cargo?: string | null
   tipo_perfil?: string | null
-  status?: $Enums.UserProfileStatus
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  status?: $Enums.UserProfileStatus
+  foto_url?: string | null
 }
 
 export type user_profileUpdateWithoutUserInput = {
@@ -805,9 +841,10 @@ export type user_profileUpdateWithoutUserInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   caixa?: Prisma.caixaUpdateManyWithoutUser_profileNestedInput
   loja?: Prisma.lojaUpdateOneRequiredWithoutUser_profileNestedInput
 }
@@ -819,9 +856,10 @@ export type user_profileUncheckedUpdateWithoutUserInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   caixa?: Prisma.caixaUncheckedUpdateManyWithoutUser_profileNestedInput
 }
 
@@ -832,9 +870,10 @@ export type user_profileUncheckedUpdateManyWithoutUserInput = {
   cpf_cnpj?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cargo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tipo_perfil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  status?: Prisma.EnumUserProfileStatusFieldUpdateOperationsInput | $Enums.UserProfileStatus
+  foto_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -876,9 +915,10 @@ export type user_profileSelect<ExtArgs extends runtime.Types.Extensions.Internal
   cpf_cnpj?: boolean
   cargo?: boolean
   tipo_perfil?: boolean
-  status?: boolean
   data_criacao?: boolean
   ultima_atualizacao?: boolean
+  status?: boolean
+  foto_url?: boolean
   caixa?: boolean | Prisma.user_profile$caixaArgs<ExtArgs>
   loja?: boolean | Prisma.lojaDefaultArgs<ExtArgs>
   user?: boolean | Prisma.userDefaultArgs<ExtArgs>
@@ -893,9 +933,10 @@ export type user_profileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   cpf_cnpj?: boolean
   cargo?: boolean
   tipo_perfil?: boolean
-  status?: boolean
   data_criacao?: boolean
   ultima_atualizacao?: boolean
+  status?: boolean
+  foto_url?: boolean
   loja?: boolean | Prisma.lojaDefaultArgs<ExtArgs>
   user?: boolean | Prisma.userDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user_profile"]>
@@ -908,9 +949,10 @@ export type user_profileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   cpf_cnpj?: boolean
   cargo?: boolean
   tipo_perfil?: boolean
-  status?: boolean
   data_criacao?: boolean
   ultima_atualizacao?: boolean
+  status?: boolean
+  foto_url?: boolean
   loja?: boolean | Prisma.lojaDefaultArgs<ExtArgs>
   user?: boolean | Prisma.userDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user_profile"]>
@@ -923,12 +965,13 @@ export type user_profileSelectScalar = {
   cpf_cnpj?: boolean
   cargo?: boolean
   tipo_perfil?: boolean
-  status?: boolean
   data_criacao?: boolean
   ultima_atualizacao?: boolean
+  status?: boolean
+  foto_url?: boolean
 }
 
-export type user_profileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id_user_profile" | "user_id" | "id_loja" | "nome" | "cpf_cnpj" | "cargo" | "tipo_perfil" | "status" | "data_criacao" | "ultima_atualizacao", ExtArgs["result"]["user_profile"]>
+export type user_profileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id_user_profile" | "user_id" | "id_loja" | "nome" | "cpf_cnpj" | "cargo" | "tipo_perfil" | "data_criacao" | "ultima_atualizacao" | "status" | "foto_url", ExtArgs["result"]["user_profile"]>
 export type user_profileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   caixa?: boolean | Prisma.user_profile$caixaArgs<ExtArgs>
   loja?: boolean | Prisma.lojaDefaultArgs<ExtArgs>
@@ -959,9 +1002,10 @@ export type $user_profilePayload<ExtArgs extends runtime.Types.Extensions.Intern
     cpf_cnpj: string | null
     cargo: string | null
     tipo_perfil: string | null
-    status: $Enums.UserProfileStatus
     data_criacao: Date | null
     ultima_atualizacao: Date | null
+    status: $Enums.UserProfileStatus
+    foto_url: string | null
   }, ExtArgs["result"]["user_profile"]>
   composites: {}
 }
@@ -1395,9 +1439,10 @@ export interface user_profileFieldRefs {
   readonly cpf_cnpj: Prisma.FieldRef<"user_profile", 'String'>
   readonly cargo: Prisma.FieldRef<"user_profile", 'String'>
   readonly tipo_perfil: Prisma.FieldRef<"user_profile", 'String'>
-  readonly status: Prisma.FieldRef<"user_profile", 'UserProfileStatus'>
   readonly data_criacao: Prisma.FieldRef<"user_profile", 'DateTime'>
   readonly ultima_atualizacao: Prisma.FieldRef<"user_profile", 'DateTime'>
+  readonly status: Prisma.FieldRef<"user_profile", 'UserProfileStatus'>
+  readonly foto_url: Prisma.FieldRef<"user_profile", 'String'>
 }
     
 

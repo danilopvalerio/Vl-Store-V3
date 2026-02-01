@@ -107,3 +107,8 @@ export type user_profile = Prisma.user_profileModel
  * This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
  */
 export type venda = Prisma.vendaModel
+/**
+ * Model imagem_variacao
+ * 
+ */
+export type imagem_variacao = Prisma.imagem_variacaoModel

@@ -68,7 +68,8 @@ export const ModelName = {
   telefone_user: 'telefone_user',
   user: 'user',
   user_profile: 'user_profile',
-  venda: 'venda'
+  venda: 'venda',
+  imagem_variacao: 'imagem_variacao'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -77,12 +78,12 @@ export type ModelName = (typeof ModelName)[keyof typeof ModelName]
  * Enums
  */
 
-export const TransactionIsolationLevel = {
+export const TransactionIsolationLevel = runtime.makeStrictEnum({
   ReadUncommitted: 'ReadUncommitted',
   ReadCommitted: 'ReadCommitted',
   RepeatableRead: 'RepeatableRead',
   Serializable: 'Serializable'
-} as const
+} as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
@@ -294,9 +295,10 @@ export const User_profileScalarFieldEnum = {
   cpf_cnpj: 'cpf_cnpj',
   cargo: 'cargo',
   tipo_perfil: 'tipo_perfil',
-  status: 'status',
   data_criacao: 'data_criacao',
-  ultima_atualizacao: 'ultima_atualizacao'
+  ultima_atualizacao: 'ultima_atualizacao',
+  status: 'status',
+  foto_url: 'foto_url'
 } as const
 
 export type User_profileScalarFieldEnum = (typeof User_profileScalarFieldEnum)[keyof typeof User_profileScalarFieldEnum]
@@ -308,7 +310,6 @@ export const VendaScalarFieldEnum = {
   id_caixa: 'id_caixa',
   id_user: 'id_user',
   id_cliente: 'id_cliente',
-  tipo_venda: 'tipo_venda',
   data: 'data',
   hora: 'hora',
   desconto: 'desconto',
@@ -317,10 +318,23 @@ export const VendaScalarFieldEnum = {
   total_final: 'total_final',
   valor_pago: 'valor_pago',
   data_criacao: 'data_criacao',
-  ultima_atualizacao: 'ultima_atualizacao'
+  ultima_atualizacao: 'ultima_atualizacao',
+  tipo_venda: 'tipo_venda'
 } as const
 
 export type VendaScalarFieldEnum = (typeof VendaScalarFieldEnum)[keyof typeof VendaScalarFieldEnum]
+
+
+export const Imagem_variacaoScalarFieldEnum = {
+  id_imagem: 'id_imagem',
+  id_variacao: 'id_variacao',
+  caminho: 'caminho',
+  ordem: 'ordem',
+  principal: 'principal',
+  data_criacao: 'data_criacao'
+} as const
+
+export type Imagem_variacaoScalarFieldEnum = (typeof Imagem_variacaoScalarFieldEnum)[keyof typeof Imagem_variacaoScalarFieldEnum]
 
 
 export const SortOrder = {

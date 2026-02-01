@@ -46,7 +46,6 @@ export type VendaMinAggregateOutputType = {
   id_caixa: string | null
   id_user: string | null
   id_cliente: string | null
-  tipo_venda: string | null
   data: Date | null
   hora: Date | null
   desconto: runtime.Decimal | null
@@ -56,6 +55,7 @@ export type VendaMinAggregateOutputType = {
   valor_pago: runtime.Decimal | null
   data_criacao: Date | null
   ultima_atualizacao: Date | null
+  tipo_venda: string | null
 }
 
 export type VendaMaxAggregateOutputType = {
@@ -64,7 +64,6 @@ export type VendaMaxAggregateOutputType = {
   id_caixa: string | null
   id_user: string | null
   id_cliente: string | null
-  tipo_venda: string | null
   data: Date | null
   hora: Date | null
   desconto: runtime.Decimal | null
@@ -74,6 +73,7 @@ export type VendaMaxAggregateOutputType = {
   valor_pago: runtime.Decimal | null
   data_criacao: Date | null
   ultima_atualizacao: Date | null
+  tipo_venda: string | null
 }
 
 export type VendaCountAggregateOutputType = {
@@ -82,7 +82,6 @@ export type VendaCountAggregateOutputType = {
   id_caixa: number
   id_user: number
   id_cliente: number
-  tipo_venda: number
   data: number
   hora: number
   desconto: number
@@ -92,6 +91,7 @@ export type VendaCountAggregateOutputType = {
   valor_pago: number
   data_criacao: number
   ultima_atualizacao: number
+  tipo_venda: number
   _all: number
 }
 
@@ -116,7 +116,6 @@ export type VendaMinAggregateInputType = {
   id_caixa?: true
   id_user?: true
   id_cliente?: true
-  tipo_venda?: true
   data?: true
   hora?: true
   desconto?: true
@@ -126,6 +125,7 @@ export type VendaMinAggregateInputType = {
   valor_pago?: true
   data_criacao?: true
   ultima_atualizacao?: true
+  tipo_venda?: true
 }
 
 export type VendaMaxAggregateInputType = {
@@ -134,7 +134,6 @@ export type VendaMaxAggregateInputType = {
   id_caixa?: true
   id_user?: true
   id_cliente?: true
-  tipo_venda?: true
   data?: true
   hora?: true
   desconto?: true
@@ -144,6 +143,7 @@ export type VendaMaxAggregateInputType = {
   valor_pago?: true
   data_criacao?: true
   ultima_atualizacao?: true
+  tipo_venda?: true
 }
 
 export type VendaCountAggregateInputType = {
@@ -152,7 +152,6 @@ export type VendaCountAggregateInputType = {
   id_caixa?: true
   id_user?: true
   id_cliente?: true
-  tipo_venda?: true
   data?: true
   hora?: true
   desconto?: true
@@ -162,6 +161,7 @@ export type VendaCountAggregateInputType = {
   valor_pago?: true
   data_criacao?: true
   ultima_atualizacao?: true
+  tipo_venda?: true
   _all?: true
 }
 
@@ -257,7 +257,6 @@ export type VendaGroupByOutputType = {
   id_caixa: string | null
   id_user: string | null
   id_cliente: string | null
-  tipo_venda: string | null
   data: Date | null
   hora: Date | null
   desconto: runtime.Decimal | null
@@ -267,6 +266,7 @@ export type VendaGroupByOutputType = {
   valor_pago: runtime.Decimal
   data_criacao: Date | null
   ultima_atualizacao: Date | null
+  tipo_venda: string | null
   _count: VendaCountAggregateOutputType | null
   _avg: VendaAvgAggregateOutputType | null
   _sum: VendaSumAggregateOutputType | null
@@ -298,7 +298,6 @@ export type vendaWhereInput = {
   id_caixa?: Prisma.UuidNullableFilter<"venda"> | string | null
   id_user?: Prisma.UuidNullableFilter<"venda"> | string | null
   id_cliente?: Prisma.UuidNullableFilter<"venda"> | string | null
-  tipo_venda?: Prisma.StringNullableFilter<"venda"> | string | null
   data?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
   hora?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
   desconto?: Prisma.DecimalNullableFilter<"venda"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -308,6 +307,7 @@ export type vendaWhereInput = {
   valor_pago?: Prisma.DecimalFilter<"venda"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
+  tipo_venda?: Prisma.StringNullableFilter<"venda"> | string | null
   item_venda?: Prisma.Item_vendaListRelationFilter
   movimentacao?: Prisma.MovimentacaoListRelationFilter
   pagamento_venda?: Prisma.Pagamento_vendaListRelationFilter
@@ -323,7 +323,6 @@ export type vendaOrderByWithRelationInput = {
   id_caixa?: Prisma.SortOrderInput | Prisma.SortOrder
   id_user?: Prisma.SortOrderInput | Prisma.SortOrder
   id_cliente?: Prisma.SortOrderInput | Prisma.SortOrder
-  tipo_venda?: Prisma.SortOrderInput | Prisma.SortOrder
   data?: Prisma.SortOrderInput | Prisma.SortOrder
   hora?: Prisma.SortOrderInput | Prisma.SortOrder
   desconto?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -333,6 +332,7 @@ export type vendaOrderByWithRelationInput = {
   valor_pago?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrderInput | Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrderInput | Prisma.SortOrder
+  tipo_venda?: Prisma.SortOrderInput | Prisma.SortOrder
   item_venda?: Prisma.item_vendaOrderByRelationAggregateInput
   movimentacao?: Prisma.movimentacaoOrderByRelationAggregateInput
   pagamento_venda?: Prisma.pagamento_vendaOrderByRelationAggregateInput
@@ -351,7 +351,6 @@ export type vendaWhereUniqueInput = Prisma.AtLeast<{
   id_caixa?: Prisma.UuidNullableFilter<"venda"> | string | null
   id_user?: Prisma.UuidNullableFilter<"venda"> | string | null
   id_cliente?: Prisma.UuidNullableFilter<"venda"> | string | null
-  tipo_venda?: Prisma.StringNullableFilter<"venda"> | string | null
   data?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
   hora?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
   desconto?: Prisma.DecimalNullableFilter<"venda"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -361,6 +360,7 @@ export type vendaWhereUniqueInput = Prisma.AtLeast<{
   valor_pago?: Prisma.DecimalFilter<"venda"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
+  tipo_venda?: Prisma.StringNullableFilter<"venda"> | string | null
   item_venda?: Prisma.Item_vendaListRelationFilter
   movimentacao?: Prisma.MovimentacaoListRelationFilter
   pagamento_venda?: Prisma.Pagamento_vendaListRelationFilter
@@ -376,7 +376,6 @@ export type vendaOrderByWithAggregationInput = {
   id_caixa?: Prisma.SortOrderInput | Prisma.SortOrder
   id_user?: Prisma.SortOrderInput | Prisma.SortOrder
   id_cliente?: Prisma.SortOrderInput | Prisma.SortOrder
-  tipo_venda?: Prisma.SortOrderInput | Prisma.SortOrder
   data?: Prisma.SortOrderInput | Prisma.SortOrder
   hora?: Prisma.SortOrderInput | Prisma.SortOrder
   desconto?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -386,6 +385,7 @@ export type vendaOrderByWithAggregationInput = {
   valor_pago?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrderInput | Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrderInput | Prisma.SortOrder
+  tipo_venda?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.vendaCountOrderByAggregateInput
   _avg?: Prisma.vendaAvgOrderByAggregateInput
   _max?: Prisma.vendaMaxOrderByAggregateInput
@@ -402,7 +402,6 @@ export type vendaScalarWhereWithAggregatesInput = {
   id_caixa?: Prisma.UuidNullableWithAggregatesFilter<"venda"> | string | null
   id_user?: Prisma.UuidNullableWithAggregatesFilter<"venda"> | string | null
   id_cliente?: Prisma.UuidNullableWithAggregatesFilter<"venda"> | string | null
-  tipo_venda?: Prisma.StringNullableWithAggregatesFilter<"venda"> | string | null
   data?: Prisma.DateTimeNullableWithAggregatesFilter<"venda"> | Date | string | null
   hora?: Prisma.DateTimeNullableWithAggregatesFilter<"venda"> | Date | string | null
   desconto?: Prisma.DecimalNullableWithAggregatesFilter<"venda"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -412,11 +411,11 @@ export type vendaScalarWhereWithAggregatesInput = {
   valor_pago?: Prisma.DecimalWithAggregatesFilter<"venda"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.DateTimeNullableWithAggregatesFilter<"venda"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableWithAggregatesFilter<"venda"> | Date | string | null
+  tipo_venda?: Prisma.StringNullableWithAggregatesFilter<"venda"> | string | null
 }
 
 export type vendaCreateInput = {
   id_venda?: string
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -426,6 +425,7 @@ export type vendaCreateInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaCreateNestedManyWithoutVendaInput
@@ -441,7 +441,6 @@ export type vendaUncheckedCreateInput = {
   id_caixa?: string | null
   id_user?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -451,6 +450,7 @@ export type vendaUncheckedCreateInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoUncheckedCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedCreateNestedManyWithoutVendaInput
@@ -458,7 +458,6 @@ export type vendaUncheckedCreateInput = {
 
 export type vendaUpdateInput = {
   id_venda?: Prisma.StringFieldUpdateOperationsInput | string
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -468,6 +467,7 @@ export type vendaUpdateInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUpdateManyWithoutVendaNestedInput
@@ -483,7 +483,6 @@ export type vendaUncheckedUpdateInput = {
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -493,6 +492,7 @@ export type vendaUncheckedUpdateInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUncheckedUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedUpdateManyWithoutVendaNestedInput
@@ -504,7 +504,6 @@ export type vendaCreateManyInput = {
   id_caixa?: string | null
   id_user?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -514,11 +513,11 @@ export type vendaCreateManyInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
 }
 
 export type vendaUpdateManyMutationInput = {
   id_venda?: Prisma.StringFieldUpdateOperationsInput | string
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -528,6 +527,7 @@ export type vendaUpdateManyMutationInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type vendaUncheckedUpdateManyInput = {
@@ -536,7 +536,6 @@ export type vendaUncheckedUpdateManyInput = {
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -546,6 +545,7 @@ export type vendaUncheckedUpdateManyInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type VendaListRelationFilter = {
@@ -574,7 +574,6 @@ export type vendaCountOrderByAggregateInput = {
   id_caixa?: Prisma.SortOrder
   id_user?: Prisma.SortOrder
   id_cliente?: Prisma.SortOrder
-  tipo_venda?: Prisma.SortOrder
   data?: Prisma.SortOrder
   hora?: Prisma.SortOrder
   desconto?: Prisma.SortOrder
@@ -584,6 +583,7 @@ export type vendaCountOrderByAggregateInput = {
   valor_pago?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrder
+  tipo_venda?: Prisma.SortOrder
 }
 
 export type vendaAvgOrderByAggregateInput = {
@@ -599,7 +599,6 @@ export type vendaMaxOrderByAggregateInput = {
   id_caixa?: Prisma.SortOrder
   id_user?: Prisma.SortOrder
   id_cliente?: Prisma.SortOrder
-  tipo_venda?: Prisma.SortOrder
   data?: Prisma.SortOrder
   hora?: Prisma.SortOrder
   desconto?: Prisma.SortOrder
@@ -609,6 +608,7 @@ export type vendaMaxOrderByAggregateInput = {
   valor_pago?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrder
+  tipo_venda?: Prisma.SortOrder
 }
 
 export type vendaMinOrderByAggregateInput = {
@@ -617,7 +617,6 @@ export type vendaMinOrderByAggregateInput = {
   id_caixa?: Prisma.SortOrder
   id_user?: Prisma.SortOrder
   id_cliente?: Prisma.SortOrder
-  tipo_venda?: Prisma.SortOrder
   data?: Prisma.SortOrder
   hora?: Prisma.SortOrder
   desconto?: Prisma.SortOrder
@@ -627,6 +626,7 @@ export type vendaMinOrderByAggregateInput = {
   valor_pago?: Prisma.SortOrder
   data_criacao?: Prisma.SortOrder
   ultima_atualizacao?: Prisma.SortOrder
+  tipo_venda?: Prisma.SortOrder
 }
 
 export type vendaSumOrderByAggregateInput = {
@@ -850,7 +850,6 @@ export type vendaUncheckedUpdateManyWithoutUserNestedInput = {
 
 export type vendaCreateWithoutCaixaInput = {
   id_venda?: string
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -860,6 +859,7 @@ export type vendaCreateWithoutCaixaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaCreateNestedManyWithoutVendaInput
@@ -873,7 +873,6 @@ export type vendaUncheckedCreateWithoutCaixaInput = {
   id_loja: string
   id_user?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -883,6 +882,7 @@ export type vendaUncheckedCreateWithoutCaixaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoUncheckedCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedCreateNestedManyWithoutVendaInput
@@ -923,7 +923,6 @@ export type vendaScalarWhereInput = {
   id_caixa?: Prisma.UuidNullableFilter<"venda"> | string | null
   id_user?: Prisma.UuidNullableFilter<"venda"> | string | null
   id_cliente?: Prisma.UuidNullableFilter<"venda"> | string | null
-  tipo_venda?: Prisma.StringNullableFilter<"venda"> | string | null
   data?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
   hora?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
   desconto?: Prisma.DecimalNullableFilter<"venda"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -933,11 +932,11 @@ export type vendaScalarWhereInput = {
   valor_pago?: Prisma.DecimalFilter<"venda"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
   ultima_atualizacao?: Prisma.DateTimeNullableFilter<"venda"> | Date | string | null
+  tipo_venda?: Prisma.StringNullableFilter<"venda"> | string | null
 }
 
 export type vendaCreateWithoutClienteInput = {
   id_venda?: string
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -947,6 +946,7 @@ export type vendaCreateWithoutClienteInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaCreateNestedManyWithoutVendaInput
@@ -960,7 +960,6 @@ export type vendaUncheckedCreateWithoutClienteInput = {
   id_loja: string
   id_caixa?: string | null
   id_user?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -970,6 +969,7 @@ export type vendaUncheckedCreateWithoutClienteInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoUncheckedCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedCreateNestedManyWithoutVendaInput
@@ -1003,7 +1003,6 @@ export type vendaUpdateManyWithWhereWithoutClienteInput = {
 
 export type vendaCreateWithoutItem_vendaInput = {
   id_venda?: string
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1013,6 +1012,7 @@ export type vendaCreateWithoutItem_vendaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   movimentacao?: Prisma.movimentacaoCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaCreateNestedManyWithoutVendaInput
   caixa?: Prisma.caixaCreateNestedOneWithoutVendaInput
@@ -1027,7 +1027,6 @@ export type vendaUncheckedCreateWithoutItem_vendaInput = {
   id_caixa?: string | null
   id_user?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1037,6 +1036,7 @@ export type vendaUncheckedCreateWithoutItem_vendaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   movimentacao?: Prisma.movimentacaoUncheckedCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedCreateNestedManyWithoutVendaInput
 }
@@ -1059,7 +1059,6 @@ export type vendaUpdateToOneWithWhereWithoutItem_vendaInput = {
 
 export type vendaUpdateWithoutItem_vendaInput = {
   id_venda?: Prisma.StringFieldUpdateOperationsInput | string
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1069,6 +1068,7 @@ export type vendaUpdateWithoutItem_vendaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movimentacao?: Prisma.movimentacaoUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUpdateManyWithoutVendaNestedInput
   caixa?: Prisma.caixaUpdateOneWithoutVendaNestedInput
@@ -1083,7 +1083,6 @@ export type vendaUncheckedUpdateWithoutItem_vendaInput = {
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1093,13 +1092,13 @@ export type vendaUncheckedUpdateWithoutItem_vendaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movimentacao?: Prisma.movimentacaoUncheckedUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedUpdateManyWithoutVendaNestedInput
 }
 
 export type vendaCreateWithoutLojaInput = {
   id_venda?: string
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1109,6 +1108,7 @@ export type vendaCreateWithoutLojaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaCreateNestedManyWithoutVendaInput
@@ -1122,7 +1122,6 @@ export type vendaUncheckedCreateWithoutLojaInput = {
   id_caixa?: string | null
   id_user?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1132,6 +1131,7 @@ export type vendaUncheckedCreateWithoutLojaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoUncheckedCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedCreateNestedManyWithoutVendaInput
@@ -1165,7 +1165,6 @@ export type vendaUpdateManyWithWhereWithoutLojaInput = {
 
 export type vendaCreateWithoutMovimentacaoInput = {
   id_venda?: string
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1175,6 +1174,7 @@ export type vendaCreateWithoutMovimentacaoInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaCreateNestedManyWithoutVendaInput
   caixa?: Prisma.caixaCreateNestedOneWithoutVendaInput
@@ -1189,7 +1189,6 @@ export type vendaUncheckedCreateWithoutMovimentacaoInput = {
   id_caixa?: string | null
   id_user?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1199,6 +1198,7 @@ export type vendaUncheckedCreateWithoutMovimentacaoInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedCreateNestedManyWithoutVendaInput
 }
@@ -1221,7 +1221,6 @@ export type vendaUpdateToOneWithWhereWithoutMovimentacaoInput = {
 
 export type vendaUpdateWithoutMovimentacaoInput = {
   id_venda?: Prisma.StringFieldUpdateOperationsInput | string
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1231,6 +1230,7 @@ export type vendaUpdateWithoutMovimentacaoInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUpdateManyWithoutVendaNestedInput
   caixa?: Prisma.caixaUpdateOneWithoutVendaNestedInput
@@ -1245,7 +1245,6 @@ export type vendaUncheckedUpdateWithoutMovimentacaoInput = {
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1255,13 +1254,13 @@ export type vendaUncheckedUpdateWithoutMovimentacaoInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedUpdateManyWithoutVendaNestedInput
 }
 
 export type vendaCreateWithoutPagamento_vendaInput = {
   id_venda?: string
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1271,6 +1270,7 @@ export type vendaCreateWithoutPagamento_vendaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoCreateNestedManyWithoutVendaInput
   caixa?: Prisma.caixaCreateNestedOneWithoutVendaInput
@@ -1285,7 +1285,6 @@ export type vendaUncheckedCreateWithoutPagamento_vendaInput = {
   id_caixa?: string | null
   id_user?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1295,6 +1294,7 @@ export type vendaUncheckedCreateWithoutPagamento_vendaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoUncheckedCreateNestedManyWithoutVendaInput
 }
@@ -1317,7 +1317,6 @@ export type vendaUpdateToOneWithWhereWithoutPagamento_vendaInput = {
 
 export type vendaUpdateWithoutPagamento_vendaInput = {
   id_venda?: Prisma.StringFieldUpdateOperationsInput | string
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1327,6 +1326,7 @@ export type vendaUpdateWithoutPagamento_vendaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUpdateManyWithoutVendaNestedInput
   caixa?: Prisma.caixaUpdateOneWithoutVendaNestedInput
@@ -1341,7 +1341,6 @@ export type vendaUncheckedUpdateWithoutPagamento_vendaInput = {
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1351,13 +1350,13 @@ export type vendaUncheckedUpdateWithoutPagamento_vendaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUncheckedUpdateManyWithoutVendaNestedInput
 }
 
 export type vendaCreateWithoutUserInput = {
   id_venda?: string
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1367,6 +1366,7 @@ export type vendaCreateWithoutUserInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaCreateNestedManyWithoutVendaInput
@@ -1380,7 +1380,6 @@ export type vendaUncheckedCreateWithoutUserInput = {
   id_loja: string
   id_caixa?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1390,6 +1389,7 @@ export type vendaUncheckedCreateWithoutUserInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
   item_venda?: Prisma.item_vendaUncheckedCreateNestedManyWithoutVendaInput
   movimentacao?: Prisma.movimentacaoUncheckedCreateNestedManyWithoutVendaInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedCreateNestedManyWithoutVendaInput
@@ -1426,7 +1426,6 @@ export type vendaCreateManyCaixaInput = {
   id_loja: string
   id_user?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1436,11 +1435,11 @@ export type vendaCreateManyCaixaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
 }
 
 export type vendaUpdateWithoutCaixaInput = {
   id_venda?: Prisma.StringFieldUpdateOperationsInput | string
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1450,6 +1449,7 @@ export type vendaUpdateWithoutCaixaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUpdateManyWithoutVendaNestedInput
@@ -1463,7 +1463,6 @@ export type vendaUncheckedUpdateWithoutCaixaInput = {
   id_loja?: Prisma.StringFieldUpdateOperationsInput | string
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1473,6 +1472,7 @@ export type vendaUncheckedUpdateWithoutCaixaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUncheckedUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedUpdateManyWithoutVendaNestedInput
@@ -1483,7 +1483,6 @@ export type vendaUncheckedUpdateManyWithoutCaixaInput = {
   id_loja?: Prisma.StringFieldUpdateOperationsInput | string
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1493,6 +1492,7 @@ export type vendaUncheckedUpdateManyWithoutCaixaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type vendaCreateManyClienteInput = {
@@ -1500,7 +1500,6 @@ export type vendaCreateManyClienteInput = {
   id_loja: string
   id_caixa?: string | null
   id_user?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1510,11 +1509,11 @@ export type vendaCreateManyClienteInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
 }
 
 export type vendaUpdateWithoutClienteInput = {
   id_venda?: Prisma.StringFieldUpdateOperationsInput | string
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1524,6 +1523,7 @@ export type vendaUpdateWithoutClienteInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUpdateManyWithoutVendaNestedInput
@@ -1537,7 +1537,6 @@ export type vendaUncheckedUpdateWithoutClienteInput = {
   id_loja?: Prisma.StringFieldUpdateOperationsInput | string
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1547,6 +1546,7 @@ export type vendaUncheckedUpdateWithoutClienteInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUncheckedUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedUpdateManyWithoutVendaNestedInput
@@ -1557,7 +1557,6 @@ export type vendaUncheckedUpdateManyWithoutClienteInput = {
   id_loja?: Prisma.StringFieldUpdateOperationsInput | string
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1567,6 +1566,7 @@ export type vendaUncheckedUpdateManyWithoutClienteInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type vendaCreateManyLojaInput = {
@@ -1574,7 +1574,6 @@ export type vendaCreateManyLojaInput = {
   id_caixa?: string | null
   id_user?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1584,11 +1583,11 @@ export type vendaCreateManyLojaInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
 }
 
 export type vendaUpdateWithoutLojaInput = {
   id_venda?: Prisma.StringFieldUpdateOperationsInput | string
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1598,6 +1597,7 @@ export type vendaUpdateWithoutLojaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUpdateManyWithoutVendaNestedInput
@@ -1611,7 +1611,6 @@ export type vendaUncheckedUpdateWithoutLojaInput = {
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1621,6 +1620,7 @@ export type vendaUncheckedUpdateWithoutLojaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUncheckedUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedUpdateManyWithoutVendaNestedInput
@@ -1631,7 +1631,6 @@ export type vendaUncheckedUpdateManyWithoutLojaInput = {
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_user?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1641,6 +1640,7 @@ export type vendaUncheckedUpdateManyWithoutLojaInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type vendaCreateManyUserInput = {
@@ -1648,7 +1648,6 @@ export type vendaCreateManyUserInput = {
   id_loja: string
   id_caixa?: string | null
   id_cliente?: string | null
-  tipo_venda?: string | null
   data?: Date | string | null
   hora?: Date | string | null
   desconto?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1658,11 +1657,11 @@ export type vendaCreateManyUserInput = {
   valor_pago: runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Date | string | null
   ultima_atualizacao?: Date | string | null
+  tipo_venda?: string | null
 }
 
 export type vendaUpdateWithoutUserInput = {
   id_venda?: Prisma.StringFieldUpdateOperationsInput | string
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1672,6 +1671,7 @@ export type vendaUpdateWithoutUserInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUpdateManyWithoutVendaNestedInput
@@ -1685,7 +1685,6 @@ export type vendaUncheckedUpdateWithoutUserInput = {
   id_loja?: Prisma.StringFieldUpdateOperationsInput | string
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1695,6 +1694,7 @@ export type vendaUncheckedUpdateWithoutUserInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   item_venda?: Prisma.item_vendaUncheckedUpdateManyWithoutVendaNestedInput
   movimentacao?: Prisma.movimentacaoUncheckedUpdateManyWithoutVendaNestedInput
   pagamento_venda?: Prisma.pagamento_vendaUncheckedUpdateManyWithoutVendaNestedInput
@@ -1705,7 +1705,6 @@ export type vendaUncheckedUpdateManyWithoutUserInput = {
   id_loja?: Prisma.StringFieldUpdateOperationsInput | string
   id_caixa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   id_cliente?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   data?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   hora?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   desconto?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1715,6 +1714,7 @@ export type vendaUncheckedUpdateManyWithoutUserInput = {
   valor_pago?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   data_criacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ultima_atualizacao?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  tipo_venda?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -1772,7 +1772,6 @@ export type vendaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   id_caixa?: boolean
   id_user?: boolean
   id_cliente?: boolean
-  tipo_venda?: boolean
   data?: boolean
   hora?: boolean
   desconto?: boolean
@@ -1782,6 +1781,7 @@ export type vendaSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   valor_pago?: boolean
   data_criacao?: boolean
   ultima_atualizacao?: boolean
+  tipo_venda?: boolean
   item_venda?: boolean | Prisma.venda$item_vendaArgs<ExtArgs>
   movimentacao?: boolean | Prisma.venda$movimentacaoArgs<ExtArgs>
   pagamento_venda?: boolean | Prisma.venda$pagamento_vendaArgs<ExtArgs>
@@ -1798,7 +1798,6 @@ export type vendaSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   id_caixa?: boolean
   id_user?: boolean
   id_cliente?: boolean
-  tipo_venda?: boolean
   data?: boolean
   hora?: boolean
   desconto?: boolean
@@ -1808,6 +1807,7 @@ export type vendaSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   valor_pago?: boolean
   data_criacao?: boolean
   ultima_atualizacao?: boolean
+  tipo_venda?: boolean
   caixa?: boolean | Prisma.venda$caixaArgs<ExtArgs>
   cliente?: boolean | Prisma.venda$clienteArgs<ExtArgs>
   loja?: boolean | Prisma.lojaDefaultArgs<ExtArgs>
@@ -1820,7 +1820,6 @@ export type vendaSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   id_caixa?: boolean
   id_user?: boolean
   id_cliente?: boolean
-  tipo_venda?: boolean
   data?: boolean
   hora?: boolean
   desconto?: boolean
@@ -1830,6 +1829,7 @@ export type vendaSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   valor_pago?: boolean
   data_criacao?: boolean
   ultima_atualizacao?: boolean
+  tipo_venda?: boolean
   caixa?: boolean | Prisma.venda$caixaArgs<ExtArgs>
   cliente?: boolean | Prisma.venda$clienteArgs<ExtArgs>
   loja?: boolean | Prisma.lojaDefaultArgs<ExtArgs>
@@ -1842,7 +1842,6 @@ export type vendaSelectScalar = {
   id_caixa?: boolean
   id_user?: boolean
   id_cliente?: boolean
-  tipo_venda?: boolean
   data?: boolean
   hora?: boolean
   desconto?: boolean
@@ -1852,9 +1851,10 @@ export type vendaSelectScalar = {
   valor_pago?: boolean
   data_criacao?: boolean
   ultima_atualizacao?: boolean
+  tipo_venda?: boolean
 }
 
-export type vendaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id_venda" | "id_loja" | "id_caixa" | "id_user" | "id_cliente" | "tipo_venda" | "data" | "hora" | "desconto" | "acrescimo" | "status" | "total_final" | "valor_pago" | "data_criacao" | "ultima_atualizacao", ExtArgs["result"]["venda"]>
+export type vendaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id_venda" | "id_loja" | "id_caixa" | "id_user" | "id_cliente" | "data" | "hora" | "desconto" | "acrescimo" | "status" | "total_final" | "valor_pago" | "data_criacao" | "ultima_atualizacao" | "tipo_venda", ExtArgs["result"]["venda"]>
 export type vendaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   item_venda?: boolean | Prisma.venda$item_vendaArgs<ExtArgs>
   movimentacao?: boolean | Prisma.venda$movimentacaoArgs<ExtArgs>
@@ -1895,7 +1895,6 @@ export type $vendaPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     id_caixa: string | null
     id_user: string | null
     id_cliente: string | null
-    tipo_venda: string | null
     data: Date | null
     hora: Date | null
     desconto: runtime.Decimal | null
@@ -1905,6 +1904,7 @@ export type $vendaPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     valor_pago: runtime.Decimal
     data_criacao: Date | null
     ultima_atualizacao: Date | null
+    tipo_venda: string | null
   }, ExtArgs["result"]["venda"]>
   composites: {}
 }
@@ -2340,7 +2340,6 @@ export interface vendaFieldRefs {
   readonly id_caixa: Prisma.FieldRef<"venda", 'String'>
   readonly id_user: Prisma.FieldRef<"venda", 'String'>
   readonly id_cliente: Prisma.FieldRef<"venda", 'String'>
-  readonly tipo_venda: Prisma.FieldRef<"venda", 'String'>
   readonly data: Prisma.FieldRef<"venda", 'DateTime'>
   readonly hora: Prisma.FieldRef<"venda", 'DateTime'>
   readonly desconto: Prisma.FieldRef<"venda", 'Decimal'>
@@ -2350,6 +2349,7 @@ export interface vendaFieldRefs {
   readonly valor_pago: Prisma.FieldRef<"venda", 'Decimal'>
   readonly data_criacao: Prisma.FieldRef<"venda", 'DateTime'>
   readonly ultima_atualizacao: Prisma.FieldRef<"venda", 'DateTime'>
+  readonly tipo_venda: Prisma.FieldRef<"venda", 'String'>
 }
     
 
