@@ -1,3 +1,4 @@
+// src/features/products/ProductDetailModal.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -29,7 +30,7 @@ const ProductDetailModal = ({ productId, onClose, onSuccess }: Props) => {
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
       setError(
-        axiosError.response?.data?.message || "Erro ao carregar produto."
+        axiosError.response?.data?.message || "Erro ao carregar produto.",
       );
     } finally {
       setLoading(false);

@@ -9,46 +9,83 @@ import {
 } from "./product.dto";
 import { AppError } from "../../app/middleware/error.middleware";
 import { LogService } from "../logs/log.service";
+import { Prisma } from "../../shared/database/generated/prisma/client";
+// Validações manuais (isValidUUID, isValidString) removidas -> Zod
 
 export class ProductService {
   constructor(
     private repo: IProductRepository,
-    private logService: LogService,
+    private logService: LogService
   ) {}
 
-  // --- PRODUTOS ---
+  // ==========================================================================
+  // PRODUTOS
+  // ==========================================================================
 
   async createProduct(data: CreateProductDTO): Promise<ProductEntity> {
-    const existingProduct = await this.repo.findByReferencia(
-      data.referencia,
-      data.id_loja,
-    );
-    if (existingProduct)
-      throw new AppError(`Referência '${data.referencia}' já existe.`, 409);
+    // Validação de formato feita pelo Zod
 
-    const product = await this.repo.create(data);
-    await this.logService.logSystem({
-      id_user: data.actorUserId,
-      acao: "Criar Produto",
-      detalhes: `ID: ${product.id_produto}`,
-    });
-    return product;
+    try {
+      const product = await this.repo.create(data);
+
+      await this.logService.logSystem({
+        id_user: data.actorUserId,
+        acao: "Criar Produto",
+        detalhes: `Produto '${product.nome}' criado com ID: ${product.id_produto}.`,
+      });
+
+      return product;
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        const target = err.meta?.target as string[];
+        if (target?.includes("referencia")) {
+          throw new AppError(
+            `A referência '${data.referencia}' já está sendo usada por outro produto.`,
+            409
+          );
+        }
+      }
+      throw err;
+    }
   }
 
   async updateProduct(
     id: string,
-    data: UpdateProductDTO,
+    data: UpdateProductDTO
   ): Promise<ProductEntity> {
+    // Validação ID UUID feita pelo Zod
+
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Produto não encontrado.", 404);
 
-    const updated = await this.repo.update(id, data);
-    await this.logService.logSystem({
-      id_user: data.actorUserId,
-      acao: "Atualizar Produto",
-      detalhes: `ID: ${id}`,
-    });
-    return updated;
+    try {
+      const updated = await this.repo.update(id, data);
+
+      await this.logService.logSystem({
+        id_user: data.actorUserId,
+        acao: "Atualizar Produto",
+        detalhes: `Produto '${existing.nome}' (ID: ${id}) atualizado.`,
+      });
+
+      return updated;
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        const target = err.meta?.target as string[];
+        if (target?.includes("referencia")) {
+          throw new AppError(
+            `A referência '${data.referencia}' já está sendo usada por outro produto.`,
+            409
+          );
+        }
+      }
+      throw err;
+    }
   }
 
   async deleteProduct(id: string, actorUserId: string): Promise<void> {
@@ -56,10 +93,11 @@ export class ProductService {
     if (!existing) throw new AppError("Produto não encontrado.", 404);
 
     await this.repo.delete(id);
+
     await this.logService.logSystem({
       id_user: actorUserId,
       acao: "Remover Produto",
-      detalhes: `ID: ${id}`,
+      detalhes: `Produto '${existing.nome}' (ID: ${id}) removido.`,
     });
   }
 
@@ -69,68 +107,62 @@ export class ProductService {
     return product;
   }
 
-  // ATUALIZADO: Aceita orderBy (4 parâmetros)
-  async getProductsPaginated(
-    page: number,
-    limit: number,
-    lojaId?: string,
-    orderBy?: string,
-  ) {
-    const { data, total } = await this.repo.findPaginated(
-      page,
-      limit,
-      lojaId,
-      orderBy,
-    );
+  async getProductsPaginated(page: number, limit: number, lojaId?: string) {
+    const { data, total } = await this.repo.findPaginated(page, limit, lojaId);
     return { data, total, page, lastPage: Math.ceil(total / limit) };
   }
 
-  // ATUALIZADO: Aceita orderBy (5 parâmetros)
   async searchProducts(
     term: string,
     page: number,
     limit: number,
-    lojaId?: string,
-    orderBy?: string,
+    lojaId?: string
   ) {
     const { data, total } = await this.repo.searchPaginated(
       term,
       page,
       limit,
-      lojaId,
-      orderBy,
+      lojaId
     );
     return { data, total, page, lastPage: Math.ceil(total / limit) };
   }
 
-  // --- VARIAÇÕES ---
+  // ==========================================================================
+  // VARIAÇÕES
+  // ==========================================================================
 
   async createVariation(data: CreateVariationDTO): Promise<VariationEntity> {
+    // Validações de quantidade, valor e formato feitas pelo Zod
+
     const produtoPai = await this.repo.findById(data.id_produto);
     if (!produtoPai) throw new AppError("Produto pai não encontrado.", 404);
 
     const variation = await this.repo.createVariation(data);
+
     await this.logService.logSystem({
       id_user: data.actorUserId,
       acao: "Criar Variação",
-      detalhes: `Nova variação no produto ${produtoPai.nome}`,
+      detalhes: `Variação '${variation.nome}' adicionada ao produto '${produtoPai.nome}'.`,
     });
+
     return variation;
   }
 
   async updateVariation(
     id: string,
-    data: UpdateVariationDTO,
+    data: UpdateVariationDTO
   ): Promise<VariationEntity> {
     const existing = await this.repo.findVariationById(id);
     if (!existing) throw new AppError("Variação não encontrada.", 404);
 
     const updated = await this.repo.updateVariation(id, data);
+
     await this.logService.logSystem({
       id_user: data.actorUserId,
       acao: "Atualizar Variação",
-      detalhes: `ID: ${id}`,
+      detalhes: `Variação '${existing.nome}' (ID: ${id}) atualizada.`,
     });
+
     return updated;
   }
 
@@ -139,10 +171,11 @@ export class ProductService {
     if (!existing) throw new AppError("Variação não encontrada.", 404);
 
     await this.repo.deleteVariation(id);
+
     await this.logService.logSystem({
       id_user: actorUserId,
       acao: "Remover Variação",
-      detalhes: `ID: ${id}`,
+      detalhes: `Variação '${existing.nome}' (ID: ${id}) removida.`,
     });
   }
 
@@ -156,7 +189,7 @@ export class ProductService {
     const { data, total } = await this.repo.findVariationsPaginated(
       page,
       limit,
-      lojaId,
+      lojaId
     );
     return { data, total, page, lastPage: Math.ceil(total / limit) };
   }
@@ -165,13 +198,13 @@ export class ProductService {
     term: string,
     page: number,
     limit: number,
-    lojaId?: string,
+    lojaId?: string
   ) {
     const { data, total } = await this.repo.searchVariations(
       term,
       page,
       limit,
-      lojaId,
+      lojaId
     );
     return { data, total, page, lastPage: Math.ceil(total / limit) };
   }
@@ -179,12 +212,12 @@ export class ProductService {
   async getPaginatedVariationsByProduct(
     productId: string,
     page: number,
-    limit: number,
+    limit: number
   ) {
     const { data, total } = await this.repo.findVariationsByProduct(
       productId,
       page,
-      limit,
+      limit
     );
     return { data, total, page, lastPage: Math.ceil(total / limit) };
   }
@@ -193,13 +226,13 @@ export class ProductService {
     productId: string,
     term: string,
     page: number,
-    limit: number,
+    limit: number
   ) {
     const { data, total } = await this.repo.searchVariationsByProduct(
       productId,
       term,
       page,
-      limit,
+      limit
     );
     return { data, total, page, lastPage: Math.ceil(total / limit) };
   }

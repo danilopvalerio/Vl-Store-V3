@@ -34,19 +34,24 @@ const controller = new UserProfileController(service);
 router.use(authMiddleware);
 
 // --- ROTAS GERAIS ---
-// Criar novo perfil: Adicionado validate(createUserProfileSchema)
+router.get(
+  "/:id/avatar",
+  validate(userProfileIdSchema), // Valida se o ID é UUID
+  controller.getAvatar,
+);
+
 router.post(
   "/",
   requireRole(["SUPER_ADMIN", "ADMIN"]),
   validate(createUserProfileSchema),
-  controller.create
+  controller.create,
 );
 
 // Listar perfis
 router.get(
   "/",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
-  controller.getAll
+  controller.getAll,
 );
 
 // Buscar perfil pelo user_id
@@ -55,20 +60,20 @@ router.get(
   "/user/:userId",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE", "FUNCIONARIO"]),
   validate(userIdParamSchema),
-  controller.getByUserId
+  controller.getByUserId,
 );
 
 // --- ROTAS ESPECÍFICAS ---
 router.get(
   "/paginated",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
-  controller.getPaginated
+  controller.getPaginated,
 );
 
 router.get(
   "/search",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
-  controller.searchPaginated
+  controller.searchPaginated,
 );
 
 // --- ROTAS DINÂMICAS ---
@@ -77,7 +82,7 @@ router.get(
   "/:id",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
   validate(userProfileIdSchema),
-  controller.getById
+  controller.getById,
 );
 
 // Atualizar cargo/perfil
@@ -86,7 +91,7 @@ router.patch(
   "/:id",
   requireRole(["SUPER_ADMIN", "ADMIN"]),
   validate(updateUserProfileSchema),
-  controller.update
+  controller.update,
 );
 
 // Demitir (Remover perfil)
@@ -94,7 +99,7 @@ router.delete(
   "/:id",
   requireRole(["SUPER_ADMIN", "ADMIN"]),
   validate(userProfileIdSchema),
-  controller.remove
+  controller.remove,
 );
 
 export default router;

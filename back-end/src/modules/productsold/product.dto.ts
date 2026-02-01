@@ -17,12 +17,6 @@ export interface ProductEntity {
   ultima_atualizacao: Date | null;
 }
 
-export interface VariationImageEntity {
-  id_imagem: string;
-  caminho: string;
-  principal: boolean;
-}
-
 export interface VariationEntity {
   id_variacao: string;
   id_produto: string;
@@ -30,16 +24,15 @@ export interface VariationEntity {
   descricao: string | null;
   quantidade: number | null;
   valor: number;
-  imagens?: VariationImageEntity[];
   data_criacao: Date | null;
   ultima_atualizacao: Date | null;
 }
 
+// DTO estendido para listagem (inclui campos calculados)
 export interface ProductListingDTO extends ProductEntity {
   total_estoque: number;
   qtd_variacoes: number;
   menor_valor: number;
-  imagem_capa: string | null;
 }
 
 // ============================================================================
@@ -49,7 +42,7 @@ export interface ProductListingDTO extends ProductEntity {
 export interface CreateProductDTO {
   id_loja: string;
   nome: string;
-  referencia: string;
+  referencia?: string;
   categoria?: string;
   material?: string;
   genero?: string;
@@ -77,7 +70,6 @@ export interface CreateVariationDTO {
   quantidade: number;
   valor: number;
   actorUserId?: string;
-  files?: Express.Multer.File[]; // Tipagem correta do Multer
 }
 
 export interface UpdateVariationDTO {
@@ -86,39 +78,37 @@ export interface UpdateVariationDTO {
   quantidade?: number;
   valor?: number;
   actorUserId?: string;
-  files?: Express.Multer.File[]; // Tipagem correta do Multer
 }
 
 // ============================================================================
 // INTERFACE DO REPOSITÓRIO
 // ============================================================================
 
-export interface IProductRepository extends IBaseRepository<
-  ProductEntity,
-  CreateProductDTO,
-  UpdateProductDTO
-> {
-  // Listagens Especiais
+// CORREÇÃO: Estendendo o IBaseRepository para padronizar
+export interface IProductRepository
+  extends IBaseRepository<ProductEntity, CreateProductDTO, UpdateProductDTO> {
+  // Sobrescrevendo a tipagem dos métodos de listagem para retornar o DTO enriquecido (ListingDTO)
+  // O TypeScript permite isso se o tipo for compatível ou mais específico
   findPaginated(
     page: number,
     limit: number,
-    lojaId?: string,
-    orderBy?: string,
+    lojaId?: string
   ): Promise<{ data: ProductListingDTO[]; total: number }>;
-
   searchPaginated(
     query: string,
     page: number,
     limit: number,
-    lojaId?: string,
-    orderBy?: string,
+    lojaId?: string
   ): Promise<{ data: ProductListingDTO[]; total: number }>;
 
-  // Variações
+  // --- MÉTODOS ESPECÍFICOS DE VARIAÇÕES ---
+  // (Como não criamos um módulo separado para variações BaseRepository só
+  // lida com uma entidade por vez, mantemos os métodos de variações explícitos)
+
   createVariation(data: CreateVariationDTO): Promise<VariationEntity>;
   updateVariation(
     id: string,
-    data: UpdateVariationDTO,
+    data: UpdateVariationDTO
   ): Promise<VariationEntity>;
   deleteVariation(id: string): Promise<void>;
   findVariationById(id: string): Promise<VariationEntity | null>;
@@ -126,31 +116,24 @@ export interface IProductRepository extends IBaseRepository<
   findVariationsPaginated(
     page: number,
     limit: number,
-    lojaId?: string,
+    lojaId?: string
   ): Promise<{ data: VariationEntity[]; total: number }>;
-
   searchVariations(
     query: string,
     page: number,
     limit: number,
-    lojaId?: string,
+    lojaId?: string
   ): Promise<{ data: VariationEntity[]; total: number }>;
 
   findVariationsByProduct(
     productId: string,
     page: number,
-    limit: number,
+    limit: number
   ): Promise<{ data: VariationEntity[]; total: number }>;
-
   searchVariationsByProduct(
     productId: string,
     query: string,
     page: number,
-    limit: number,
+    limit: number
   ): Promise<{ data: VariationEntity[]; total: number }>;
-
-  findByReferencia(
-    referencia: string,
-    lojaId: string,
-  ): Promise<ProductEntity | null>;
 }

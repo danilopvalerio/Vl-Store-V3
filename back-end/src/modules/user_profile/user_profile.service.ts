@@ -1,3 +1,5 @@
+import path from "path";
+import fs from "fs";
 import {
   IUserProfileRepository,
   CreateUserProfileDTO,
@@ -11,20 +13,66 @@ import { LogService } from "../logs/log.service";
 export class UserProfileService {
   constructor(
     private repo: IUserProfileRepository,
-    private logService: LogService
+    private logService: LogService,
   ) {}
+
+  async getProfileAvatarPath(
+    profileId: string,
+    requestingUserId: string, // ID de quem está pedindo (token)
+    requestingUserRole?: string,
+  ): Promise<string> {
+    const profile = await this.repo.findById(profileId);
+
+    if (!profile) {
+      throw new AppError("Perfil não encontrado.", 404);
+    }
+
+    if (!profile.foto_url) {
+      throw new AppError("Este perfil não possui foto.", 404);
+    }
+
+    // --- Validação de Segurança (Arquivo Privado) ---
+    // Apenas o dono do perfil ou Admin/Gerente pode ver a foto
+    const isOwner = profile.user_id === requestingUserId;
+    const isAdmin = ["SUPER_ADMIN", "ADMIN", "GERENTE"].includes(
+      requestingUserRole || "",
+    );
+
+    if (!isOwner && !isAdmin) {
+      // Se quiser ser muito estrito, lance 403.
+      // Se quiser esconder a existência, lance 404.
+      throw new AppError("Acesso negado à imagem.", 403);
+    }
+
+    // Constrói o caminho.
+    // AJUSTE O '..' CONFORME SUA ESTRUTURA DE PASTAS.
+    // Supondo que a pasta 'uploads' está na raiz do projeto (fora do src)
+    const uploadsFolder = path.resolve(__dirname, "..", "..", "..", "uploads");
+    const filePath = path.join(uploadsFolder, profile.foto_url);
+
+    // Evitar Path Traversal (segurança)
+    if (!filePath.startsWith(uploadsFolder)) {
+      throw new AppError("Caminho de arquivo inválido.", 400);
+    }
+
+    if (!fs.existsSync(filePath)) {
+      throw new AppError("Arquivo de imagem não encontrado no disco.", 404);
+    }
+
+    return filePath;
+  }
 
   async createProfile(data: CreateUserProfileDTO): Promise<UserProfileEntity> {
     // 1. Verifica duplicidade de perfil (REGRA DE NEGÓCIO)
     const userHasProfile = await this.repo.findByUserId(
       data.user_id,
-      data.id_loja
+      data.id_loja,
     );
 
     if (userHasProfile) {
       throw new AppError(
         "Este usuário já possui um perfil cadastrado nesta loja.",
-        409
+        409,
       );
     }
 
@@ -32,7 +80,7 @@ export class UserProfileService {
     if (data.cpf_cnpj) {
       const existing = await this.repo.findByCpfCnpj(
         data.cpf_cnpj,
-        data.id_loja
+        data.id_loja,
       );
       if (existing) {
         throw new AppError("Este CPF/CNPJ já está cadastrado nesta loja.", 409);
@@ -43,7 +91,7 @@ export class UserProfileService {
     if (data.tipo_perfil === "SUPER_ADMIN") {
       throw new AppError(
         "Criação de perfis SUPER_ADMIN não permitida por esta rota.",
-        403
+        403,
       );
     }
 
@@ -60,7 +108,7 @@ export class UserProfileService {
 
   async updateProfile(
     id: string,
-    data: UpdateUserProfileDTO
+    data: UpdateUserProfileDTO,
   ): Promise<UserProfileEntity> {
     // A validação de ID UUID já foi feita no middleware/Zod
 
@@ -71,12 +119,12 @@ export class UserProfileService {
     if (data.cpf_cnpj && data.cpf_cnpj !== existing.cpf_cnpj) {
       const docExists = await this.repo.findByCpfCnpj(
         data.cpf_cnpj,
-        existing.id_loja
+        existing.id_loja,
       );
       if (docExists && docExists.id_user_profile !== id) {
         throw new AppError(
           "Este CPF/CNPJ já está cadastrado para outro usuário nesta loja.",
-          409
+          409,
         );
       }
     }
@@ -84,7 +132,7 @@ export class UserProfileService {
     if (data.tipo_perfil === "SUPER_ADMIN") {
       throw new AppError(
         "Alteração manual para SUPER_ADMIN não permitida.",
-        403
+        403,
       );
     }
 
@@ -100,16 +148,29 @@ export class UserProfileService {
   }
 
   async deleteProfile(id: string, actorUserId?: string): Promise<void> {
-    // Validação de ID UUID feita pelo Zod
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Perfil não encontrado.", 404);
 
-    await this.repo.delete(id);
+    // Se tiver foto, delete do disco
+    if (existing.foto_url) {
+      const uploadsFolder = path.resolve(
+        __dirname,
+        "..",
+        "..",
+        "..",
+        "uploads",
+      );
+      const filePath = path.join(uploadsFolder, existing.foto_url);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath); // Deleta o arquivo físico
+      }
+    }
 
+    await this.repo.delete(id);
     await this.logService.logSystem({
       id_user: actorUserId,
       acao: "Remover Perfil",
-      detalhes: `O perfil do funcionário '${existing.nome}' (ID: ${id}) foi removido.`,
+      detalhes: `Perfil ${id} removido.`,
     });
   }
 
@@ -122,7 +183,7 @@ export class UserProfileService {
 
   async getProfileByUserId(
     userId: string,
-    lojaId?: string
+    lojaId?: string,
   ): Promise<UserProfileEntity> {
     // Validação de userId UUID feita pelo Zod
     const profile = await this.repo.findByUserId(userId, lojaId);
@@ -150,7 +211,7 @@ export class UserProfileService {
     const { data, total } = await this.repo.findPaginatedWithFilter(
       page,
       limit,
-      lojaId
+      lojaId,
     );
     return { data, total, page, lastPage: Math.ceil(total / limit) };
   }
@@ -172,7 +233,7 @@ export class UserProfileService {
       query,
       page,
       limit,
-      lojaId
+      lojaId,
     );
     return { data, total, page, lastPage: Math.ceil(total / limit) };
   }

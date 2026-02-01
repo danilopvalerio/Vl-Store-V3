@@ -1,3 +1,4 @@
+// src/features/products/AddProductModal.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,7 +13,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import api from "../../utils/api";
-// Import ajustado para o tipo global
 import { ApiErrorResponse } from "../../types/api";
 
 interface AddProductProps {
@@ -32,11 +32,8 @@ const AddProductModal = ({ onClose, onSuccess }: AddProductProps) => {
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
-
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
@@ -62,6 +59,7 @@ const AddProductModal = ({ onClose, onSuccess }: AddProductProps) => {
 
       await api.post("/products", payload);
       onSuccess();
+      onClose();
     } catch (err) {
       console.error(err);
       const axiosError = err as AxiosError<ApiErrorResponse>;
@@ -78,15 +76,15 @@ const AddProductModal = ({ onClose, onSuccess }: AddProductProps) => {
   return (
     <div
       className="modal-backdrop d-flex justify-content-center align-items-center"
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.48)" }}
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.48)", zIndex: 1050 }}
       onClick={onClose}
     >
       <div
         className="modal-dialog detail-box"
-        style={{ maxWidth: "600px" }}
+        style={{ maxWidth: "600px", width: "100%" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="modal-content border-0 shadow">
+        <div className="modal-content border-0 shadow rounded-4">
           <div className="modal-header bg-white border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
             <h5 className="modal-title fw-bold text-secondary">Novo Produto</h5>
             <button
@@ -195,6 +193,7 @@ const AddProductModal = ({ onClose, onSuccess }: AddProductProps) => {
                     <option value="UNISSEX">Unissex</option>
                     <option value="MASCULINO">Masculino</option>
                     <option value="FEMININO">Feminino</option>
+                    <option value="INFANTIL">Infantil Unissex</option>
                     <option value="INFANTIL_FEMININO">Infantil Feminino</option>
                     <option value="INFANTIL_MASCULINO">
                       Infantil Masculino

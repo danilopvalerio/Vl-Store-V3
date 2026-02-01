@@ -1,6 +1,7 @@
+// src/features/products/ProductVariations.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
@@ -9,11 +10,16 @@ import {
   faSave,
   faTimes,
   faTrash,
+  faImage,
+  faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 import { AxiosError } from "axios";
+import Image from "next/image"; // <--- IMPORTANTE
 import api from "../../utils/api";
 import { Variation, GetVariationsQueryParams } from "./types/index";
 import { ApiErrorResponse, PaginatedResponse } from "../../types/api";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
 
 interface ProductVariationsProps {
   productId: string;
@@ -32,9 +38,16 @@ const ProductVariations = ({ productId }: ProductVariationsProps) => {
 
   // Edit / Create State
   const [editingVarId, setEditingVarId] = useState<string | null>(null);
+
+  // Form Fields
   const [editVarNome, setEditVarNome] = useState("");
   const [editVarQtd, setEditVarQtd] = useState(0);
   const [editVarValor, setEditVarValor] = useState(0);
+  const [editVarDescricao, setEditVarDescricao] = useState("");
+
+  // Upload Files State
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadVariations = useCallback(async () => {
     if (!productId) return;
@@ -64,57 +77,76 @@ const ProductVariations = ({ productId }: ProductVariationsProps) => {
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
       setError(
-        axiosError.response?.data?.message || "Erro ao carregar variações."
+        axiosError.response?.data?.message || "Erro ao carregar variações.",
       );
     } finally {
       setLoading(false);
     }
   }, [productId, page, limit, searchVarTerm]);
 
-  // Load on mount or when dependencies change
   useEffect(() => {
     loadVariations();
   }, [loadVariations]);
 
   // --- ACTIONS ---
 
+  const resetForm = () => {
+    setEditVarNome("");
+    setEditVarQtd(0);
+    setEditVarValor(0);
+    setEditVarDescricao("");
+    setSelectedFiles(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const startEditVariation = (v: Variation) => {
     setEditingVarId(v.id_variacao);
     setEditVarNome(v.nome);
     setEditVarQtd(v.quantidade);
     setEditVarValor(Number(v.valor));
+    setEditVarDescricao(v.descricao || "");
+    setSelectedFiles(null);
   };
 
   const startAddVariation = () => {
     setEditingVarId("new");
-    setEditVarNome("");
-    setEditVarQtd(0);
-    setEditVarValor(0);
+    resetForm();
   };
 
   const cancelEditVariation = () => {
     setEditingVarId(null);
+    resetForm();
   };
 
   const saveVariation = async () => {
     if (!editVarNome) return alert("Nome da variação é obrigatório");
 
     try {
-      if (editingVarId === "new") {
-        await api.post("/products/variations", {
-          id_produto: productId,
-          nome: editVarNome,
-          quantidade: editVarQtd,
-          valor: editVarValor,
-        });
-      } else {
-        await api.patch(`/products/variations/${editingVarId}`, {
-          nome: editVarNome,
-          quantidade: editVarQtd,
-          valor: editVarValor,
+      const formData = new FormData();
+      formData.append("nome", editVarNome);
+      formData.append("quantidade", String(editVarQtd));
+      formData.append("valor", String(editVarValor));
+      if (editVarDescricao) formData.append("descricao", editVarDescricao);
+
+      if (selectedFiles && selectedFiles.length > 0) {
+        Array.from(selectedFiles).forEach((file) => {
+          formData.append("imagens", file);
         });
       }
+
+      if (editingVarId === "new") {
+        formData.append("id_produto", productId);
+        await api.post("/products/variations", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else if (editingVarId) {
+        await api.patch(`/products/variations/${editingVarId}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
       setEditingVarId(null);
+      resetForm();
       loadVariations();
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
@@ -136,19 +168,18 @@ const ProductVariations = ({ productId }: ProductVariationsProps) => {
   return (
     <div className="mt-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h6 className="fw-bold text-secondary m-0">Variações</h6>
+        <h6 className="fw-bold text-secondary m-0">Variações do Produto</h6>
         <button
           className="btn btn-sm btn-outline-dark rounded-pill"
           onClick={startAddVariation}
           disabled={!!editingVarId}
         >
-          <FontAwesomeIcon icon={faPlus} className="me-1" /> Nova
+          <FontAwesomeIcon icon={faPlus} className="me-1" /> Nova Variação
         </button>
       </div>
 
       {error && <div className="alert alert-danger py-2 small">{error}</div>}
 
-      {/* BUSCA */}
       <div className="input-group mb-3">
         <span className="input-group-text bg-white border-end-0">
           <FontAwesomeIcon icon={faSearch} className="text-muted" />
@@ -156,7 +187,7 @@ const ProductVariations = ({ productId }: ProductVariationsProps) => {
         <input
           type="text"
           className="form-control border-start-0"
-          placeholder="Buscar variação..."
+          placeholder="Buscar variação (nome, cor, tamanho)..."
           value={searchVarTerm}
           onChange={(e) => {
             setPage(1);
@@ -165,33 +196,67 @@ const ProductVariations = ({ productId }: ProductVariationsProps) => {
         />
       </div>
 
-      {/* TABELA */}
       <div className="table-responsive border rounded">
         <table className="table table-hover align-middle mb-0">
           <thead className="table-light">
             <tr>
-              <th className="small fw-bold ps-3">Variação</th>
+              <th className="small fw-bold text-center" style={{ width: 60 }}>
+                Imagem
+              </th>
+              <th className="small fw-bold ps-3">Detalhes</th>
               <th className="small fw-bold text-center">Estoque</th>
-              <th className="small fw-bold text-end">Preço</th>
+              <th className="small fw-bold text-end">Preço (R$)</th>
               <th className="small fw-bold text-center" style={{ width: 100 }}>
                 Ações
               </th>
             </tr>
           </thead>
           <tbody>
-            {/* LINHA DE EDIÇÃO / NOVA */}
-            {editingVarId === "new" && (
-              <tr className="bg-light table-active">
-                <td className="ps-3">
-                  <input
-                    className="form-control form-control-sm"
-                    autoFocus
-                    placeholder="Ex: G, Vermelho"
-                    value={editVarNome}
-                    onChange={(e) => setEditVarNome(e.target.value)}
-                  />
-                </td>
+            {editingVarId && (
+              <tr className="bg-light table-active border border-primary">
                 <td className="text-center">
+                  <button
+                    className="btn btn-sm btn-outline-secondary border-0"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Adicionar imagens"
+                  >
+                    <FontAwesomeIcon icon={faUpload} />
+                  </button>
+                  <input
+                    type="file"
+                    multiple
+                    ref={fileInputRef}
+                    className="d-none"
+                    accept="image/*"
+                    onChange={(e) => setSelectedFiles(e.target.files)}
+                  />
+                  {selectedFiles && selectedFiles.length > 0 && (
+                    <div
+                      className="small text-success mt-1"
+                      style={{ fontSize: "0.65rem" }}
+                    >
+                      {selectedFiles.length} file(s)
+                    </div>
+                  )}
+                </td>
+                <td className="ps-3">
+                  <div className="d-flex flex-column gap-2">
+                    <input
+                      className="form-control form-control-sm"
+                      autoFocus
+                      placeholder="Nome (Ex: G, Azul)"
+                      value={editVarNome}
+                      onChange={(e) => setEditVarNome(e.target.value)}
+                    />
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="Descrição (opcional)"
+                      value={editVarDescricao}
+                      onChange={(e) => setEditVarDescricao(e.target.value)}
+                    />
+                  </div>
+                </td>
+                <td className="text-center align-top pt-3">
                   <input
                     type="number"
                     className="form-control form-control-sm text-center"
@@ -200,7 +265,7 @@ const ProductVariations = ({ productId }: ProductVariationsProps) => {
                     onChange={(e) => setEditVarQtd(Number(e.target.value))}
                   />
                 </td>
-                <td className="text-end">
+                <td className="text-end align-top pt-3">
                   <input
                     type="number"
                     step="0.01"
@@ -210,121 +275,116 @@ const ProductVariations = ({ productId }: ProductVariationsProps) => {
                     onChange={(e) => setEditVarValor(Number(e.target.value))}
                   />
                 </td>
-                <td className="text-center">
-                  <button
-                    className="btn btn-sm btn-success me-1"
-                    onClick={saveVariation}
-                  >
-                    <FontAwesomeIcon icon={faSave} />
-                  </button>
-                  <button
-                    className="btn btn-sm btn-secondary"
-                    onClick={cancelEditVariation}
-                  >
-                    <FontAwesomeIcon icon={faTimes} />
-                  </button>
+                <td className="text-center align-top pt-3">
+                  <div className="d-flex justify-content-center gap-1">
+                    <button
+                      className="btn btn-sm btn-success"
+                      onClick={saveVariation}
+                      title="Salvar"
+                    >
+                      <FontAwesomeIcon icon={faSave} />
+                    </button>
+                    <button
+                      className="btn btn-sm btn-secondary"
+                      onClick={cancelEditVariation}
+                      title="Cancelar"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             )}
 
-            {/* LISTA DE VARIAÇÕES */}
-            {loading && variations.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="text-center p-3">
-                  Carregando...
-                </td>
-              </tr>
-            ) : (
-              variations.map((v) =>
-                editingVarId === v.id_variacao ? (
-                  // MODO EDIÇÃO
-                  <tr key={v.id_variacao} className="bg-light table-active">
-                    <td className="ps-3">
-                      <input
-                        className="form-control form-control-sm"
-                        value={editVarNome}
-                        onChange={(e) => setEditVarNome(e.target.value)}
-                      />
-                    </td>
-                    <td className="text-center">
-                      <input
-                        type="number"
-                        className="form-control form-control-sm text-center"
-                        style={{ maxWidth: 80 }}
-                        value={editVarQtd}
-                        onChange={(e) => setEditVarQtd(Number(e.target.value))}
-                      />
-                    </td>
-                    <td className="text-end">
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-control form-control-sm text-end"
-                        style={{ maxWidth: 100 }}
-                        value={editVarValor}
-                        onChange={(e) =>
-                          setEditVarValor(Number(e.target.value))
-                        }
-                      />
-                    </td>
-                    <td className="text-center">
-                      <button
-                        className="btn btn-sm btn-success me-1"
-                        onClick={saveVariation}
+            {variations.map((v) => {
+              if (editingVarId === v.id_variacao) return null;
+
+              const mainImage =
+                v.imagens?.find((img) => img.principal) || v.imagens?.[0];
+              const thumbUrl = mainImage
+                ? `${API_BASE_URL}${mainImage.caminho}`
+                : null;
+
+              return (
+                <tr key={v.id_variacao}>
+                  <td className="text-center p-1">
+                    <div
+                      className="bg-white border rounded mx-auto d-flex align-items-center justify-content-center overflow-hidden position-relative"
+                      style={{ width: 40, height: 40 }} // position: relative é necessário no pai
+                    >
+                      {thumbUrl ? (
+                        <Image
+                          src={thumbUrl}
+                          alt={v.nome}
+                          fill
+                          sizes="40px"
+                          style={{ objectFit: "cover" }}
+                        />
+                      ) : (
+                        <FontAwesomeIcon
+                          icon={faImage}
+                          className="text-light"
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td className="ps-3">
+                    <div className="fw-medium">{v.nome}</div>
+                    {v.descricao && (
+                      <div
+                        className="small text-muted text-truncate"
+                        style={{ maxWidth: 200 }}
                       >
-                        <FontAwesomeIcon icon={faSave} />
-                      </button>
-                      <button
-                        className="btn btn-sm btn-secondary"
-                        onClick={cancelEditVariation}
-                      >
-                        <FontAwesomeIcon icon={faTimes} />
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  // MODO VISUALIZAÇÃO
-                  <tr key={v.id_variacao}>
-                    <td className="ps-3 fw-medium">{v.nome}</td>
-                    <td className="text-center">
-                      <span
-                        className={`badge ${
-                          v.quantidade > 0
-                            ? "bg-success-subtle text-success"
-                            : "bg-danger-subtle text-danger"
-                        }`}
-                      >
-                        {v.quantidade} un
-                      </span>
-                    </td>
-                    <td className="text-end font-monospace">
-                      R$ {Number(v.valor).toFixed(2)}
-                    </td>
-                    <td className="text-center">
-                      <button
-                        className="btn btn-link text-secondary p-1 me-2"
-                        onClick={() => startEditVariation(v)}
-                        disabled={!!editingVarId}
-                      >
-                        <FontAwesomeIcon icon={faPen} />
-                      </button>
-                      <button
-                        className="btn btn-link text-danger p-1"
-                        onClick={() => deleteVariation(v.id_variacao)}
-                        disabled={!!editingVarId}
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
-                    </td>
-                  </tr>
-                )
-              )
-            )}
+                        {v.descricao}
+                      </div>
+                    )}
+                  </td>
+                  <td className="text-center">
+                    <span
+                      className={`badge ${
+                        v.quantidade > 0
+                          ? "bg-success-subtle text-success"
+                          : "bg-danger-subtle text-danger"
+                      }`}
+                    >
+                      {v.quantidade} un
+                    </span>
+                  </td>
+                  <td className="text-end font-monospace">
+                    {/* R$ RECOLOCADO AQUI */}
+                    R$ {Number(v.valor).toFixed(2)}
+                  </td>
+                  <td className="text-center">
+                    <button
+                      className="btn btn-link text-secondary p-1 me-2"
+                      onClick={() => startEditVariation(v)}
+                      disabled={!!editingVarId}
+                    >
+                      <FontAwesomeIcon icon={faPen} />
+                    </button>
+                    <button
+                      className="btn btn-link text-danger p-1"
+                      onClick={() => deleteVariation(v.id_variacao)}
+                      disabled={!!editingVarId}
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
 
             {!loading && variations.length === 0 && editingVarId !== "new" && (
               <tr>
-                <td colSpan={4} className="text-center py-3 text-muted">
+                <td colSpan={5} className="text-center py-3 text-muted">
                   Nenhuma variação encontrada.
+                </td>
+              </tr>
+            )}
+            {loading && (
+              <tr>
+                <td colSpan={5} className="text-center py-3">
+                  <div className="spinner-border spinner-border-sm text-secondary" />
                 </td>
               </tr>
             )}
@@ -332,7 +392,6 @@ const ProductVariations = ({ productId }: ProductVariationsProps) => {
         </table>
       </div>
 
-      {/* PAGINAÇÃO */}
       <div className="d-flex justify-content-center align-items-center gap-3 mt-3">
         <button
           className="btn btn-sm btn-outline-secondary rounded-pill px-3"

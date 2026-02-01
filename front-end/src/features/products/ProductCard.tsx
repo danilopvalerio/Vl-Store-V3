@@ -1,11 +1,14 @@
+// src/features/products/ProductCard.tsx
 "use client";
 
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBoxOpen,
-  faDollarSign,
   faLayerGroup,
+  faImage,
 } from "@fortawesome/free-solid-svg-icons";
+import Image from "next/image";
 import { Product } from "./types/index";
 
 interface Props {
@@ -13,10 +16,25 @@ interface Props {
   onClick: () => void;
 }
 
+// CORREÇÃO: Porta 3333
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+
 const ProductCard = ({ product, onClick }: Props) => {
+  const [imageError, setImageError] = useState(false);
+  console.log("Product imagem_capa:", product.imagem_capa);
+  // Garante que não duplique barras se a env já tiver barra
+  const formatUrl = (path: string) => {
+    if (path.startsWith("http")) return path;
+    const cleanBase = API_BASE_URL.replace(/\/$/, "");
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    return `${cleanBase}${cleanPath}`;
+  };
+
+  const imageUrl = product.imagem_capa ? formatUrl(product.imagem_capa) : null;
+
   return (
     <div
-      className="card-item-bottom-line-rounded h-100 hover-shadow cursor-pointer"
+      className="card-item-bottom-line-rounded h-100 hover-shadow cursor-pointer overflow-hidden d-flex flex-column"
       onClick={onClick}
       style={{
         transition: "transform 0.2s, box-shadow 0.2s",
@@ -32,34 +50,60 @@ const ProductCard = ({ product, onClick }: Props) => {
         e.currentTarget.classList.remove("shadow");
       }}
     >
-      <div className="card-body p-4 d-flex flex-column h-100">
-        <div className="d-flex align-items-start mb-3">
-          <div
-            className="rounded bg-light d-flex align-items-center justify-content-center me-3 text-secondary"
-            style={{ width: "50px", height: "50px", minWidth: "50px" }}
-          >
-            <FontAwesomeIcon icon={faBoxOpen} className="fs-4" />
+      {/* Área da Imagem de Capa */}
+      <div
+        className="w-100 bg-light d-flex align-items-center justify-content-center border-bottom"
+        style={{ height: "180px", position: "relative" }}
+      >
+        {imageUrl && !imageError ? (
+          <Image
+            src={imageUrl}
+            alt={product.nome}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={{ objectFit: "cover" }}
+            onError={() => setImageError(true)}
+            // Adicione priority se for a imagem principal da tela (opcional)
+            // priority
+          />
+        ) : (
+          <div className="text-secondary text-opacity-25">
+            <FontAwesomeIcon icon={faImage} size="3x" />
           </div>
+        )}
 
-          <div className="overflow-hidden">
-            <h6
-              className="card-title fw-bold mb-1 text-truncate"
-              title={product.nome}
-            >
-              {product.nome}
-            </h6>
-            <div className="d-flex gap-2 text-muted small">
-              {product.referencia && (
-                <span className="badge bg-light text-secondary border">
-                  Ref: {product.referencia}
-                </span>
-              )}
-              {product.categoria && (
-                <span className="badge bg-light text-secondary border">
-                  {product.categoria}
-                </span>
-              )}
-            </div>
+        {!product.ativo && (
+          <div
+            className="position-absolute top-0 end-0 m-2"
+            style={{ zIndex: 10 }}
+          >
+            <span className="badge bg-danger shadow-sm">INATIVO</span>
+          </div>
+        )}
+      </div>
+
+      <div className="card-body p-3 d-flex flex-column flex-grow-1">
+        <div className="mb-2">
+          <h6
+            className="card-title fw-bold mb-1 text-truncate"
+            title={product.nome}
+          >
+            {product.nome}
+          </h6>
+          <div className="d-flex gap-2 text-muted small flex-wrap">
+            {product.referencia && (
+              <span className="badge bg-light text-secondary border">
+                {product.referencia}
+              </span>
+            )}
+            {product.categoria && (
+              <span
+                className="badge bg-light text-secondary border text-truncate"
+                style={{ maxWidth: "100px" }}
+              >
+                {product.categoria}
+              </span>
+            )}
           </div>
         </div>
 
@@ -68,32 +112,25 @@ const ProductCard = ({ product, onClick }: Props) => {
             className="d-flex flex-wrap justify-content-between align-items-center small text-muted gap-2"
             style={{ rowGap: "6px" }}
           >
-            {/* Variações */}
-            <div className="d-flex align-items-center">
+            <div className="d-flex align-items-center" title="Qtd. Variações">
               <FontAwesomeIcon icon={faLayerGroup} className="me-1" />
-              {product.qtd_variacoes || 0} variações
+              {product.qtd_variacoes || 0}
             </div>
 
-            {/* Total em estoque */}
-            <div className="d-flex align-items-center">
+            <div className="d-flex align-items-center" title="Estoque Total">
               <FontAwesomeIcon icon={faBoxOpen} className="me-1" />
-              Estoque: <strong className="ms-1">{product.total_estoque}</strong>
+              {product.total_estoque || 0}
             </div>
 
-            {/* Menor valor */}
-            <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faDollarSign} className="me-1" />
-              Menor valor:{" "}
-              <strong className="ms-1">{product.menor_valor}</strong>
+            <div
+              className="d-flex align-items-center text-dark fw-bold"
+              title="A partir de"
+            >
+              <span className="me-1 fw-normal text-muted">R$</span>
+              {product.menor_valor ? product.menor_valor.toFixed(2) : "0.00"}
             </div>
           </div>
         </div>
-
-        {!product.ativo && (
-          <div className="position-absolute top-0 end-0 m-2">
-            <span className="badge bg-danger">INATIVO</span>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -8,6 +8,8 @@ import {
   faPlus,
   faSearch,
   faTimes,
+  faSortAmountDown,
+  faEraser,
 } from "@fortawesome/free-solid-svg-icons";
 
 import api from "../../../utils/api";
@@ -16,28 +18,53 @@ import AddProductModal from "./../../../features/products/AddProductModal";
 import ProductDetailModal from "./../../../features/products/ProductDetailModal";
 import { Product } from "./../../../features/products/types/index";
 import { PaginatedResponse } from "@/types/api";
-const LIMIT = 8; // Produtos por página
+
+const LIMIT = 8;
 
 const ProductsPage = () => {
   const router = useRouter();
 
-  // Estados
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // Paginação e Busca
+  // Estados de Filtro
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [orderBy, setOrderBy] = useState("name_asc");
 
-  // Modais
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    null
+    null,
   );
 
-  // --- 1. Auth Check ---
+  // --- 1. Fetch Data ---
+  const fetchProducts = useCallback(
+    async (page = 1, term = "", order = "name_asc") => {
+      setLoading(true);
+      try {
+        let url = `/products/paginated?page=${page}&perPage=${LIMIT}&orderBy=${order}`;
+        if (term) {
+          url = `/products/search?term=${encodeURIComponent(
+            term,
+          )}&page=${page}&perPage=${LIMIT}&orderBy=${order}`;
+        }
+
+        const response = await api.get<PaginatedResponse<Product>>(url);
+        setProducts(response.data.data);
+        setCurrentPage(response.data.page);
+        setTotalPages(response.data.totalPages);
+      } catch (error) {
+        console.error("Erro ao buscar produtos:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // --- 2. Auth Check ---
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (!storedUser) {
@@ -45,42 +72,38 @@ const ProductsPage = () => {
       return;
     }
     setCheckingAuth(false);
-    fetchProducts(1);
-  }, [router]);
+    fetchProducts(1, "", "name_asc");
+  }, [router, fetchProducts]);
 
-  // --- 2. Fetch Data ---
-  const fetchProducts = async (page = 1, term = "") => {
-    setLoading(true);
-    try {
-      let url = `/products/paginated?page=${page}&perPage=${LIMIT}`;
-      if (term) {
-        url = `/products/search?term=${encodeURIComponent(
-          term
-        )}&page=${page}&perPage=${LIMIT}`;
-      }
+  // --- Handlers ---
 
-      const response = await api.get<PaginatedResponse<Product>>(url);
-      setProducts(response.data.data);
-      setCurrentPage(response.data.page);
-      setTotalPages(response.data.totalPages);
-    } catch (error) {
-      console.error("Erro ao buscar produtos:", error);
-    } finally {
-      setLoading(false);
+  const handleSearch = () => fetchProducts(1, searchTerm, orderBy);
+
+  const handleClearSearchInput = () => {
+    setSearchTerm("");
+    fetchProducts(1, "", orderBy);
+  };
+
+  const handleClearAllFilters = () => {
+    setSearchTerm("");
+    setOrderBy("name_asc");
+    fetchProducts(1, "", "name_asc");
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      fetchProducts(newPage, searchTerm, orderBy);
     }
   };
 
-  const handleSearch = () => fetchProducts(1, searchTerm);
-  const handleClearSearch = () => {
-    setSearchTerm("");
-    fetchProducts(1, "");
+  const handleOrderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newOrder = e.target.value;
+    setOrderBy(newOrder);
+    fetchProducts(1, searchTerm, newOrder);
   };
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages)
-      fetchProducts(newPage, searchTerm);
-  };
+
   const handleRefresh = () => {
-    fetchProducts(currentPage, searchTerm);
+    fetchProducts(currentPage, searchTerm, orderBy);
     setIsAddModalOpen(false);
     setSelectedProductId(null);
   };
@@ -91,6 +114,17 @@ const ProductsPage = () => {
         <div className="spinner-border text-secondary" />
       </div>
     );
+
+  // Estilo unificado
+  const commonStyle = {
+    height: "48px",
+    outline: "none",
+    boxShadow: "none",
+    fontSize: "14px",
+  };
+
+  // Verifica se há filtros ativos para habilitar/desabilitar o botão limpar
+  const hasActiveFilters = searchTerm !== "" || orderBy !== "name_asc";
 
   return (
     <div
@@ -116,26 +150,30 @@ const ProductsPage = () => {
           </div>
 
           <div className="p-4">
-            {/* Barra de Ferramentas */}
-            <div className="row g-3 mb-4 justify-content-evenly align-items-top">
-              <div className="col-12 col-md-6 col-lg-5">
-                <div className="position-relative mb-3">
+            {/* --- GRID LAYOUT --- */}
+            <div className="row g-2 mb-4 align-items-center">
+              {/* 1. BARRA DE PESQUISA (LG: 4, MD: 7, SM: 12) */}
+              <div className="col-12 col-md-7 col-lg-4">
+                <div className="position-relative w-100">
                   <FontAwesomeIcon
                     icon={faSearch}
                     className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                    style={{ zIndex: 5 }}
                   />
                   <input
                     type="text"
-                    className="p-2 ps-5 col-12 form-control-underline2"
-                    placeholder="Buscar produto por nome, ref..."
+                    className="form-control form-control-underline2 ps-5 w-100"
+                    placeholder="Buscar..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    style={commonStyle}
                   />
                   {searchTerm && (
                     <span
-                      className="position-absolute top-50 end-0 translate-middle-y me-5 cursor-pointer"
-                      onClick={handleClearSearch}
+                      className="position-absolute top-50 end-0 translate-middle-y me-3 cursor-pointer p-2"
+                      onClick={handleClearSearchInput}
+                      style={{ zIndex: 5 }}
                     >
                       <FontAwesomeIcon
                         className="text-secondary"
@@ -145,19 +183,86 @@ const ProductsPage = () => {
                   )}
                 </div>
               </div>
-              <button
-                className="col-12 col-md-2 col-lg-2 button-bottom-line-rounded px-4"
-                onClick={handleSearch}
-              >
-                Buscar
-              </button>
-              <button
-                className="col-12 col-md-3 col-lg-2 button-bottom-line-rounded px-2"
-                onClick={() => setIsAddModalOpen(true)}
-              >
-                <FontAwesomeIcon icon={faPlus} className="me-2" /> Novo Produto
-              </button>
+
+              {/* 2. SELECT (LG: 2, MD: 5, SM: 12) */}
+              <div className="col-12 col-md-5 col-lg-2">
+                <div className="position-relative w-100">
+                  <FontAwesomeIcon
+                    icon={faSortAmountDown}
+                    className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+                    style={{ zIndex: 5 }}
+                  />
+                  <select
+                    className="form-control button-bottom-line-rounded ps-5 w-100 cursor-pointer "
+                    value={orderBy}
+                    onChange={handleOrderChange}
+                    style={{
+                      ...commonStyle,
+                      appearance: "none",
+                    }}
+                  >
+                    <option value="name_asc">Nome (A-Z)</option>
+                    <option value="name_desc">Nome (Z-A)</option>
+                    <option value="price_asc">Menor Preço</option>
+                    <option value="price_desc">Maior Preço</option>
+                    <option value="stock_asc">Menor Estoque</option>
+                    <option value="stock_desc">Maior Estoque</option>
+                    <option value="newest">Recentes</option>
+                    <option value="oldest">Antigos</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 3. BOTÕES (LG: 2 cada, MD: 4 cada, SM: 4 cada) */}
+
+              {/* Botão Buscar */}
+              <div className="col-4 col-md-4 col-lg-2">
+                <button
+                  className="btn button-bottom-line-rounded w-100 px-0"
+                  onClick={handleSearch}
+                  style={commonStyle}
+                >
+                  Buscar
+                </button>
+              </div>
+
+              {/* Botão Limpar */}
+              <div className="col-4 col-md-4 col-lg-2">
+                <button
+                  className="btn button-bottom-line-rounded w-100 px-0 d-flex align-items-center justify-content-center"
+                  onClick={handleClearAllFilters}
+                  disabled={!hasActiveFilters} // Desabilita HTML
+                  title="Limpar filtros"
+                  style={{
+                    ...commonStyle,
+                    opacity: hasActiveFilters ? 1 : 0.6, // Feedback visual
+                    cursor: hasActiveFilters ? "pointer" : "not-allowed",
+                  }}
+                >
+                  <FontAwesomeIcon
+                    icon={faEraser}
+                    className="me-2 d-none d-lg-inline"
+                  />
+                  Limpar
+                </button>
+              </div>
+
+              {/* Botão Novo */}
+              <div className="col-4 col-md-4 col-lg-2">
+                <button
+                  className="btn button-bottom-line-rounded w-100 px-0 text-nowrap"
+                  onClick={() => setIsAddModalOpen(true)}
+                  style={commonStyle}
+                >
+                  <FontAwesomeIcon
+                    icon={faPlus}
+                    className="me-2 d-none d-lg-inline"
+                  />
+                  Novo
+                </button>
+              </div>
             </div>
+            {/* --- FIM GRID --- */}
 
             {/* Lista de Produtos */}
             {loading ? (
@@ -180,10 +285,11 @@ const ProductsPage = () => {
                     </div>
                   ))}
                 </div>
+
                 {/* Paginação */}
                 <div className="d-flex justify-content-center align-items-center gap-3 mt-5">
                   <button
-                    className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                    className="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-none"
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                   >
@@ -193,7 +299,7 @@ const ProductsPage = () => {
                     Página {currentPage} de {totalPages}
                   </span>
                   <button
-                    className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                    className="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-none"
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                   >
@@ -204,6 +310,15 @@ const ProductsPage = () => {
             ) : (
               <div className="text-center py-5 text-muted">
                 <p className="fs-5 mb-1">Nenhum produto encontrado.</p>
+                {/* Botão extra de limpar caso a busca não retorne nada */}
+                {hasActiveFilters && (
+                  <button
+                    className="btn btn-link text-secondary shadow-none"
+                    onClick={handleClearAllFilters}
+                  >
+                    Limpar filtros
+                  </button>
+                )}
               </div>
             )}
           </div>

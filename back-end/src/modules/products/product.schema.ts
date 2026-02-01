@@ -1,48 +1,41 @@
 import { z } from "zod";
 
-// ==========================================
-// SCHEMAS REUTILIZÁVEIS
-// ==========================================
+// Opções permitidas de ordenação
+const orderByOptions = z
+  .enum([
+    "name_asc",
+    "name_desc",
+    "price_asc",
+    "price_desc",
+    "stock_asc",
+    "stock_desc",
+    "newest",
+    "oldest",
+  ])
+  .optional();
 
 const paginationQuery = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).default(10),
   term: z.string().optional(),
-  lojaId: z.string().uuid().optional(),
+  lojaId: z.uuid().optional(),
+  orderBy: orderByOptions, // <--- Novo Campo
 });
 
 const paramsId = z.object({
-  id: z.string().uuid({ message: "ID inválido" }),
+  id: z.uuid({ message: "ID inválido" }),
 });
 
-// ==========================================
-// SCHEMAS DE ROTA
-// ==========================================
-
-// Validação apenas de ID (GET /:id, DELETE /:id)
-export const productIdSchema = z.object({
-  params: paramsId,
-});
-
-// Validação de Paginação Genérica (GET /paginated, GET /search)
-export const productPaginationSchema = z.object({
-  query: paginationQuery,
-});
-
-// Validação Combinada: ID na URL + Paginação na Query
-// Usado em: GET /:id/variations e GET /:id/variations/search
+export const productIdSchema = z.object({ params: paramsId });
+export const productPaginationSchema = z.object({ query: paginationQuery });
 export const productNestedPaginationSchema = z.object({
-  params: paramsId, // ID do produto pai
+  params: paramsId,
   query: paginationQuery,
 });
-
-// ------------------------------------------
-// PRODUTO (Create / Update)
-// ------------------------------------------
 
 export const createProductSchema = z.object({
   body: z.object({
-    id_loja: z.string().uuid({ message: "ID da loja é obrigatório" }),
+    id_loja: z.uuid({ message: "ID da loja é obrigatório" }),
     nome: z.string().min(1, "Nome do produto é obrigatório").max(255),
     referencia: z.string().max(100).optional(),
     categoria: z.string().max(100).optional(),
@@ -64,17 +57,13 @@ export const updateProductSchema = z.object({
   }),
 });
 
-// ------------------------------------------
-// VARIAÇÃO (Create / Update)
-// ------------------------------------------
-
 export const createVariationSchema = z.object({
   body: z.object({
-    id_produto: z.string().uuid({ message: "ID do produto pai é obrigatório" }),
-    nome: z.string().min(1, "Nome da variação é obrigatório").optional(), // Pode ser opcional se o produto for único
+    id_produto: z.uuid({ message: "ID do produto pai é obrigatório" }),
+    nome: z.string().min(1).optional(),
     descricao: z.string().optional(),
-    quantidade: z.number().int().min(0, "Quantidade não pode ser negativa"),
-    valor: z.number().min(0, "Valor não pode ser negativo"),
+    quantidade: z.coerce.number().int().min(0),
+    valor: z.coerce.number().min(0),
   }),
 });
 
@@ -83,7 +72,7 @@ export const updateVariationSchema = z.object({
   body: z.object({
     nome: z.string().optional(),
     descricao: z.string().optional(),
-    quantidade: z.number().int().min(0).optional(),
-    valor: z.number().min(0).optional(),
+    quantidade: z.coerce.number().int().min(0).optional(),
+    valor: z.coerce.number().min(0).optional(),
   }),
 });

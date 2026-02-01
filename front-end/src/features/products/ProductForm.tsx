@@ -1,3 +1,4 @@
+// src/features/products/ProductForm.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -32,18 +33,15 @@ const ProductForm = ({ product, onSuccess, onClose }: ProductFormProps) => {
   const [referencia, setReferencia] = useState(product.referencia || "");
   const [categoria, setCategoria] = useState(product.categoria || "");
   const [material, setMaterial] = useState(product.material || "");
-
-  // CORRECTION: Initialize with fallback to "UNISSEX" if null/undefined
   const [genero, setGenero] = useState<string>(product.genero || "UNISSEX");
-
-  const [ativo, setAtivo] = useState(product.ativo);
+  const [ativo, setAtivo] = useState(product.ativo || false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const currentUser = JSON.parse(storedUser);
       setIsAdmin(
-        currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN"
+        currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN",
       );
     }
   }, []);
@@ -72,7 +70,7 @@ const ProductForm = ({ product, onSuccess, onClose }: ProductFormProps) => {
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
       setError(
-        axiosError.response?.data?.message || "Erro ao atualizar produto."
+        axiosError.response?.data?.message || "Erro ao atualizar produto.",
       );
     } finally {
       setSaving(false);
@@ -91,7 +89,7 @@ const ProductForm = ({ product, onSuccess, onClose }: ProductFormProps) => {
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
       setError(
-        axiosError.response?.data?.message || "Erro ao excluir produto."
+        axiosError.response?.data?.message || "Erro ao excluir produto.",
       );
       setSaving(false);
     }
@@ -178,12 +176,12 @@ const ProductForm = ({ product, onSuccess, onClose }: ProductFormProps) => {
             <select
               className="p-2 ps-5 w-100 form-control-underline"
               value={genero}
-              // CORRECTION: Cast to generic string to satisfy TS if the type is strict
               onChange={(e) => setGenero(e.target.value)}
             >
               <option value="UNISSEX">Unissex</option>
               <option value="MASCULINO">Masculino</option>
               <option value="FEMININO">Feminino</option>
+              <option value="INFANTIL">Infantil (Geral)</option>
               <option value="INFANTIL_FEMININO">Infantil Feminino</option>
               <option value="INFANTIL_MASCULINO">Infantil Masculino</option>
             </select>

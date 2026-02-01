@@ -1,4 +1,11 @@
+// src/features/products/types/index.tsx
+
 // --- Respostas da API ---
+export interface VariationImage {
+  id_imagem: string;
+  caminho: string;
+  principal: boolean;
+}
 
 // Variação (Filho)
 export interface Variation {
@@ -8,6 +15,7 @@ export interface Variation {
   descricao?: string;
   quantidade: number;
   valor: string | number; // Pode vir como string decimal do banco
+  imagens?: VariationImage[];
 }
 
 // DTO para os parâmetros de busca (Query Params)
@@ -25,7 +33,7 @@ export interface Product {
   nome: string;
   categoria?: string;
   material?: string;
-  genero?: "MASCULINO" | "FEMININO" | "UNISSEX" | "INFANTIL" | null;
+  genero?: "MASCULINO" | "FEMININO" | "UNISSEX" | "INFANTIL" | string | null; // Adicionado string para flexibilidade no front
   ativo: boolean;
 
   // Detalhes (Presente no GetById, ausente nas Listas otimizadas)
@@ -35,6 +43,7 @@ export interface Product {
   total_estoque?: number; // Soma das quantidades
   qtd_variacoes?: number; // Contagem de variações
   menor_valor?: number; // Menor preço encontrado
+  imagem_capa?: string | null;
 }
 
 // Erro da API
@@ -63,6 +72,7 @@ export interface UpdateProductPayload {
   ativo?: boolean;
 }
 
+// Note: Create/Update Variation usam FormData, não JSON, por causa das imagens.
 export interface CreateVariationPayload {
   id_produto: string;
   nome: string;

@@ -13,6 +13,7 @@ export interface UserProfileEntity {
   cargo: string | null;
   tipo_perfil: string | null;
   status: UserProfileStatus;
+  foto_url: string | null;
   data_criacao: Date | null;
   ultima_atualizacao: Date | null;
 }
@@ -27,7 +28,7 @@ export interface CreateUserProfileDTO {
   cpf_cnpj?: string;
   cargo?: string;
   tipo_perfil?: string;
-
+  foto_url?: string;
   actorUserId?: string; // Campo de controle (não vai para o banco diretamente)
 }
 
@@ -37,39 +38,38 @@ export interface UpdateUserProfileDTO {
   cargo?: string;
   tipo_perfil?: string;
   status?: "ACTIVE" | "INACTIVE" | "BLOCKED";
-
+  foto_url?: string;
   actorUserId?: string;
 }
 
 // ============================================================================
 // INTERFACE DO REPOSITÓRIO
 // ============================================================================
-export interface IUserProfileRepository
-  extends IBaseRepository<
-    UserProfileEntity,
-    CreateUserProfileDTO,
-    UpdateUserProfileDTO
-  > {
+export interface IUserProfileRepository extends IBaseRepository<
+  UserProfileEntity,
+  CreateUserProfileDTO,
+  UpdateUserProfileDTO
+> {
   // Métodos específicos
   findByCpfCnpj(
     cpf_cnpj: string,
-    id_loja?: string
+    id_loja?: string,
   ): Promise<UserProfileEntity | null>;
   findByUserId(
     user_id: string,
-    id_loja?: string
+    id_loja?: string,
   ): Promise<UserProfileEntity | null>;
 
   // Métodos de paginação com filtro
   findPaginatedWithFilter(
     page: number,
     limit: number,
-    lojaId?: string
+    lojaId?: string,
   ): Promise<{ data: UserProfileEntity[]; total: number }>;
   searchPaginatedWithFilter(
     query: string,
     page: number,
     limit: number,
-    lojaId?: string
+    lojaId?: string,
   ): Promise<{ data: UserProfileEntity[]; total: number }>;
 }

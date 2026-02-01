@@ -27,6 +27,7 @@ export class UserProfileRepository implements IUserProfileRepository {
       cargo: profile.cargo,
       tipo_perfil: profile.tipo_perfil,
       status: profile.status,
+      foto_url: profile.foto_url,
       data_criacao: profile.data_criacao,
       ultima_atualizacao: profile.ultima_atualizacao,
     };
@@ -41,6 +42,7 @@ export class UserProfileRepository implements IUserProfileRepository {
         cpf_cnpj: data.cpf_cnpj,
         cargo: data.cargo,
         tipo_perfil: data.tipo_perfil,
+        foto_url: data.foto_url,
       },
     });
     return this.mapToEntity(profile);
@@ -48,7 +50,7 @@ export class UserProfileRepository implements IUserProfileRepository {
 
   async update(
     id: string,
-    data: UpdateUserProfileDTO
+    data: UpdateUserProfileDTO,
   ): Promise<UserProfileEntity> {
     const profile = await prisma.user_profile.update({
       where: { id_user_profile: id },
@@ -58,6 +60,7 @@ export class UserProfileRepository implements IUserProfileRepository {
         cargo: data.cargo,
         tipo_perfil: data.tipo_perfil,
         status: data.status,
+        foto_url: data.foto_url,
         ultima_atualizacao: new Date(),
       },
     });
@@ -73,7 +76,7 @@ export class UserProfileRepository implements IUserProfileRepository {
 
   async findByCpfCnpj(
     cpf_cnpj: string,
-    id_loja?: string
+    id_loja?: string,
   ): Promise<UserProfileEntity | null> {
     const where: Prisma.user_profileWhereInput = { cpf_cnpj };
     if (id_loja) {
@@ -85,7 +88,7 @@ export class UserProfileRepository implements IUserProfileRepository {
 
   async findByUserId(
     user_id: string,
-    id_loja?: string
+    id_loja?: string,
   ): Promise<UserProfileEntity | null> {
     const where: Prisma.user_profileWhereInput = { user_id };
     if (id_loja) {
@@ -106,7 +109,7 @@ export class UserProfileRepository implements IUserProfileRepository {
 
   async findPaginated(
     page: number,
-    limit: number
+    limit: number,
   ): Promise<RepositoryPaginatedResult<UserProfileEntity>> {
     return this.findPaginatedWithFilter(page, limit);
   }
@@ -114,7 +117,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   async findPaginatedWithFilter(
     page: number,
     limit: number,
-    lojaId?: string
+    lojaId?: string,
   ): Promise<RepositoryPaginatedResult<UserProfileEntity>> {
     const skip = (page - 1) * limit;
     const where: Prisma.user_profileWhereInput = lojaId
@@ -137,7 +140,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   async searchPaginated(
     query: string,
     page: number,
-    limit: number
+    limit: number,
   ): Promise<RepositoryPaginatedResult<UserProfileEntity>> {
     return this.searchPaginatedWithFilter(query, page, limit);
   }
@@ -146,7 +149,7 @@ export class UserProfileRepository implements IUserProfileRepository {
     query: string,
     page: number,
     limit: number,
-    lojaId?: string
+    lojaId?: string,
   ): Promise<RepositoryPaginatedResult<UserProfileEntity>> {
     const skip = (page - 1) * limit;
 

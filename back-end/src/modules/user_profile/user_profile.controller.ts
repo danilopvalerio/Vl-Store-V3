@@ -8,6 +8,10 @@ export class UserProfileController {
     return req.user?.userId;
   }
 
+  private getActorRole(req: Request): string | undefined {
+    return req.user?.role;
+  }
+
   private getLojaFilter(req: Request): string | undefined {
     const user = req.user;
     if (!user) return undefined;
@@ -15,9 +19,28 @@ export class UserProfileController {
     return user.lojaId;
   }
 
+  // --- CORREÇÃO AQUI ---
+  getAvatar = async (req: Request, res: Response) => {
+    const actorUserId = this.getActorId(req);
+    const actorRole = this.getActorRole(req);
+
+    // Forçamos o tipo aqui com 'as string'
+    const profileId = req.params.id as string;
+
+    if (!actorUserId)
+      return res.status(401).json({ error: "Autenticação necessária" });
+
+    const filePath = await this.service.getProfileAvatarPath(
+      profileId,
+      actorUserId,
+      actorRole,
+    );
+
+    return res.sendFile(filePath);
+  };
+
   create = async (req: Request, res: Response) => {
     const actorUserId = this.getActorId(req);
-    // Validação de auth está no service ou middleware, mas podemos checar aqui se necessário
     if (!actorUserId)
       return res.status(401).json({ error: "Usuário não autenticado." });
 
@@ -33,7 +56,8 @@ export class UserProfileController {
     if (!actorUserId)
       return res.status(401).json({ error: "Usuário não autenticado." });
 
-    const result = await this.service.updateProfile(req.params.id, {
+    // --- CORREÇÃO AQUI ---
+    const result = await this.service.updateProfile(req.params.id as string, {
       ...req.body,
       actorUserId,
     });
@@ -45,12 +69,14 @@ export class UserProfileController {
     if (!actorUserId)
       return res.status(401).json({ error: "Usuário não autenticado." });
 
-    await this.service.deleteProfile(req.params.id, actorUserId);
+    // --- CORREÇÃO AQUI ---
+    await this.service.deleteProfile(req.params.id as string, actorUserId);
     return res.status(204).send();
   };
 
   getById = async (req: Request, res: Response) => {
-    const result = await this.service.getProfileById(req.params.id);
+    // --- CORREÇÃO AQUI ---
+    const result = await this.service.getProfileById(req.params.id as string);
     return res.json(result);
   };
 
@@ -60,17 +86,17 @@ export class UserProfileController {
   };
 
   getByUserId = async (req: Request, res: Response) => {
-    // Aqui mantemos a lógica de tentar filtrar pela loja se o usuário não for SuperAdmin
-    // Mas a rota original não explicitava isso no argumento, vamos manter flexível
-    // Se quiser impor a loja: this.getLojaFilter(req)
-    const result = await this.service.getProfileByUserId(req.params.userId);
+    // --- CORREÇÃO AQUI ---
+    // Note que aqui o parametro chama 'userId' conforme definido na rota /user/:userId
+    const result = await this.service.getProfileByUserId(
+      req.params.userId as string,
+    );
     return res.json(result);
   };
 
   getPaginated = async (req: Request, res: Response) => {
     const { page = 1, perPage = 10 } = req.query;
     const filterLojaId = this.getLojaFilter(req);
-
     const result = await this.service.getProfilesPaginated({
       page: Number(page),
       limit: Number(perPage),
@@ -82,8 +108,8 @@ export class UserProfileController {
   searchPaginated = async (req: Request, res: Response) => {
     const { term = "", page = 1, perPage = 10 } = req.query;
     const filterLojaId = this.getLojaFilter(req);
-
     const result = await this.service.searchProfiles({
+      // Converter explicitamente para String garante que não seja array ou undefined
       query: String(term),
       page: Number(page),
       limit: Number(perPage),
