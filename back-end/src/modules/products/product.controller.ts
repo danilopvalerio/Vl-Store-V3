@@ -23,6 +23,8 @@ interface UpdateVariationMultipartBody {
   descricao?: string;
   quantidade?: string;
   valor?: string;
+  // CAMPO NOVO ADICIONADO AQUI:
+  kept_images?: string | string[];
 }
 
 export class ProductController {
@@ -118,6 +120,8 @@ export class ProductController {
       valor: rawBody.valor ? Number(rawBody.valor) : undefined,
       actorUserId,
       files: files,
+      // REPASSANDO O KEPT_IMAGES PARA O DTO:
+      kept_images: rawBody.kept_images,
     };
 
     const result = await this.service.updateVariation(id, dto);
@@ -140,7 +144,7 @@ export class ProductController {
     return res.json(result);
   };
 
-  // --- PAGINAÇÃO E BUSCA (ATUALIZADO COM ORDERBY) ---
+  // --- PAGINAÇÃO E BUSCA ---
 
   getPaginatedProductVariations = async (req: Request, res: Response) => {
     const id = req.params.id as string;
@@ -170,12 +174,11 @@ export class ProductController {
     return res.json(result);
   };
 
-  // ATUALIZADO: Recebe orderBy
   getPaginated = async (req: Request, res: Response) => {
     const page = toInt(req.query.page, 1);
     const perPage = toInt(req.query.perPage, 10);
     const type = req.query.type as string;
-    const orderBy = req.query.orderBy as string | undefined; // <--- Novo
+    const orderBy = req.query.orderBy as string | undefined;
     const lojaId = this.getLojaFilter(req);
 
     if (type === "variation") {
@@ -191,18 +194,17 @@ export class ProductController {
       page,
       perPage,
       lojaId,
-      orderBy, // <--- Passando
+      orderBy,
     );
     return res.json(result);
   };
 
-  // ATUALIZADO: Recebe orderBy
   searchPaginated = async (req: Request, res: Response) => {
     const term = String(req.query.term || "");
     const page = toInt(req.query.page, 1);
     const perPage = toInt(req.query.perPage, 10);
     const type = req.query.type as string;
-    const orderBy = req.query.orderBy as string | undefined; // <--- Novo
+    const orderBy = req.query.orderBy as string | undefined;
     const lojaId = this.getLojaFilter(req);
 
     if (type === "variation") {
@@ -220,7 +222,7 @@ export class ProductController {
       page,
       perPage,
       lojaId,
-      orderBy, // <--- Passando
+      orderBy,
     );
     return res.json(result);
   };

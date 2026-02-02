@@ -1,20 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    unoptimized: true, // Adicione esta linha temporariamente
     remotePatterns: [
       {
         protocol: "http",
-        hostname: "localhost", // Se estiver rodando local
-        port: "3333", // A porta do seu BACK-END (onde estão as imagens)
+        hostname: "localhost",
+        port: "3333",
         pathname: "/uploads/**",
       },
-      // Adicione aqui o domínio do Contabo/Produção quando fizer deploy
-      // {
-      //   protocol: 'http', // ou https
-      //   hostname: 'seu-ip-contabo-ou-dominio.com',
-      //   port: '',
-      //   pathname: '/uploads/**',
-      // },
     ],
   },
 };

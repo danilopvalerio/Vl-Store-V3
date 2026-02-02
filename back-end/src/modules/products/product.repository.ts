@@ -234,12 +234,11 @@ export class ProductRepository implements IProductRepository {
     page: number,
     limit: number,
     lojaId?: string,
-    orderBy?: string, // 4º Argumento
+    orderBy?: string,
   ): Promise<{ data: ProductListingDTO[]; total: number }> {
     const skip = (page - 1) * limit;
     const where: Prisma.produtoWhereInput = lojaId ? { id_loja: lojaId } : {};
 
-    // Configura ordenação do Prisma (Simples)
     let prismaOrderBy: Prisma.produtoOrderByWithRelationInput | undefined;
     switch (orderBy) {
       case "name_asc":
@@ -258,7 +257,6 @@ export class ProductRepository implements IProductRepository {
         prismaOrderBy = { nome: "asc" };
     }
 
-    // Verifica se é ordenação complexa (Memória)
     const isComplexOrder = [
       "price_asc",
       "price_desc",
@@ -281,18 +279,15 @@ export class ProductRepository implements IProductRepository {
     };
 
     if (isComplexOrder) {
-      // 1. Busca TUDO
       const allProducts = await prisma.produto.findMany({
         where,
         include: includeQuery,
       });
 
-      // 2. Processa
       const processed = this.processProductListing(
         allProducts as ProductWithCoverRaw[],
       );
 
-      // 3. Ordena
       processed.sort((a, b) => {
         if (orderBy === "price_asc") return a.menor_valor - b.menor_valor;
         if (orderBy === "price_desc") return b.menor_valor - a.menor_valor;
@@ -301,13 +296,11 @@ export class ProductRepository implements IProductRepository {
         return 0;
       });
 
-      // 4. Pagina
       const total = processed.length;
       const paginatedData = processed.slice(skip, skip + limit);
 
       return { data: paginatedData, total };
     } else {
-      // Ordenação Simples (Banco)
       const [dataRaw, total] = await Promise.all([
         prisma.produto.findMany({
           where,
@@ -331,7 +324,7 @@ export class ProductRepository implements IProductRepository {
     page: number,
     limit: number,
     lojaId?: string,
-    orderBy?: string, // 5º Argumento
+    orderBy?: string,
   ): Promise<{ data: ProductListingDTO[]; total: number }> {
     const skip = (page - 1) * limit;
     const searchCondition: Prisma.produtoWhereInput = {
@@ -451,30 +444,47 @@ export class ProductRepository implements IProductRepository {
     return this.mapToVariationEntity(variation);
   }
 
+  // >>> MUDANÇA IMPORTANTE AQUI:
   async updateVariation(
     id: string,
     data: UpdateVariationDTO,
   ): Promise<VariationEntity> {
+    // 1. Prepara novas imagens (se houver upload)
     const imagensCreate = data.files?.map((file, index) => ({
       id_imagem: randomUUID(),
       caminho: file.path,
-      principal: index === 0, // Garante que a 1ª seja principal
+      principal: false, // Por padrão false, ou ajuste sua lógica de "Principal"
       ordem: index,
     }));
 
-    if (data.files && data.files.length > 0) {
-      const currentVariation = await prisma.produto_variacao.findUnique({
-        where: { id_variacao: id },
-        include: { imagem_variacao: true },
-      });
+    // 2. Busca imagens atuais no banco para comparar
+    const currentVariation = await prisma.produto_variacao.findUnique({
+      where: { id_variacao: id },
+      include: { imagem_variacao: true },
+    });
 
-      if (currentVariation?.imagem_variacao) {
-        for (const img of currentVariation.imagem_variacao) {
-          this.deleteFilesFromDisk(img.caminho);
-        }
-      }
+    const currentImages = currentVariation?.imagem_variacao || [];
+
+    // 3. Normaliza o input kept_images (pode vir string única, array ou undefined)
+    let keptIds: string[] = [];
+    if (Array.isArray(data.kept_images)) {
+      keptIds = data.kept_images;
+    } else if (typeof data.kept_images === "string") {
+      keptIds = [data.kept_images];
+    }
+    // Se undefined, keptIds fica vazio [], o que significaria apagar todas as antigas.
+
+    // 4. Identifica quais imagens devem ser EXCLUÍDAS (estão no banco, mas não no keptIds)
+    const imagesToDelete = currentImages.filter(
+      (img) => !keptIds.includes(img.id_imagem),
+    );
+
+    // 5. Apaga arquivos físicos do disco
+    for (const img of imagesToDelete) {
+      this.deleteFilesFromDisk(img.caminho);
     }
 
+    // 6. Atualiza no Banco (Delete as removidas + Create as novas)
     const variation = await prisma.produto_variacao.update({
       where: { id_variacao: id },
       data: {
@@ -483,16 +493,21 @@ export class ProductRepository implements IProductRepository {
         quantidade: data.quantidade,
         valor: data.valor,
         ultima_atualizacao: new Date(),
-        imagem_variacao:
-          imagensCreate && imagensCreate.length > 0
-            ? {
-                deleteMany: {},
-                create: imagensCreate,
-              }
-            : undefined,
+        imagem_variacao: {
+          // Deleta APENAS as que filtramos acima
+          deleteMany: {
+            id_imagem: { in: imagesToDelete.map((i) => i.id_imagem) },
+          },
+          // Cria as novas (se houver arquivos)
+          create:
+            imagensCreate && imagensCreate.length > 0
+              ? imagensCreate
+              : undefined,
+        },
       },
       include: { imagem_variacao: true },
     });
+
     return this.mapToVariationEntity(variation);
   }
 

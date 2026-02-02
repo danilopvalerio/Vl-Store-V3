@@ -77,7 +77,7 @@ export interface CreateVariationDTO {
   quantidade: number;
   valor: number;
   actorUserId?: string;
-  files?: Express.Multer.File[]; // Tipagem correta do Multer
+  files?: Express.Multer.File[];
 }
 
 export interface UpdateVariationDTO {
@@ -86,7 +86,9 @@ export interface UpdateVariationDTO {
   quantidade?: number;
   valor?: number;
   actorUserId?: string;
-  files?: Express.Multer.File[]; // Tipagem correta do Multer
+  files?: Express.Multer.File[];
+  // CAMPO NOVO ADICIONADO AQUI:
+  kept_images?: string[] | string;
 }
 
 // ============================================================================

@@ -63,8 +63,7 @@ const ProductCard = ({ product, onClick }: Props) => {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             style={{ objectFit: "cover" }}
             onError={() => setImageError(true)}
-            // Adicione priority se for a imagem principal da tela (opcional)
-            // priority
+            loading="eager"
           />
         ) : (
           <div className="text-secondary text-opacity-25">

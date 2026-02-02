@@ -118,6 +118,7 @@ export class ProductService {
     return variation;
   }
 
+  // ATUALIZADO AQUI
   async updateVariation(
     id: string,
     data: UpdateVariationDTO,
@@ -125,7 +126,10 @@ export class ProductService {
     const existing = await this.repo.findVariationById(id);
     if (!existing) throw new AppError("Variação não encontrada.", 404);
 
+    // O repositório já tem a lógica de comparar o que existe com o kept_images.
+    // Só precisamos garantir que 'data' contenha 'kept_images'.
     const updated = await this.repo.updateVariation(id, data);
+
     await this.logService.logSystem({
       id_user: data.actorUserId,
       acao: "Atualizar Variação",
