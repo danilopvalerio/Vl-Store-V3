@@ -8,6 +8,7 @@ import {
 } from "./user_profile.dto";
 import { AppError } from "../../app/middleware/error.middleware";
 import { LogService } from "../logs/log.service";
+import { deleteProfilePhoto } from "../../app/middleware/upload.middleware";
 // VALIDATION IMPORTS REMOVIDOS (isValidUUID, isValidString) -> Zod cuida disso
 
 export class UserProfileService {
@@ -45,12 +46,13 @@ export class UserProfileService {
     }
 
     // Constrói o caminho.
-    // AJUSTE O '..' CONFORME SUA ESTRUTURA DE PASTAS.
-    // Supondo que a pasta 'uploads' está na raiz do projeto (fora do src)
-    const uploadsFolder = path.resolve(__dirname, "..", "..", "..", "uploads");
-    const filePath = path.join(uploadsFolder, profile.foto_url);
+    // A foto_url agora tem o formato "uploads/perfis/arquivo.jpeg"
+    // Então o caminho base é a raiz do projeto
+    const projectRoot = path.resolve(__dirname, "..", "..", "..");
+    const filePath = path.join(projectRoot, profile.foto_url);
 
     // Evitar Path Traversal (segurança)
+    const uploadsFolder = path.join(projectRoot, "uploads");
     if (!filePath.startsWith(uploadsFolder)) {
       throw new AppError("Caminho de arquivo inválido.", 400);
     }
@@ -151,19 +153,9 @@ export class UserProfileService {
     const existing = await this.repo.findById(id);
     if (!existing) throw new AppError("Perfil não encontrado.", 404);
 
-    // Se tiver foto, delete do disco
+    // Se tiver foto, delete do disco usando o helper
     if (existing.foto_url) {
-      const uploadsFolder = path.resolve(
-        __dirname,
-        "..",
-        "..",
-        "..",
-        "uploads",
-      );
-      const filePath = path.join(uploadsFolder, existing.foto_url);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath); // Deleta o arquivo físico
-      }
+      await deleteProfilePhoto(existing.foto_url);
     }
 
     await this.repo.delete(id);
@@ -236,5 +228,59 @@ export class UserProfileService {
       lojaId,
     );
     return { data, total, page, lastPage: Math.ceil(total / limit) };
+  }
+
+  // ============================================================================
+  // MÉTODOS DE FOTO DE PERFIL
+  // ============================================================================
+
+  async updateProfilePhoto(
+    profileId: string,
+    newFotoUrl: string,
+    actorUserId: string,
+  ): Promise<UserProfileEntity> {
+    const existing = await this.repo.findById(profileId);
+    if (!existing) throw new AppError("Perfil não encontrado.", 404);
+
+    // Se já tinha foto, deleta a antiga
+    if (existing.foto_url) {
+      await deleteProfilePhoto(existing.foto_url);
+    }
+
+    const updatedProfile = await this.repo.update(profileId, {
+      foto_url: newFotoUrl,
+    });
+
+    await this.logService.logSystem({
+      id_user: actorUserId,
+      acao: "Atualizar Foto Perfil",
+      detalhes: `Foto do perfil ${existing.nome} (ID: ${profileId}) atualizada.`,
+    });
+
+    return updatedProfile;
+  }
+
+  async deleteProfilePhoto(
+    profileId: string,
+    actorUserId: string,
+  ): Promise<void> {
+    const existing = await this.repo.findById(profileId);
+    if (!existing) throw new AppError("Perfil não encontrado.", 404);
+
+    if (!existing.foto_url) {
+      throw new AppError("Este perfil não possui foto.", 404);
+    }
+
+    // Deleta os arquivos físicos
+    await deleteProfilePhoto(existing.foto_url);
+
+    // Atualiza o registro no banco removendo a foto_url
+    await this.repo.update(profileId, { foto_url: undefined });
+
+    await this.logService.logSystem({
+      id_user: actorUserId,
+      acao: "Remover Foto Perfil",
+      detalhes: `Foto do perfil ${existing.nome} (ID: ${profileId}) removida.`,
+    });
   }
 }

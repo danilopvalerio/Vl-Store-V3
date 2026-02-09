@@ -10,7 +10,10 @@ import { LogService } from "../logs/log.service";
 // Validações manuais (isValidEmail) removidas, o Zod já garantiu.
 
 export class UserService {
-  constructor(private repo: IUserRepository, private logService: LogService) {}
+  constructor(
+    private repo: IUserRepository,
+    private logService: LogService,
+  ) {}
 
   // Helper para converter Entity -> ResponseDTO
   private toResponse(entity: UserEntity): UserResponseDTO {
@@ -20,12 +23,13 @@ export class UserService {
       ativo: entity.ativo,
       criadoEm: entity.data_criacao,
       telefones: entity.telefones || [],
+      profileId: entity.profileId,
     };
   }
 
   async createUser(
     data: CreateUserDTO,
-    actorUserId: string
+    actorUserId: string,
   ): Promise<UserResponseDTO> {
     // Validação de formato de e-mail removida (Zod fez)
 
@@ -47,7 +51,7 @@ export class UserService {
   async updateUser(
     id: string,
     data: UpdateUserDTO,
-    actorUserId: string
+    actorUserId: string,
   ): Promise<UserResponseDTO> {
     // Validação de ID UUID removida (Zod fez)
 

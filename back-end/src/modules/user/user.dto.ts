@@ -12,6 +12,8 @@ export interface UserEntity {
   ultima_atualizacao: Date | null;
   // Telefones mapeados (opcional no domínio interno se não houver include)
   telefones?: string[];
+  // ID do perfil criado
+  profileId?: string;
 }
 
 // ============================================================================
@@ -24,6 +26,8 @@ export interface UserResponseDTO {
   criadoEm: Date | null;
   // Telefones reinseridos para o front
   telefones: string[];
+  // ID do perfil criado (para upload de foto)
+  profileId?: string;
 }
 
 // ============================================================================
@@ -52,17 +56,20 @@ export interface UpdateUserDTO {
 // ============================================================================
 // 4. CONTRATO DO REPOSITÓRIO
 // ============================================================================
-export interface IUserRepository
-  extends IBaseRepository<UserEntity, CreateUserDTO, UpdateUserDTO> {
+export interface IUserRepository extends IBaseRepository<
+  UserEntity,
+  CreateUserDTO,
+  UpdateUserDTO
+> {
   findByEmail(email: string): Promise<UserEntity | null>;
 
   findPaginatedSafe(
     page: number,
-    limit: number
+    limit: number,
   ): Promise<{ data: UserResponseDTO[]; total: number }>;
   searchPaginatedSafe(
     query: string,
     page: number,
-    limit: number
+    limit: number,
   ): Promise<{ data: UserResponseDTO[]; total: number }>;
 }

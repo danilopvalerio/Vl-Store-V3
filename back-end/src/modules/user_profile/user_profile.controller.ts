@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { UserProfileService } from "./user_profile.service";
 
+// Interface estendida para request com foto processada
+interface RequestWithPhoto extends Request {
+  processedPhotoPath?: string;
+}
+
 export class UserProfileController {
   constructor(private service: UserProfileService) {}
 
@@ -49,6 +54,55 @@ export class UserProfileController {
       actorUserId,
     });
     return res.status(201).json(result);
+  };
+
+  // Criar perfil com foto
+  createWithPhoto = async (req: RequestWithPhoto, res: Response) => {
+    const actorUserId = this.getActorId(req);
+    if (!actorUserId)
+      return res.status(401).json({ error: "Usuário não autenticado." });
+
+    const fotoUrl = req.processedPhotoPath || undefined;
+
+    const result = await this.service.createProfile({
+      ...req.body,
+      foto_url: fotoUrl,
+      actorUserId,
+    });
+    return res.status(201).json(result);
+  };
+
+  // Upload de foto para perfil existente
+  uploadPhoto = async (req: RequestWithPhoto, res: Response) => {
+    const actorUserId = this.getActorId(req);
+    if (!actorUserId)
+      return res.status(401).json({ error: "Usuário não autenticado." });
+
+    const profileId = req.params.id as string;
+    const fotoUrl = req.processedPhotoPath;
+
+    if (!fotoUrl) {
+      return res.status(400).json({ error: "Nenhuma foto enviada." });
+    }
+
+    const result = await this.service.updateProfilePhoto(
+      profileId,
+      fotoUrl,
+      actorUserId,
+    );
+    return res.json(result);
+  };
+
+  // Deletar foto de perfil
+  deletePhoto = async (req: Request, res: Response) => {
+    const actorUserId = this.getActorId(req);
+    if (!actorUserId)
+      return res.status(401).json({ error: "Usuário não autenticado." });
+
+    const profileId = req.params.id as string;
+
+    await this.service.deleteProfilePhoto(profileId, actorUserId);
+    return res.status(204).send();
   };
 
   update = async (req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { IMaskInput } from "react-imask";
 import { AxiosError } from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -12,7 +12,9 @@ import {
   faLock,
   faPhone,
   faShieldHalved,
+  faCamera,
 } from "@fortawesome/free-solid-svg-icons";
+import Image from "next/image";
 
 import api from "../../utils/api";
 import { extractDigitsOnly } from "../../utils/validationUtils";
@@ -36,6 +38,11 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
 
   const [tipoPerfil, setTipoPerfil] = useState("FUNCIONARIO");
 
+  // Foto de perfil
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -49,6 +56,26 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveFoto = () => {
+    setFotoFile(null);
+    setFotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,8 +106,30 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
         tipo_perfil: tipoPerfil,
       };
 
-      // Apenas UMA chamada
-      await api.post("/users", fullPayload);
+      // Cria usuário e perfil
+      const response = await api.post("/users", fullPayload);
+      console.log("Resposta criação usuário:", response.data);
+
+      // Se tem foto, faz upload separado
+      if (fotoFile && response.data.profileId) {
+        console.log(
+          "Fazendo upload da foto para profileId:",
+          response.data.profileId,
+        );
+        const formData = new FormData();
+        formData.append("foto", fotoFile);
+
+        await api.post(`/profiles/${response.data.profileId}/photo`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      } else if (fotoFile) {
+        console.warn(
+          "Foto selecionada mas profileId não retornado:",
+          response.data,
+        );
+      }
 
       onSuccess();
     } catch (err) {
@@ -125,6 +174,57 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeProps) => {
 
           <div className="modal-body p-4 pt-2">
             {error && <div className="alert alert-danger">{error}</div>}
+
+            {/* FOTO DE PERFIL */}
+            <div className="d-flex justify-content-center mb-4">
+              <div className="position-relative">
+                <div
+                  className="rounded-circle border border-3 border-secondary overflow-hidden bg-light d-flex align-items-center justify-content-center"
+                  style={{ width: 120, height: 120 }}
+                >
+                  {fotoPreview ? (
+                    <Image
+                      src={fotoPreview}
+                      alt="Preview"
+                      fill
+                      style={{ objectFit: "cover" }}
+                      sizes="120px"
+                    />
+                  ) : (
+                    <FontAwesomeIcon
+                      icon={faUser}
+                      className="text-secondary text-opacity-25"
+                      size="3x"
+                    />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0 shadow"
+                  style={{ width: 36, height: 36 }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <FontAwesomeIcon icon={faCamera} />
+                </button>
+                {fotoPreview && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger rounded-circle position-absolute top-0 end-0"
+                    style={{ width: 28, height: 28, fontSize: "0.7rem" }}
+                    onClick={handleRemoveFoto}
+                  >
+                    ×
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="d-none"
+                  onChange={handleFotoChange}
+                />
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="row g-3">
               {/* NOME */}

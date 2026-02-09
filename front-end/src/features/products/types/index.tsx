@@ -1,5 +1,7 @@
 // src/features/products/types/index.tsx
 
+import { BaseEntity } from "@/components/common/GenericEntityPage";
+
 // --- Respostas da API ---
 export interface VariationImage {
   id_imagem: string;
@@ -46,12 +48,6 @@ export interface Product {
   imagem_capa?: string | null;
 }
 
-// Erro da API
-export interface ApiErrorResponse {
-  error?: string;
-  message?: string;
-}
-
 // --- Payloads de Envio ---
 
 export interface CreateProductPayload {
@@ -86,4 +82,11 @@ export interface UpdateVariationPayload {
   descricao?: string;
   quantidade?: number;
   valor?: number;
+}
+
+// --- Tipo para uso com componentes genéricos ---
+// Estende BaseEntity para compatibilidade com GenericEntityPage e EntityCard
+export interface ProductEntity extends BaseEntity, Omit<Product, "id"> {
+  // Herda todas as propriedades de Product
+  // BaseEntity fornece: title, subtitle, imageUrl, isActive, description, status, createdAt, updatedAt
 }

@@ -9,6 +9,7 @@ import {
   faImage,
 } from "@fortawesome/free-solid-svg-icons";
 import Image from "next/image";
+import { getImageUrl } from "../../utils/imageUrl";
 import { Product } from "./types/index";
 
 interface Props {
@@ -16,21 +17,9 @@ interface Props {
   onClick: () => void;
 }
 
-// CORREÇÃO: Porta 3333
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
-
 const ProductCard = ({ product, onClick }: Props) => {
   const [imageError, setImageError] = useState(false);
-  console.log("Product imagem_capa:", product.imagem_capa);
-  // Garante que não duplique barras se a env já tiver barra
-  const formatUrl = (path: string) => {
-    if (path.startsWith("http")) return path;
-    const cleanBase = API_BASE_URL.replace(/\/$/, "");
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
-    return `${cleanBase}${cleanPath}`;
-  };
-
-  const imageUrl = product.imagem_capa ? formatUrl(product.imagem_capa) : null;
+  const imageUrl = getImageUrl(product.imagem_capa);
 
   return (
     <div

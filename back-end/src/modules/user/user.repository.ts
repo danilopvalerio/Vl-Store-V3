@@ -70,7 +70,7 @@ export class UserRepository implements IUserRepository {
     const senhaHash = data.senha ? await hashPassword(data.senha) : "temp_hash";
 
     // USA TRANSACTION PARA GARANTIR INTEGRIDADE
-    const newUser = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // 1. Cria o User
       const user = await tx.user.create({
         data: {
@@ -85,7 +85,7 @@ export class UserRepository implements IUserRepository {
       });
 
       // 2. Cria o Profile usando o ID do usuário recém-criado
-      await tx.user_profile.create({
+      const profile = await tx.user_profile.create({
         data: {
           user_id: user.user_id,
           id_loja: data.id_loja,
@@ -96,10 +96,12 @@ export class UserRepository implements IUserRepository {
         },
       });
 
-      return user;
+      return { user, profileId: profile.id_user_profile };
     });
 
-    return this.mapToEntity(newUser);
+    const entity = this.mapToEntity(result.user);
+    entity.profileId = result.profileId;
+    return entity;
   }
 
   async update(id: string, data: UpdateUserDTO): Promise<UserEntity> {
@@ -155,7 +157,7 @@ export class UserRepository implements IUserRepository {
   // Implementação genérica (retorna Entity)
   async findPaginated(
     page: number,
-    limit: number
+    limit: number,
   ): Promise<{ data: UserEntity[]; total: number }> {
     const skip = (page - 1) * limit;
     const [users, total] = await Promise.all([
@@ -172,7 +174,7 @@ export class UserRepository implements IUserRepository {
   async searchPaginated(
     query: string,
     page: number,
-    limit: number
+    limit: number,
   ): Promise<{ data: UserEntity[]; total: number }> {
     const skip = (page - 1) * limit;
     const where = { email: { contains: query, mode: "insensitive" as const } };
@@ -191,7 +193,7 @@ export class UserRepository implements IUserRepository {
   // Implementação Segura (retorna ResponseDTO)
   async findPaginatedSafe(
     page: number,
-    limit: number
+    limit: number,
   ): Promise<{ data: UserResponseDTO[]; total: number }> {
     const skip = (page - 1) * limit;
     const [users, total] = await Promise.all([
@@ -209,7 +211,7 @@ export class UserRepository implements IUserRepository {
   async searchPaginatedSafe(
     query: string,
     page: number,
-    limit: number
+    limit: number,
   ): Promise<{ data: UserResponseDTO[]; total: number }> {
     const skip = (page - 1) * limit;
     const where: Prisma.userWhereInput = {

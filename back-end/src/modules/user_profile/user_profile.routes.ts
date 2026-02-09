@@ -11,13 +11,17 @@ import {
   authMiddleware,
   requireRole,
 } from "../../app/middleware/auth.middleware";
-import { validate } from "../../app/middleware/validation.middleware"; // <--- SEU MIDDLEWARE
+import { validate } from "../../app/middleware/validation.middleware";
+import {
+  uploadProfilePhoto,
+  processProfilePhoto,
+} from "../../app/middleware/upload.middleware";
 import {
   createUserProfileSchema,
   updateUserProfileSchema,
   userProfileIdSchema,
   userIdParamSchema,
-} from "./user_profile.schema"; // <--- SEUS SCHEMAS
+} from "./user_profile.schema";
 
 const router = Router();
 
@@ -33,18 +37,23 @@ const controller = new UserProfileController(service);
 // --- TODAS AS ROTAS ABAIXO EXIGEM TOKEN ---
 router.use(authMiddleware);
 
-// --- ROTAS GERAIS ---
-router.get(
-  "/:id/avatar",
-  validate(userProfileIdSchema), // Valida se o ID é UUID
-  controller.getAvatar,
-);
+// --- ROTAS ESTÁTICAS (devem vir antes das dinâmicas com :id) ---
 
+// Criar perfil sem foto
 router.post(
   "/",
   requireRole(["SUPER_ADMIN", "ADMIN"]),
   validate(createUserProfileSchema),
   controller.create,
+);
+
+// Criar perfil com foto
+router.post(
+  "/with-photo",
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
+  uploadProfilePhoto,
+  processProfilePhoto,
+  controller.createWithPhoto,
 );
 
 // Listar perfis
@@ -55,7 +64,6 @@ router.get(
 );
 
 // Buscar perfil pelo user_id
-// Adicionado validação do parametro userId
 router.get(
   "/user/:userId",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE", "FUNCIONARIO"]),
@@ -63,20 +71,43 @@ router.get(
   controller.getByUserId,
 );
 
-// --- ROTAS ESPECÍFICAS ---
+// Paginação
 router.get(
   "/paginated",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
   controller.getPaginated,
 );
 
+// Busca
 router.get(
   "/search",
   requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
   controller.searchPaginated,
 );
 
-// --- ROTAS DINÂMICAS ---
+// --- ROTAS DINÂMICAS (com :id) ---
+
+// Avatar (foto de perfil via sendFile)
+router.get("/:id/avatar", validate(userProfileIdSchema), controller.getAvatar);
+
+// Upload/atualizar foto de perfil existente
+router.post(
+  "/:id/photo",
+  requireRole(["SUPER_ADMIN", "ADMIN", "GERENTE"]),
+  validate(userProfileIdSchema),
+  uploadProfilePhoto,
+  processProfilePhoto,
+  controller.uploadPhoto,
+);
+
+// Remover foto de perfil
+router.delete(
+  "/:id/photo",
+  requireRole(["SUPER_ADMIN", "ADMIN"]),
+  validate(userProfileIdSchema),
+  controller.deletePhoto,
+);
+
 // Buscar por ID do perfil
 router.get(
   "/:id",
@@ -86,7 +117,6 @@ router.get(
 );
 
 // Atualizar cargo/perfil
-// Adicionado validate(updateUserProfileSchema)
 router.patch(
   "/:id",
   requireRole(["SUPER_ADMIN", "ADMIN"]),

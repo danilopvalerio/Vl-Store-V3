@@ -1,5 +1,7 @@
 // app/employees/types.ts
 
+import { BaseEntity } from "@/components/common/GenericEntityPage";
+
 // --- Respostas da API ---
 export type UserProfileStatus = "PENDING" | "ACTIVE" | "INACTIVE" | "BLOCKED";
 
@@ -8,6 +10,7 @@ export interface EmployeeSummary {
   cpf: string;
   nome: string;
   cargo: string;
+  foto_url?: string | null; // Imagem de perfil
 }
 
 // GET /api/profiles (Lista e Detalhe)
@@ -16,10 +19,11 @@ export interface UserProfileResponse {
   user_id: string;
   id_loja: string;
   nome: string;
-  cpf_cnpj: string; // O backend pode retornar 'cpf' ou 'cpf_cnpj', ajuste se necessário
+  cpf_cnpj: string;
   cargo: string;
   tipo_perfil: string;
   status: UserProfileStatus;
+  foto_url?: string | null; // Imagem de perfil
   data_criacao: string;
   ultima_atualizacao: string;
 }
@@ -79,6 +83,7 @@ export interface UpdateProfilePayload {
   cpf?: string;
   cargo?: string;
   status?: "ACTIVE" | "INACTIVE" | "BLOCKED";
+  foto?: string | null; // Imagem de perfil
 }
 
 // Dados do Usuário Logado (localStorage)
@@ -88,4 +93,12 @@ export interface LoggedUser {
   nome: string;
   role: string;
   lojaId: string;
+}
+
+// --- Tipo para uso com componentes genéricos ---
+// Estende BaseEntity para compatibilidade com GenericEntityPage e EntityCard
+export interface EmployeeEntity
+  extends Omit<BaseEntity, "status">, Omit<UserProfileResponse, "id"> {
+  // Herda todas as propriedades de UserProfileResponse
+  // status vem de UserProfileResponse (UserProfileStatus) e não de BaseEntity (string)
 }

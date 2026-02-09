@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { IMaskInput } from "react-imask";
 import { AxiosError } from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -14,9 +14,12 @@ import {
   faStore,
   faUserSlash,
   faStoreSlash,
+  faCamera,
 } from "@fortawesome/free-solid-svg-icons";
+import Image from "next/image";
 
 import api from "../../utils/api";
+import { getImageUrl } from "../../utils/imageUrl";
 import { extractDigitsOnly } from "../../utils/validationUtils";
 
 // Importando os tipos
@@ -30,8 +33,10 @@ import {
 } from "./types/index"; // Verifique o caminho
 
 // --- EXTENSÃO DE TIPOS LOCAIS ---
-interface ExtendedUpdateProfilePayload
-  extends Omit<UpdateProfilePayload, "status"> {
+interface ExtendedUpdateProfilePayload extends Omit<
+  UpdateProfilePayload,
+  "status"
+> {
   tipo_perfil?: string;
   status?: UserProfileStatus;
 }
@@ -67,6 +72,12 @@ const EmployeeDetailModal = ({
   const [telefone2, setTelefone2] = useState("");
   const [tipoPerfil, setTipoPerfil] = useState("");
 
+  // Foto de perfil
+  const [fotoAtual, setFotoAtual] = useState<string | null>(null);
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // --- Estados de Controle ---
   const [profileStatus, setProfileStatus] =
     useState<UserProfileStatus>("ACTIVE");
@@ -91,7 +102,7 @@ const EmployeeDetailModal = ({
     const loadData = async () => {
       try {
         const profRes = await api.get<UserProfileResponse>(
-          `/profiles/${profileId}`
+          `/profiles/${profileId}`,
         );
         const profile = profRes.data;
 
@@ -102,17 +113,18 @@ const EmployeeDetailModal = ({
             setBlockExclusion(true);
           }
         }
-
+        console.log(profile);
         setNome(profile.nome);
         setCpf(profile.cpf_cnpj || "");
         setCargo(profile.cargo);
         setTipoPerfil(profile.tipo_perfil || "FUNCIONARIO");
         setProfileStatus(profile.status);
         setUserId(profile.user_id);
+        setFotoAtual(profile.foto_url || null);
 
         if (profile.user_id) {
           const userRes = await api.get<UserResponse>(
-            `/users/${profile.user_id}`
+            `/users/${profile.user_id}`,
           );
           const userData = userRes.data;
 
@@ -150,6 +162,26 @@ const EmployeeDetailModal = ({
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveFoto = () => {
+    setFotoFile(null);
+    setFotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   // --- Update ---
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,6 +201,18 @@ const EmployeeDetailModal = ({
       };
 
       await api.patch(`/profiles/${profileId}`, profilePayload);
+
+      // Upload de foto se houver nova foto selecionada
+      if (fotoFile) {
+        const formData = new FormData();
+        formData.append("foto", fotoFile);
+
+        await api.post(`/profiles/${profileId}/photo`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      }
 
       if (userId) {
         const telefonesParaEnviar = [telefone1, telefone2]
@@ -204,7 +248,7 @@ const EmployeeDetailModal = ({
     if (!isAdmin || blockExclusion) return;
     if (
       !confirm(
-        "Tem certeza? Isso removerá o funcionário DESTA LOJA, mas o login dele continuará existindo no sistema."
+        "Tem certeza? Isso removerá o funcionário DESTA LOJA, mas o login dele continuará existindo no sistema.",
       )
     )
       return;
@@ -226,7 +270,7 @@ const EmployeeDetailModal = ({
     if (!isAdmin || blockExclusion) return;
     if (
       !confirm(
-        "ATENÇÃO CRÍTICA: Isso apagará a CONTA DE LOGIN (email/senha) permanentemente. O usuário perderá acesso a TODAS as lojas. Tem certeza absoluta?"
+        "ATENÇÃO CRÍTICA: Isso apagará a CONTA DE LOGIN (email/senha) permanentemente. O usuário perderá acesso a TODAS as lojas. Tem certeza absoluta?",
       )
     )
       return;
@@ -285,6 +329,69 @@ const EmployeeDetailModal = ({
             {successMsg && (
               <div className="alert alert-success">{successMsg}</div>
             )}
+
+            {/* FOTO DE PERFIL */}
+            <div className="d-flex justify-content-center mb-4">
+              <div className="position-relative">
+                <div
+                  className="rounded-circle border border-3 border-secondary overflow-hidden bg-light d-flex align-items-center justify-content-center"
+                  style={{ width: 120, height: 120 }}
+                >
+                  {fotoPreview ? (
+                    <Image
+                      src={fotoPreview}
+                      alt="Preview"
+                      fill
+                      style={{ objectFit: "cover" }}
+                      sizes="120px"
+                    />
+                  ) : fotoAtual ? (
+                    <Image
+                      src={getImageUrl(fotoAtual) || ""}
+                      alt="Foto atual"
+                      fill
+                      style={{ objectFit: "cover" }}
+                      sizes="120px"
+                    />
+                  ) : (
+                    <FontAwesomeIcon
+                      icon={faUser}
+                      className="text-secondary text-opacity-25"
+                      size="3x"
+                    />
+                  )}
+                </div>
+                {isAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0 shadow"
+                      style={{ width: 36, height: 36 }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <FontAwesomeIcon icon={faCamera} />
+                    </button>
+                    {(fotoPreview || fotoAtual) && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger rounded-circle position-absolute top-0 end-0"
+                        style={{ width: 28, height: 28, fontSize: "0.7rem" }}
+                        onClick={handleRemoveFoto}
+                      >
+                        ×
+                      </button>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="d-none"
+                      onChange={handleFotoChange}
+                    />
+                  </>
+                )}
+              </div>
+            </div>
 
             <form onSubmit={handleUpdate} className="row g-3">
               {/* --- DADOS GERAIS --- */}

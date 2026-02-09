@@ -18,14 +18,13 @@ import {
 import { AxiosError } from "axios";
 import Image from "next/image";
 import api from "../../utils/api";
+import { getImageUrl } from "../../utils/imageUrl";
 import {
   Variation,
   VariationImage,
   GetVariationsQueryParams,
 } from "./types/index";
 import { ApiErrorResponse, PaginatedResponse } from "../../types/api";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
 
 // --- SUB-COMPONENTE: Linha da Tabela (Carrossel de Imagens) ---
 interface VariationRowProps {
@@ -48,9 +47,7 @@ const VariationRow = ({
   const hasMultipleImages = images.length > 1;
 
   const currentImageObj = images.length > 0 ? images[currentImgIndex] : null;
-  const thumbUrl = currentImageObj
-    ? `${API_BASE_URL}${currentImageObj.caminho}`
-    : null;
+  const thumbUrl = getImageUrl(currentImageObj?.caminho);
 
   const handleNextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -427,7 +424,7 @@ const ProductVariations = ({ productId }: ProductVariationsProps) => {
                             style={{ width: 48, height: 48 }}
                           >
                             <Image
-                              src={`${API_BASE_URL}${img.caminho}`}
+                              src={getImageUrl(img.caminho) || ""}
                               alt="Thumb"
                               fill
                               sizes="48px"
